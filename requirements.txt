@@ -1,0 +1,38 @@
+# Core Framework
+fastapi==0.110.0
+uvicorn[standard]==0.29.0
+pydantic==2.6.3
+python-dotenv==1.0.1
+
+# Database
+neo4j==5.18.0
+redis==5.0.2
+
+# LLM Integration
+openai==1.14.0
+anthropic==0.21.3
+ollama==0.1.8
+
+# Authentication & Security
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.9
+
+# Task Queue
+celery==5.3.4
+flower==2.0.1
+
+# Utilities
+httpx==0.27.0
+uuid6==2024.1.12
+python-dateutil==2.9.0
+
+# Testing
+pytest==8.1.1
+pytest-asyncio==0.23.5
+pytest-cov==4.1.0
+
+# Development
+black==24.2.0
+flake8==7.0.0
+mypy==1.9.0httpx>=0.25.0

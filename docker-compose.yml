@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  neo4j:
+    image: neo4j:5-community
+    container_name: uht-neo4j
+    ports:
+      - "7474:7474"  # HTTP
+      - "7687:7687"  # Bolt
+    environment:
+      - NEO4J_AUTH=neo4j/uht-password-2025
+      - NEO4J_PLUGINS=["apoc"]
+      - NEO4J_apoc_export_file_enabled=true
+      - NEO4J_apoc_import_file_enabled=true
+      - NEO4J_apoc_import_file_use__neo4j__config=true
+      - NEO4J_dbms_security_procedures_unrestricted=apoc.*
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+      - neo4j_import:/var/lib/neo4j/import
+      - neo4j_plugins:/plugins
+    restart: unless-stopped
+    networks:
+      - uht-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: uht-redis
+    ports:
+      - "6383:6379"  # Using 6383 to avoid conflict with existing Redis
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - uht-network
+
+  api:
+    build: .
+    container_name: uht-api
+    ports:
+      - "8100:8000"  # API on port 8100
+    environment:
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USER=neo4j
+      - NEO4J_PASSWORD=uht-password-2025
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=your-jwt-secret-minimum-32-characters-change-in-production
+      - ENVIRONMENT=development
+    depends_on:
+      - neo4j
+      - redis
+    volumes:
+      - ./:/app
+    restart: unless-stopped
+    networks:
+      - uht-network
+
+volumes:
+  neo4j_data:
+  neo4j_logs:
+  neo4j_import:
+  neo4j_plugins:
+  redis_data:
+
+networks:
+  uht-network:
+    driver: bridge

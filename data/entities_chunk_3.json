@@ -1,0 +1,802 @@
+[
+  {
+    "name": "Buddhist Temple",
+    "description": "A structure housing Buddha images and serving Buddhist religious practices. Various architectural traditions by region; meditation and ceremonial spaces; often includes grounds."
+  },
+  {
+    "name": "Mosque",
+    "description": "A building for Islamic worship with prayer hall oriented toward Mecca. Features mihrab and minbar; gender-separated prayer areas; community and educational functions."
+  },
+  {
+    "name": "Sports Stadium",
+    "description": "A large venue for athletic events with seating for spectators. Playing field surrounded by stands; various configurations for different sports; entertainment and economic anchor."
+  },
+  {
+    "name": "Movie Theater",
+    "description": "A venue for exhibiting films to paying audiences. Multiple screens; stadium seating; digital projection; challenged by home streaming."
+  },
+  {
+    "name": "Art Museum",
+    "description": "A building housing and displaying collections of art for public viewing. Climate-controlled galleries; educational programs; cultural institution and tourist attraction."
+  },
+  {
+    "name": "Public Library",
+    "description": "A building housing book collections for public borrowing and reference. Reading rooms and computer access; free public service; community gathering space and information hub."
+  },
+  {
+    "name": "Correctional Prison",
+    "description": "A facility for confining persons convicted of crimes. Cells, administrative areas, and yards; various security levels; operated by government."
+  },
+  {
+    "name": "International Airport",
+    "description": "A facility for aircraft operations and passenger/cargo handling. Runways, terminals, and support facilities; security and customs processing; transportation hub."
+  },
+  {
+    "name": "Commercial Harbor",
+    "description": "A sheltered water area with facilities for ships to load and unload. Piers, cranes, and warehouses; major trade infrastructure; various vessel types accommodated."
+  },
+  {
+    "name": "Hydroelectric Dam",
+    "description": "A barrier across a watercourse generating electricity from water flow. Contains turbines and generators; creates reservoir; major infrastructure investment with environmental impacts."
+  },
+  {
+    "name": "Sedan Automobile",
+    "description": "A passenger car with enclosed body and separate trunk. Four doors and seating for four-five; most common car type; various sizes and powertrains."
+  },
+  {
+    "name": "Semi-Trailer Truck",
+    "description": "A large commercial vehicle with tractor unit pulling cargo trailer. Long-haul freight transportation; requires commercial license; backbone of goods distribution."
+  },
+  {
+    "name": "City Transit Bus",
+    "description": "A large passenger vehicle operating on fixed urban routes. Diesel, electric, or hybrid propulsion; accessible entrances; public transportation backbone."
+  },
+  {
+    "name": "Sport Motorcycle",
+    "description": "A two-wheeled motor vehicle designed for speed and performance. Rider astride engine; various styles and displacements; requires special license."
+  },
+  {
+    "name": "Road Bicycle",
+    "description": "A human-powered two-wheeled vehicle optimized for paved surfaces. Lightweight frame and drop handlebars; efficient transportation and recreation; various price points."
+  },
+  {
+    "name": "Passenger Train",
+    "description": "A railway vehicle carrying passengers between stations. Various types from commuter to high-speed; electric or diesel power; efficient mass transit."
+  },
+  {
+    "name": "Commercial Jet Aircraft",
+    "description": "A large airplane powered by jet engines for passenger or cargo transport. Cruises at high altitude and speed; operated by airlines; requires crew and infrastructure."
+  },
+  {
+    "name": "Utility Helicopter",
+    "description": "A rotary-wing aircraft for vertical flight and hovering. Various sizes and configurations; used for transport, rescue, and aerial work; complex to operate."
+  },
+  {
+    "name": "Container Ship",
+    "description": "A cargo vessel designed to carry standardized shipping containers. Enables global trade efficiency; operated by shipping lines; among largest mobile objects."
+  },
+  {
+    "name": "Fishing Boat",
+    "description": "A watercraft designed for commercial or recreational fishing. Various sizes and configurations; specialized equipment for different catch; regulated by fishery authorities."
+  },
+  {
+    "name": "Nuclear Submarine",
+    "description": "A self-propelled underwater vessel powered by nuclear reactor. Military or research purposes; extended underwater endurance; sophisticated life support systems."
+  },
+  {
+    "name": "Space Launch Rocket",
+    "description": "A vehicle using rocket propulsion to deliver payload beyond Earth's atmosphere. Expendable or reusable designs; massive engineering achievement; operated by space agencies and companies."
+  },
+  {
+    "name": "Crewed Spacecraft",
+    "description": "A vehicle designed for human occupation in space. Life support and reentry capability; extreme engineering requirements; operated by national and commercial entities."
+  },
+  {
+    "name": "Communications Satellite",
+    "description": "An artificial object orbiting Earth to relay radio signals. Geostationary or low Earth orbit; enables global telecommunications; designed for long operational life."
+  },
+  {
+    "name": "Quadcopter Drone",
+    "description": "An uncrewed aerial vehicle with four rotors. Electric battery powered; used for photography, delivery, and surveillance; increasingly regulated."
+  },
+  {
+    "name": "Shopping Cart",
+    "description": "A wheeled basket for transporting goods in retail stores. Wire or plastic construction; nested for storage; essential retail infrastructure."
+  },
+  {
+    "name": "Horse-Drawn Wagon",
+    "description": "A four-wheeled vehicle pulled by horses for cargo transport. Historical primary land transport; still used in some communities; nostalgic and ceremonial use."
+  },
+  {
+    "name": "Snow Sled",
+    "description": "A vehicle on runners for traveling over snow and ice. Various types from recreational to working; pulled by dogs, motors, or gravity; cold climate essential."
+  },
+  {
+    "name": "Kayak",
+    "description": "A narrow watercraft propelled by double-bladed paddle. Sit-inside or sit-on-top designs; originated with Inuit peoples; recreational and sporting use."
+  },
+  {
+    "name": "Canoe",
+    "description": "An open watercraft propelled by single-bladed paddles. Pointed at both ends; originated with indigenous peoples; camping and recreational use."
+  },
+  {
+    "name": "Sailing Yacht",
+    "description": "A recreational vessel propelled primarily by wind-powered sails. Various sizes and configurations; fiberglass, wood, or metal construction; racing and cruising purposes."
+  },
+  {
+    "name": "Passenger Ferry",
+    "description": "A vessel carrying passengers and vehicles across water bodies. Scheduled service on fixed routes; various sizes; essential transportation in coastal and island areas."
+  },
+  {
+    "name": "Light Rail Tram",
+    "description": "An electric rail vehicle operating on city streets or dedicated tracks. Urban transit connecting neighborhoods; lower capacity than metro; visible rail infrastructure."
+  },
+  {
+    "name": "Taxicab",
+    "description": "A vehicle for hire to transport passengers to specified destinations. Licensed and regulated; metered or fixed fares; increasingly competing with rideshare services."
+  },
+  {
+    "name": "Ambulance",
+    "description": "An emergency vehicle equipped to transport and treat patients. Life support equipment; staffed by paramedics; emergency response network component."
+  },
+  {
+    "name": "Fire Engine",
+    "description": "A specialized vehicle carrying firefighting equipment and personnel. Water pumps, hoses, and ladders; responds to fires and accidents; municipal emergency service."
+  },
+  {
+    "name": "Main Battle Tank",
+    "description": "A heavily armored tracked military vehicle with large caliber gun. Primary ground combat weapon; requires crew of three-four; extremely expensive to build and operate."
+  },
+  {
+    "name": "Fighter Jet",
+    "description": "A military aircraft designed for air-to-air combat. High speed and maneuverability; sophisticated weapons systems; crewed or uncrewed variants."
+  },
+  {
+    "name": "Hang Glider",
+    "description": "An unpowered aircraft with fabric wing controlled by pilot weight shift. Launched from hills or towed aloft; recreational soaring flight; requires training and conditions."
+  },
+  {
+    "name": "Hot Air Balloon",
+    "description": "A lighter-than-air craft using heated air for buoyancy. Basket suspended below fabric envelope; limited steering capability; recreational and promotional use."
+  },
+  {
+    "name": "Internal Combustion Engine",
+    "description": "A heat engine converting fuel combustion to mechanical motion. Gasoline or diesel fuel; powers most vehicles; being replaced by electric motors."
+  },
+  {
+    "name": "Electric Motor",
+    "description": "A device converting electrical energy to rotational mechanical energy. Various types and sizes; increasingly used in vehicles; simpler than combustion engines."
+  },
+  {
+    "name": "Aircraft Propeller",
+    "description": "A rotating airfoil generating thrust to propel aircraft forward. Fixed or variable pitch; driven by piston or turbine engine; still used on smaller aircraft."
+  },
+  {
+    "name": "Aircraft Wing",
+    "description": "An airfoil structure generating lift to enable flight. Various shapes and configurations; contains fuel and control surfaces; primary flight enabling structure."
+  },
+  {
+    "name": "Ship Rudder",
+    "description": "A flat surface hinged to stern for steering watercraft. Deflects water flow to change direction; controlled from helm; essential for vessel control."
+  },
+  {
+    "name": "Disc Brake",
+    "description": "A vehicle braking system using caliper to squeeze rotor. Better heat dissipation than drum brakes; standard on modern cars; requires periodic pad replacement."
+  },
+  {
+    "name": "Gas Pedal",
+    "description": "A foot-operated control regulating engine power in vehicles. Pressed to accelerate; spring-returned; being replaced by electronic throttle control."
+  },
+  {
+    "name": "Steering Wheel",
+    "description": "A circular control device for directing vehicle movement. Connected to steering mechanism; airbag mounted; primary driver interface for direction."
+  },
+  {
+    "name": "Pneumatic Tire",
+    "description": "A flexible toroidal container of compressed air surrounding a wheel. Provides traction and cushioning; various types for different applications; requires maintenance."
+  },
+  {
+    "name": "Vehicle Fuel Tank",
+    "description": "A container holding fuel for vehicle propulsion. Various materials and sizes; safety features required; being replaced by batteries in electric vehicles."
+  },
+  {
+    "name": "Desktop Computer",
+    "description": "A personal computer designed for stationary use at a desk. Separate components including tower, monitor, keyboard; more powerful and upgradable than laptops; declining market share."
+  },
+  {
+    "name": "Laptop Computer",
+    "description": "A portable personal computer with integrated screen and keyboard. Battery-powered mobility; various sizes and capabilities; dominant personal computing form factor."
+  },
+  {
+    "name": "Tablet Computer",
+    "description": "A mobile device with touchscreen interface and no physical keyboard. Between smartphone and laptop in size; content consumption focused; various operating systems."
+  },
+  {
+    "name": "Smartphone",
+    "description": "A handheld mobile device combining cellular phone with computing capabilities. Touchscreen interface; app ecosystem; ubiquitous personal technology; multiple daily uses."
+  },
+  {
+    "name": "LCD Monitor",
+    "description": "A flat display panel using liquid crystal technology. Thin profile and low power consumption; various sizes and resolutions; standard computer display type."
+  },
+  {
+    "name": "Mechanical Keyboard",
+    "description": "A computer input device with individual mechanical switches under each key. Tactile feedback and durability; preferred by typists and gamers; various switch types."
+  },
+  {
+    "name": "Optical Mouse",
+    "description": "A pointing device using light sensor to detect surface movement. Wireless or wired connection; replaced mechanical ball mice; standard computer interface."
+  },
+  {
+    "name": "Laser Printer",
+    "description": "A device producing documents by fusing toner to paper with laser and heat. Fast and economical for volume printing; office standard; black-and-white or color."
+  },
+  {
+    "name": "Flatbed Scanner",
+    "description": "A device digitizing documents and images by moving sensor across flat surface. Various resolutions; connects via USB; used for archiving and copying."
+  },
+  {
+    "name": "Digital SLR Camera",
+    "description": "A camera using mirror and prism system with interchangeable lenses. Optical viewfinder; large image sensor; professional and enthusiast photography."
+  },
+  {
+    "name": "Condenser Microphone",
+    "description": "A transducer converting sound to electrical signal using charged capacitor. High sensitivity and frequency response; requires phantom power; studio recording standard."
+  },
+  {
+    "name": "Bluetooth Speaker",
+    "description": "A wireless audio device receiving signals via Bluetooth protocol. Portable and battery-powered; various sizes and quality levels; ubiquitous consumer electronics."
+  },
+  {
+    "name": "Wireless Headphones",
+    "description": "An audio device worn on head receiving signals without physical cable. Bluetooth connectivity; battery-powered; various form factors and features."
+  },
+  {
+    "name": "LED Television",
+    "description": "A flat-panel display using LED backlighting for LCD screen. Thin profile and energy efficient; various sizes and resolutions; dominant home display technology."
+  },
+  {
+    "name": "FM Radio Receiver",
+    "description": "A device receiving frequency-modulated radio broadcasts. Analog technology; declining use but still widespread; car and portable formats."
+  },
+  {
+    "name": "VoIP Telephone",
+    "description": "A device enabling voice calls over internet protocol networks. Software or hardware implementations; replaces traditional phone service; enables video calling."
+  },
+  {
+    "name": "Lithium-Ion Battery",
+    "description": "A rechargeable energy storage device using lithium ion movement. High energy density; powers portable electronics and vehicles; safety considerations for damage."
+  },
+  {
+    "name": "USB Power Adapter",
+    "description": "A device converting AC wall power to DC USB output for charging. Various wattages and port types; included with devices; universal standard emerging."
+  },
+  {
+    "name": "Multicore Processor",
+    "description": "A central processing unit with multiple independent cores on single chip. Enables parallel computing; measured in cores and clock speed; foundation of modern computing."
+  },
+  {
+    "name": "DDR5 RAM",
+    "description": "A volatile memory module storing data for active processing. Current generation with higher bandwidth; measured in gigabytes; plugs into motherboard slots."
+  },
+  {
+    "name": "Solid State Drive",
+    "description": "A storage device using flash memory with no moving parts. Faster and more durable than hard drives; measured in gigabytes/terabytes; replacing mechanical storage."
+  },
+  {
+    "name": "USB Flash Drive",
+    "description": "A small portable storage device using flash memory with USB connector. Convenient data transfer; various capacities; ubiquitous and inexpensive."
+  },
+  {
+    "name": "Computer Network",
+    "description": "A system of interconnected devices sharing resources and communication. Wired or wireless connections; various scales from local to global; fundamental infrastructure."
+  },
+  {
+    "name": "Wireless Router",
+    "description": "A device directing network traffic and providing wireless access. Connects local network to internet; Wi-Fi standards and speeds vary; central home network device."
+  },
+  {
+    "name": "Rack Server",
+    "description": "A computer designed for mounting in standardized equipment racks. High-density computing; data center infrastructure; various form factors."
+  },
+  {
+    "name": "Relational Database",
+    "description": "A data storage system organizing information in tables with defined relationships. SQL query language; ACID compliance; foundation of enterprise data systems."
+  },
+  {
+    "name": "Computer Software",
+    "description": "A collection of instructions and data enabling computer to perform tasks. Various types from operating systems to applications; developed through programming."
+  },
+  {
+    "name": "Mobile Application",
+    "description": "A software program designed for smartphone or tablet devices. Distributed through app stores; various purposes; dominant software interaction paradigm."
+  },
+  {
+    "name": "Operating System",
+    "description": "A software layer managing computer hardware and providing services to applications. Windows, macOS, Linux, iOS, Android primary examples; foundation of computing experience."
+  },
+  {
+    "name": "Sorting Algorithm",
+    "description": "A computational procedure for arranging elements in specified order. Various approaches with different efficiency characteristics; fundamental computer science concept."
+  },
+  {
+    "name": "Computer Program",
+    "description": "A sequence of instructions executed by computer to accomplish specific task. Written in programming languages; compiled or interpreted; various complexity levels."
+  },
+  {
+    "name": "Source Code",
+    "description": "Human-readable instructions written in programming language before compilation. Represents software logic; version-controlled; intellectual property considerations."
+  },
+  {
+    "name": "Digital File",
+    "description": "A named collection of data stored on computer storage device. Various formats and types; organized in directories; basic unit of digital information management."
+  },
+  {
+    "name": "File Folder",
+    "description": "A directory structure organizing files hierarchically on storage systems. Metaphor from physical filing; enables organization; various permission levels."
+  },
+  {
+    "name": "PDF Document",
+    "description": "A file format preserving document formatting across systems. Contains text, images, and vectors; widely used for sharing; created by Adobe."
+  },
+  {
+    "name": "JPEG Image",
+    "description": "A compressed image file format using lossy compression. Reduces file size with some quality loss; dominant photo format; web and camera standard."
+  },
+  {
+    "name": "MP4 Video",
+    "description": "A digital container format for video, audio, and subtitles. Efficient compression; widely compatible; streaming and storage standard."
+  },
+  {
+    "name": "MP3 Audio",
+    "description": "A compressed audio file format using perceptual coding. Revolutionized music distribution; lossy compression; being replaced by newer formats."
+  },
+  {
+    "name": "Display Pixel",
+    "description": "The smallest controllable element of a digital display. Emits or modulates light; resolution measured in pixels; basis of digital imagery."
+  },
+  {
+    "name": "Digital Byte",
+    "description": "A unit of digital information comprising eight bits. Fundamental data measurement; prefixed for larger quantities; basis of storage and transmission metrics."
+  },
+  {
+    "name": "Temperature Sensor",
+    "description": "A device detecting temperature and converting to measurable signal. Various technologies including thermistor and thermocouple; IoT and industrial applications."
+  },
+  {
+    "name": "Servo Actuator",
+    "description": "A motorized device moving to commanded position with feedback control. Used in robotics and automation; various sizes and types; precise positioning capability."
+  },
+  {
+    "name": "Industrial Robot",
+    "description": "A programmable mechanical device performing automated tasks. Articulated arms most common; manufacturing and logistics applications; increasingly collaborative with humans."
+  },
+  {
+    "name": "Large Language Model",
+    "description": "An artificial intelligence system trained on vast text data to generate human-like text. Transformer architecture; various capabilities; rapid recent advancement."
+  },
+  {
+    "name": "Convolutional Neural Network",
+    "description": "A deep learning architecture designed for processing structured grid data like images. Hierarchical feature learning; powers computer vision; various architectures."
+  },
+  {
+    "name": "Distributed Ledger",
+    "description": "A database replicated across multiple nodes without central authority. Blockchain best-known implementation; enables cryptocurrency; various consensus mechanisms."
+  },
+  {
+    "name": "Bitcoin",
+    "description": "A decentralized digital currency using blockchain technology. Limited supply of 21 million; volatile value; pioneered cryptocurrency concept."
+  },
+  {
+    "name": "REST API",
+    "description": "An architectural style for networked applications using HTTP protocols. Stateless client-server communication; enables system integration; web services standard."
+  },
+  {
+    "name": "Internet Protocol",
+    "description": "A set of rules governing data transmission across interconnected networks. IP addressing and packet routing; TCP/IP suite foundation; enables internet."
+  },
+  {
+    "name": "AES Encryption",
+    "description": "A symmetric block cipher algorithm protecting data confidentiality. 128, 192, or 256-bit keys; government standard; widely implemented."
+  },
+  {
+    "name": "Natural Language",
+    "description": "A system of communication using words and grammar developed through human use. Spoken and written forms; enables abstract thought and culture; thousands of languages exist."
+  },
+  {
+    "name": "Written Word",
+    "description": "A unit of language represented by symbols on physical or digital medium. Foundation of literacy; enables recorded communication; various writing systems."
+  },
+  {
+    "name": "Declarative Sentence",
+    "description": "A grammatical structure making a statement or assertion. Subject-verb-object structure in English; conveys information; most common sentence type."
+  },
+  {
+    "name": "Alphabetic Letter",
+    "description": "A symbol in a writing system representing a phoneme or sound. Various alphabets with different character counts; learned in childhood; basis of written communication."
+  },
+  {
+    "name": "Arabic Numeral",
+    "description": "A symbol representing numerical quantity in the Hindu-Arabic system. Ten digits 0-9; positional notation; universal mathematical notation."
+  },
+  {
+    "name": "Typographic Symbol",
+    "description": "A character representing a concept other than letter or number. Includes punctuation and special characters; keyboard accessible; varies by language and field."
+  },
+  {
+    "name": "Visual Sign",
+    "description": "A displayed device conveying specific information through symbols or text. Regulatory, warning, and informational types; standardized designs; public communication."
+  },
+  {
+    "name": "Electronic Signal",
+    "description": "A varying electrical quantity conveying information. Analog or digital encoding; transmitted through various media; foundation of telecommunications."
+  },
+  {
+    "name": "Text Message",
+    "description": "A short written communication sent between mobile devices. SMS or internet-based protocols; character limits historically; dominant communication form."
+  },
+  {
+    "name": "Email Message",
+    "description": "A digital message transmitted between computer users over network. Asynchronous communication; attachments capability; professional standard but declining for personal use."
+  },
+  {
+    "name": "SMS Text",
+    "description": "A short message service text transmitted over cellular networks. 160 character original limit; near-universal capability; basic mobile communication."
+  },
+  {
+    "name": "Voice Call",
+    "description": "A real-time audio communication between two or more parties. Telephone or internet-based; declining for younger generations; still essential for business."
+  },
+  {
+    "name": "Radio Broadcast",
+    "description": "One-way audio transmission to distributed receivers. AM and FM frequencies; licensed spectrum; streaming extending reach."
+  },
+  {
+    "name": "News Publication",
+    "description": "A periodical presenting current events and information. Print or digital format; journalism standards; advertising and subscription supported."
+  },
+  {
+    "name": "Printed Book",
+    "description": "A bound collection of printed pages for reading. Physical form of long-form text; publishing industry product; competing with digital formats."
+  },
+  {
+    "name": "Magazine",
+    "description": "A periodical publication with articles, photographs, and advertisements. Print or digital; various specializations; declining print circulation."
+  },
+  {
+    "name": "Daily Newspaper",
+    "description": "A publication printed daily containing news, opinion, and advertising. Local, national, and international editions; struggling business model; digital transformation."
+  },
+  {
+    "name": "News Article",
+    "description": "A written piece reporting on events or topics for publication. Journalistic standards; inverted pyramid structure; various lengths and depths."
+  },
+  {
+    "name": "Personal Blog",
+    "description": "A regularly updated website with informal posts by individual author. Personal expression platform; various topics; largely superseded by social media."
+  },
+  {
+    "name": "Commercial Website",
+    "description": "A collection of interlinked web pages accessed through internet browser. Information and commercial purposes; responsive design; essential business presence."
+  },
+  {
+    "name": "Social Media Platform",
+    "description": "An online service enabling user-generated content sharing and interaction. Various formats and focuses; advertising-supported; major cultural influence."
+  },
+  {
+    "name": "Digital Advertisement",
+    "description": "A promotional message delivered through electronic channels. Display, search, video, and social formats; targeted and trackable; dominant advertising spending."
+  },
+  {
+    "name": "Promotional Poster",
+    "description": "A printed visual display for advertising or information. Various sizes and production methods; public placement; designed for quick communication."
+  },
+  {
+    "name": "Billboard Sign",
+    "description": "A large outdoor advertising structure along roads or buildings. High visibility placement; limited message complexity; regulated by location."
+  },
+  {
+    "name": "Corporate Logo",
+    "description": "A graphic mark identifying a company or organization. Trademarked visual identity; designed for recognition; applied across media and products."
+  },
+  {
+    "name": "Commercial Brand",
+    "description": "A name, design, and reputation distinguishing products or services. Intangible asset with financial value; built through consistent experience; legally protected."
+  },
+  {
+    "name": "Advertising Slogan",
+    "description": "A memorable phrase used in marketing campaigns. Communicates brand message; designed for recall; some become cultural touchstones."
+  },
+  {
+    "name": "News Headline",
+    "description": "A brief attention-getting summary of article content. Optimized for engagement; varying accuracy; increasingly algorithm-driven."
+  },
+  {
+    "name": "Image Caption",
+    "description": "Text describing or explaining an accompanying photograph or illustration. Provides context and attribution; journalistic standards; accessibility importance."
+  },
+  {
+    "name": "Video Subtitle",
+    "description": "Text displayed on screen representing spoken dialogue. Accessibility feature; translation capability; styled for readability."
+  },
+  {
+    "name": "Oil Painting",
+    "description": "A visual artwork created with pigments suspended in drying oil. Rich color and blending capability; traditional fine art medium; slow drying allows extended working time."
+  },
+  {
+    "name": "Graphite Drawing",
+    "description": "A monochromatic artwork created with graphite pencil on paper. Range of values from light to dark; portable and immediate; fundamental art training skill."
+  },
+  {
+    "name": "Bronze Sculpture",
+    "description": "A three-dimensional artwork cast in copper-tin alloy. Durable and detail-retaining; lost-wax casting traditional; patina develops over time."
+  },
+  {
+    "name": "Portrait Photograph",
+    "description": "An image capturing a person's likeness and character. Various styles from formal to candid; technical and interpersonal skills required; digital and film formats."
+  },
+  {
+    "name": "Feature Film",
+    "description": "A motion picture typically 80+ minutes for theatrical release. Narrative storytelling medium; collaborative production; major cultural and economic industry."
+  },
+  {
+    "name": "3D Animation",
+    "description": "Motion content created using computer-generated three-dimensional models. Film and gaming applications; computationally intensive; various rendering styles."
+  },
+  {
+    "name": "Orchestral Music",
+    "description": "Composed works performed by symphony orchestra ensemble. Western classical tradition; conductor-led; various periods and styles."
+  },
+  {
+    "name": "Popular Song",
+    "description": "A musical composition with vocals intended for wide commercial appeal. Verse-chorus structure typical; recorded and distributed; charts measure popularity."
+  },
+  {
+    "name": "Classical Symphony",
+    "description": "A large-scale orchestral composition typically in four movements. Developed in 18th century; sonata form; major composers include Beethoven and Mahler."
+  },
+  {
+    "name": "Grand Opera",
+    "description": "A dramatic musical theater work sung throughout with orchestra. Combines music, drama, and spectacle; specific operatic voice classifications; formal performance tradition."
+  },
+  {
+    "name": "Modern Dance",
+    "description": "A performance art form emphasizing expression over formal technique. Developed in 20th century; various schools and approaches; company and solo performances."
+  },
+  {
+    "name": "Classical Ballet",
+    "description": "A highly technical form of dance with precise vocabulary of movements. Pointe work for women; centuries of development; company repertoire traditions."
+  },
+  {
+    "name": "Stage Play",
+    "description": "A dramatic work performed live by actors for audience. Script and direction; various venues and scales; immediate audience connection."
+  },
+  {
+    "name": "Theatrical Drama",
+    "description": "A serious play depicting conflict and emotion for live performance. Character development emphasis; catharsis aim; classical and modern traditions."
+  },
+  {
+    "name": "Stand-Up Comedy",
+    "description": "A performance art of humorous monologue delivered to live audience. Direct address style; timing essential; club and theater venues."
+  },
+  {
+    "name": "Classical Tragedy",
+    "description": "A dramatic form depicting a protagonist's downfall through fatal flaw. Greek origins; catharsis purpose; serious themes and elevated language."
+  },
+  {
+    "name": "Literary Novel",
+    "description": "A long-form prose fiction narrative emphasizing artistic merit. Character and theme depth; various genres; publishing industry product."
+  },
+  {
+    "name": "Lyric Poem",
+    "description": "A short poem expressing personal emotions or thoughts. Musical quality; various forms; ancient tradition continuing today."
+  },
+  {
+    "name": "Short Story",
+    "description": "A brief fictional prose narrative typically under 10,000 words. Single effect focus; various genres; magazine and anthology publication."
+  },
+  {
+    "name": "Personal Essay",
+    "description": "A short nonfiction prose piece exploring topic from author's perspective. Informal and reflective; various subjects; literary tradition and contemporary practice."
+  },
+  {
+    "name": "Screenplay",
+    "description": "A written work specifying dialogue and action for film production. Industry-standard format; sold and produced through studio system; blueprint for production."
+  },
+  {
+    "name": "Song Lyric",
+    "description": "The words to a musical composition. Expresses meaning and emotion; structured for musical setting; sometimes published separately."
+  },
+  {
+    "name": "Musical Melody",
+    "description": "A sequence of notes forming a recognizable musical phrase. Horizontal dimension of music; memorable hooks; varies by culture and genre."
+  },
+  {
+    "name": "Musical Rhythm",
+    "description": "The pattern of sounds and silences in time. Beats and subdivisions; varies by genre and culture; physical response inducing."
+  },
+  {
+    "name": "Musical Harmony",
+    "description": "The simultaneous combination of different pitches. Chords and progressions; vertical dimension of music; creates emotional qualities."
+  },
+  {
+    "name": "Musical Instrument",
+    "description": "A device constructed for producing musical sounds. Strings, winds, percussion, and electronic categories; various cultural traditions; skill development required."
+  },
+  {
+    "name": "Acoustic Guitar",
+    "description": "A stringed instrument with hollow body amplifying string vibrations. Steel or nylon strings; played by plucking or strumming; versatile across genres."
+  },
+  {
+    "name": "Grand Piano",
+    "description": "A large keyboard instrument with horizontally strung soundboard. Hammer mechanism; wide dynamic range; concert and home instruments."
+  },
+  {
+    "name": "Acoustic Violin",
+    "description": "A bowed stringed instrument held under chin while played. Four strings; orchestral and solo literature; demands years of training."
+  },
+  {
+    "name": "Drum Kit",
+    "description": "A collection of drums and cymbals played by single performer. Developed in 20th century; essential to popular music; various configurations."
+  },
+  {
+    "name": "Concert Flute",
+    "description": "A woodwind instrument producing sound through air blown across edge hole. Silver or other metals; treble range; orchestral and solo literature."
+  },
+  {
+    "name": "B-Flat Trumpet",
+    "description": "A brass instrument producing sound through lip vibration in cup mouthpiece. Valves change pitch; orchestral, jazz, and popular applications; brilliant tone."
+  },
+  {
+    "name": "Human Singing Voice",
+    "description": "The musical instrument produced by human vocal apparatus. Various classifications and ranges; requires training for development; most personal instrument."
+  },
+  {
+    "name": "Mixed Choir",
+    "description": "An ensemble of singers in multiple voice parts. SATB typical arrangement; sacred and secular repertoire; amateur and professional groups."
+  },
+  {
+    "name": "Symphony Orchestra",
+    "description": "A large instrumental ensemble with strings, winds, brass, and percussion. Conductor-led; performs orchestral repertoire; various sizes and configurations."
+  },
+  {
+    "name": "Rock Band",
+    "description": "A small ensemble typically with guitars, bass, drums, and vocals. Popular music performance; amplified sound; various subgenres."
+  },
+  {
+    "name": "Live Performance",
+    "description": "An artistic presentation before physically present audience. Immediate and unrepeatable; various art forms; differs from recorded or broadcast."
+  },
+  {
+    "name": "Art Exhibition",
+    "description": "A public display of artworks in gallery or museum setting. Curated presentation; temporary or permanent; cultural and educational purpose."
+  },
+  {
+    "name": "Art Gallery",
+    "description": "A space dedicated to displaying and often selling artworks. Commercial or nonprofit operation; various specializations; cultural institution."
+  },
+  {
+    "name": "Music Concert",
+    "description": "A live musical performance before assembled audience. Various venues and formats; ticketed admission typical; recorded for distribution."
+  },
+  {
+    "name": "Nuclear Family",
+    "description": "A household unit of parents and their children. Two-generation structure; Western cultural norm; various configurations recognized."
+  },
+  {
+    "name": "Private Household",
+    "description": "A domestic unit sharing living quarters and resources. One or more persons; census and economic unit; site of domestic life."
+  },
+  {
+    "name": "Local Community",
+    "description": "A group of people living in proximity with shared interests. Geographic basis; social cohesion varying; site of civic life."
+  },
+  {
+    "name": "Rural Village",
+    "description": "A small settlement in agricultural area with limited services. Traditional social structure; declining in developed countries; various cultural forms."
+  },
+  {
+    "name": "Small Town",
+    "description": "A compact urban area larger than village but smaller than city. Local government and services; community character; various economic bases."
+  },
+  {
+    "name": "Metropolitan City",
+    "description": "A large urban center with concentrated population and services. Economic and cultural hub; complex infrastructure; global network nodes."
+  },
+  {
+    "name": "Nation-State Country",
+    "description": "A sovereign political entity with defined territory and population. International recognition; governmental authority; varies in size and power."
+  },
+  {
+    "name": "Sovereign Nation",
+    "description": "A political entity with supreme authority over its territory. Self-governance right; international relations; cultural and ethnic dimensions."
+  },
+  {
+    "name": "Federal State",
+    "description": "A constituent unit of a federal country with delegated powers. Own government and laws; relationship to federal government varies; examples include US states."
+  },
+  {
+    "name": "Administrative Province",
+    "description": "A subnational administrative division in unitary government systems. Varying autonomy levels; appointed or elected leadership; Chinese and other examples."
+  },
+  {
+    "name": "Geographic Region",
+    "description": "An area defined by common characteristics, natural or cultural. Various scales; planning and statistical purposes; identity associations."
+  },
+  {
+    "name": "Democratic Government",
+    "description": "A system of political authority derived from citizen participation. Various forms including direct and representative; elections and accountability mechanisms."
+  },
+  {
+    "name": "National Parliament",
+    "description": "A legislative assembly making laws for a nation. Elected representatives; various structures and powers; democratic institution."
+  },
+  {
+    "name": "National Congress",
+    "description": "A legislative body, particularly in presidential systems. Bicameral in many countries; law-making and oversight functions; elected membership."
+  },
+  {
+    "name": "Court Of Law",
+    "description": "An institution for administering justice through legal proceedings. Judges and procedures; civil and criminal jurisdictions; appeals hierarchy."
+  },
+  {
+    "name": "Police Force",
+    "description": "A civil organization responsible for maintaining public order. Law enforcement authority; local, regional, or national jurisdiction; various structures."
+  },
+  {
+    "name": "Armed Military",
+    "description": "The armed forces of a nation for defense and warfare. Army, navy, and air force components; government controlled; significant resource allocation."
+  },
+  {
+    "name": "Ground Army",
+    "description": "The land warfare branch of a nation's military forces. Infantry, armor, and artillery components; largest service branch typically; historical institution."
+  },
+  {
+    "name": "National Navy",
+    "description": "The maritime warfare branch of a nation's military forces. Surface ships, submarines, and aviation; power projection capability; expensive to maintain."
+  },
+  {
+    "name": "Air Force",
+    "description": "The aerial warfare branch of a nation's military forces. Combat and transport aircraft; relatively recent service branch; technological intensity."
+  },
+  {
+    "name": "Business Company",
+    "description": "A commercial enterprise organized for profit. Various sizes and structures; legal entity; employs workers and serves customers."
+  },
+  {
+    "name": "Multinational Corporation",
+    "description": "A large company operating in multiple countries. Significant economic power; complex structures; subject to varied regulations."
+  },
+  {
+    "name": "Business Partnership",
+    "description": "A commercial arrangement between two or more parties sharing profits. Various legal structures; professional services common; liability considerations."
+  },
+  {
+    "name": "Nonprofit Organization",
+    "description": "An entity operating for purposes other than profit distribution. Tax-exempt status; various missions; governed by board."
+  },
+  {
+    "name": "Charitable Organization",
+    "description": "A nonprofit entity providing public benefit, particularly to disadvantaged. Donation-funded; various focus areas; regulated status."
+  },
+  {
+    "name": "Private Foundation",
+    "description": "An endowed organization making grants for charitable purposes. Family or corporate origin typically; significant assets; grantmaking focus."
+  },
+  {
+    "name": "Professional Association",
+    "description": "An organization of individuals in a particular profession. Certification and standards; advocacy and networking; membership dues."
+  },
+  {
+    "name": "Labor Union",
+    "description": "An organization of workers advocating for employment conditions. Collective bargaining; strike capability; declining membership in many countries."
+  },
+  {
+    "name": "Trade Guild",
+    "description": "A historical or modern association of craftspeople or merchants. Skill standards and mutual aid; some continue today; professional identity."
+  },
+  {
+    "name": "Social Club",
+    "description": "A voluntary association for shared interests or recreation. Membership criteria; meeting places and activities; social bonding function."
+  }
+]

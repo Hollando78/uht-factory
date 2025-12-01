@@ -1,0 +1,802 @@
+[
+  {
+    "name": "Easter Lily",
+    "description": "A fragrant white trumpet-shaped flower associated with spring religious celebrations. Native to Japan; forced into bloom commercially; symbol of purity and renewal."
+  },
+  {
+    "name": "Shasta Daisy",
+    "description": "A cultivated perennial with classic white petals and yellow center. Hybrid created by Luther Burbank; cheerful garden flower; cut flower with long vase life."
+  },
+  {
+    "name": "Bread Wheat",
+    "description": "A grass species providing the world's most important staple grain. Domesticated approximately 10,000 years ago; contains gluten for bread-making; grown on every continent except Antarctica."
+  },
+  {
+    "name": "Asian Rice",
+    "description": "A semi-aquatic grass species feeding half the world's population. Grown in flooded paddies; dozens of thousands of varieties; central to Asian cultures and cuisines."
+  },
+  {
+    "name": "Maize",
+    "description": "A grain crop domesticated in Mexico, now grown globally. Tall grass with ears of kernels; used for food, feed, and ethanol; central to Mesoamerican civilization."
+  },
+  {
+    "name": "Barley",
+    "description": "An ancient cereal grain used for food, animal feed, and malting. Hardy and adaptable; one of first domesticated crops; essential ingredient in beer production."
+  },
+  {
+    "name": "Soybean",
+    "description": "A legume native to East Asia, source of protein, oil, and animal feed. Nitrogen-fixing crop improving soil; processed into tofu, tempeh, and milk alternatives; major global commodity."
+  },
+  {
+    "name": "Cotton Plant",
+    "description": "A shrubby plant producing fiber-covered seeds used for textiles. Native to tropical regions; historically linked to slavery; major agricultural commodity and water-intensive crop."
+  },
+  {
+    "name": "Giant Bamboo",
+    "description": "A fast-growing woody grass reaching 30 meters in height. Strongest natural material relative to weight; used for construction, food, and crafts; spreads aggressively."
+  },
+  {
+    "name": "Giant Kelp",
+    "description": "A large brown algae forming underwater forests in cold, nutrient-rich waters. Can grow 60 centimeters per day; provides habitat for diverse marine life; harvested for alginates."
+  },
+  {
+    "name": "Reindeer Lichen",
+    "description": "A fruticose lichen forming extensive mats in arctic and boreal regions. Important winter food for caribou and reindeer; extremely slow-growing; sensitive to air pollution."
+  },
+  {
+    "name": "Escherichia Coli",
+    "description": "A rod-shaped bacterium normally inhabiting animal intestines. Most strains beneficial for digestion; some cause serious illness; workhorse organism for genetic research."
+  },
+  {
+    "name": "SARS-CoV-2",
+    "description": "A coronavirus causing COVID-19 respiratory disease. Emerged in late 2019; spreads through respiratory droplets; caused global pandemic with massive health and economic impacts."
+  },
+  {
+    "name": "Penicillium Fungus",
+    "description": "A mold genus including species producing penicillin antibiotic. Blue-green spores; grows on decaying organic matter; revolutionized medicine when discovered."
+  },
+  {
+    "name": "Baker's Yeast",
+    "description": "A single-celled fungus used for fermentation in baking and brewing. Converts sugars to carbon dioxide and alcohol; one of oldest domesticated organisms; important research model."
+  },
+  {
+    "name": "Black Bread Mold",
+    "description": "A fast-growing fungus appearing on stale bread and decaying matter. Dark sporangia on white filaments; important decomposer; used in industrial organic acid production."
+  },
+  {
+    "name": "Zooplankton",
+    "description": "Microscopic animals drifting in aquatic environments. Base of marine and freshwater food webs; includes larvae of larger animals; affected by ocean acidification."
+  },
+  {
+    "name": "Amoeba Proteus",
+    "description": "A single-celled organism that moves and feeds using temporary projections. Shape-shifting predator of bacteria and algae; classic microscopy subject; reproduces by binary fission."
+  },
+  {
+    "name": "Toxoplasma Gondii",
+    "description": "A parasitic protozoan completing life cycle in cats but infecting most warm-blooded animals. Linked to behavioral changes in infected hosts; common human infection, usually asymptomatic."
+  },
+  {
+    "name": "Prion",
+    "description": "A misfolded protein that causes other proteins to misfold, creating fatal neurodegenerative diseases. Not technically living; causes diseases like BSE and CJD; extremely resistant to destruction."
+  },
+  {
+    "name": "Human Head",
+    "description": "The uppermost part of the human body containing the brain and primary sense organs. Houses face for expression and communication; supported by neck; protected by skull."
+  },
+  {
+    "name": "Cerebral Cortex",
+    "description": "The outer layer of the brain's cerebrum responsible for higher cognitive functions. Folded gray matter containing billions of neurons; processes language, reasoning, and consciousness."
+  },
+  {
+    "name": "Human Eye",
+    "description": "A spherical sensory organ detecting light and enabling vision. Contains lens, retina, and optic nerve; color perception varies individually; culturally significant as \"window to the soul.\""
+  },
+  {
+    "name": "Human Ear",
+    "description": "A sensory organ for hearing and balance. Includes outer, middle, and inner structures; converts sound waves to neural signals; houses vestibular system for equilibrium."
+  },
+  {
+    "name": "Human Nose",
+    "description": "A facial structure for breathing and olfaction. Contains nasal passages and olfactory receptors; filters and warms inhaled air; highly individual shape."
+  },
+  {
+    "name": "Human Mouth",
+    "description": "An opening in the face for eating, breathing, and speaking. Contains teeth, tongue, and salivary glands; first stage of digestive system; primary for verbal communication."
+  },
+  {
+    "name": "Human Tongue",
+    "description": "A muscular organ in the mouth essential for taste, speech, and swallowing. Covered with taste buds; highly mobile; unique print like fingerprints."
+  },
+  {
+    "name": "Human Tooth",
+    "description": "A hard structure in the jaw used for chewing food. Composed of enamel, dentin, and pulp; two sets develop through life; condition reflects overall health."
+  },
+  {
+    "name": "Human Hair",
+    "description": "Keratinous filaments growing from follicles in the skin. Provides thermal regulation and protection; highly variable in color and texture; culturally significant for identity."
+  },
+  {
+    "name": "Human Skin",
+    "description": "The body's largest organ, covering and protecting internal structures. Multiple layers with varied functions; produces vitamin D; first line of immune defense."
+  },
+  {
+    "name": "Human Neck",
+    "description": "The body region connecting head to torso. Contains cervical spine, airway, and major blood vessels; allows head rotation; vulnerable to injury."
+  },
+  {
+    "name": "Human Shoulder",
+    "description": "The complex joint connecting arm to torso. Highly mobile ball-and-socket configuration; prone to injury from overuse; supports arm movement in all directions."
+  },
+  {
+    "name": "Human Arm",
+    "description": "The upper limb extending from shoulder to wrist. Contains humerus, radius, and ulna bones; enables manipulation of environment; distinguishes primates."
+  },
+  {
+    "name": "Human Elbow",
+    "description": "The joint connecting upper and lower arm. Hinge joint allowing flexion and extension; prone to repetitive strain injuries; protects ulnar nerve."
+  },
+  {
+    "name": "Human Wrist",
+    "description": "The joint connecting forearm to hand. Complex of eight carpal bones; enables fine hand positioning; common site of repetitive strain injury."
+  },
+  {
+    "name": "Human Hand",
+    "description": "The terminal part of the arm with fingers for grasping. Opposable thumb enables precision grip; 27 bones with complex musculature; primary tool for manipulation."
+  },
+  {
+    "name": "Human Finger",
+    "description": "A digit of the hand used for touching and gripping. Contains three phalanges (two in thumb); unique fingerprints for identification; high density of sensory receptors."
+  },
+  {
+    "name": "Human Thumb",
+    "description": "The first digit of the hand, opposable to other fingers. Enables precision grip unique to primates; essential for tool use; has two phalanges versus three."
+  },
+  {
+    "name": "Fingernail",
+    "description": "A keratinous plate covering the dorsal tip of fingers. Protects fingertips and aids fine manipulation; growth reflects health status; culturally decorated."
+  },
+  {
+    "name": "Human Chest",
+    "description": "The thoracic region between neck and abdomen. Contains rib cage protecting heart and lungs; site of breast tissue; expands and contracts for breathing."
+  },
+  {
+    "name": "Human Heart",
+    "description": "A muscular organ pumping blood throughout the body. Four chambers with valves; beats approximately 100,000 times daily; culturally symbolic of love and courage."
+  },
+  {
+    "name": "Human Lung",
+    "description": "A respiratory organ exchanging oxygen and carbon dioxide with blood. Paired spongy organs in chest cavity; contains millions of alveoli; vulnerable to airborne pathogens and pollutants."
+  },
+  {
+    "name": "Human Stomach",
+    "description": "A muscular sac that chemically and mechanically breaks down food. Produces hydrochloric acid and enzymes; holds 1-1.5 liters; connects esophagus to small intestine."
+  },
+  {
+    "name": "Human Liver",
+    "description": "The largest internal organ, performing over 500 metabolic functions. Detoxifies blood, produces bile, and stores glycogen; regenerates from partial removal; damaged by alcohol excess."
+  },
+  {
+    "name": "Human Kidney",
+    "description": "A bean-shaped organ filtering blood and producing urine. Paired organs maintaining fluid and electrolyte balance; removes metabolic waste; vulnerable to high blood pressure damage."
+  },
+  {
+    "name": "Small Intestine",
+    "description": "A long tube where most nutrient absorption occurs. Approximately 6 meters long; lined with villi increasing surface area; connects stomach to large intestine."
+  },
+  {
+    "name": "Human Spine",
+    "description": "A column of 33 vertebrae supporting the body and protecting spinal cord. S-curved for shock absorption; allows upright posture; common site of pain and injury."
+  },
+  {
+    "name": "Human Rib",
+    "description": "A curved bone forming the thoracic cage. Twelve pairs protecting heart and lungs; articulate with spine and sternum; can fracture from trauma."
+  },
+  {
+    "name": "Human Hip",
+    "description": "The ball-and-socket joint connecting leg to pelvis. Bears body weight; enables walking and running; common site of arthritis and replacement surgery."
+  },
+  {
+    "name": "Human Leg",
+    "description": "The lower limb from hip to ankle. Contains femur, tibia, and fibula; primary for locomotion; distinguishes humans as bipedal."
+  },
+  {
+    "name": "Human Knee",
+    "description": "The largest joint in the body, connecting thigh to lower leg. Hinge joint with stabilizing ligaments; bears significant body weight; highly prone to injury."
+  },
+  {
+    "name": "Human Ankle",
+    "description": "The joint connecting lower leg to foot. Enables plantar and dorsiflexion; commonly sprained; critical for balance and locomotion."
+  },
+  {
+    "name": "Human Foot",
+    "description": "The terminal part of the leg supporting body weight. Contains 26 bones in arch structure; adapted for bipedal locomotion; size varies significantly."
+  },
+  {
+    "name": "Human Toe",
+    "description": "A digit of the foot aiding balance and propulsion. Big toe essential for walking gait; often affected by footwear; prone to fungal infections."
+  },
+  {
+    "name": "Human Bone",
+    "description": "A rigid organ forming the skeleton. Composed of collagen and calcium phosphate; produces blood cells in marrow; remodels throughout life."
+  },
+  {
+    "name": "Skeletal Muscle",
+    "description": "Striated voluntary muscle attached to bones enabling movement. Contracts when stimulated by motor neurons; comprises approximately 40% of body weight; atrophies without use."
+  },
+  {
+    "name": "Human Blood",
+    "description": "A liquid tissue circulating through vessels transporting oxygen, nutrients, and wastes. Contains red cells, white cells, platelets, and plasma; typed for transfusion compatibility."
+  },
+  {
+    "name": "Peripheral Nerve",
+    "description": "A bundle of axons transmitting signals between central nervous system and body. Enables sensation and motor control; can regenerate slowly when damaged."
+  },
+  {
+    "name": "Jugular Vein",
+    "description": "A major blood vessel returning deoxygenated blood from head to heart. Visible in neck when dilated; clinically significant for central line access."
+  },
+  {
+    "name": "Carotid Artery",
+    "description": "A major blood vessel supplying oxygenated blood to head and brain. Pulse palpable in neck; blockage causes stroke; monitored for cardiovascular health."
+  },
+  {
+    "name": "Human Cell",
+    "description": "The fundamental unit of human biological organization. Contains nucleus with genetic material; trillions form the body; diverse types with specialized functions."
+  },
+  {
+    "name": "Human DNA",
+    "description": "The double-helix molecule containing genetic information in chromosomes. Approximately 3 billion base pairs; 99.9% identical between individuals; basis of inheritance and identity."
+  },
+  {
+    "name": "Human Gene",
+    "description": "A segment of DNA encoding instructions for a protein or RNA molecule. Approximately 20,000 protein-coding genes; variations cause traits and diseases; subject of genetic research."
+  },
+  {
+    "name": "Human Chromosome",
+    "description": "A structure of coiled DNA and protein in cell nuclei. 23 pairs in humans; carries genes; abnormalities cause conditions like Down syndrome."
+  },
+  {
+    "name": "Hemoglobin",
+    "description": "The iron-containing protein in red blood cells that carries oxygen. Four subunits with heme groups; gives blood red color; mutations cause sickle cell disease."
+  },
+  {
+    "name": "Digestive Enzyme",
+    "description": "A protein catalyzing the breakdown of food molecules. Includes amylase, lipase, and protease; produced by salivary glands, stomach, and pancreas; essential for nutrient absorption."
+  },
+  {
+    "name": "Human Hormone",
+    "description": "A chemical messenger transported in blood to regulate body functions. Includes insulin, cortisol, and sex hormones; produced by endocrine glands; imbalances cause diverse disorders."
+  },
+  {
+    "name": "Human Antibody",
+    "description": "A Y-shaped protein produced by immune cells to neutralize pathogens. Binds specifically to antigens; basis of immunity and vaccination; used therapeutically."
+  },
+  {
+    "name": "Human Tissue",
+    "description": "A group of similar cells performing a specific function. Four main types: epithelial, connective, muscle, and nervous; organized into organs."
+  },
+  {
+    "name": "Human Organ",
+    "description": "A structure composed of multiple tissues performing specific functions. Includes heart, liver, and brain; some occur in pairs; failure may require transplantation."
+  },
+  {
+    "name": "Sourdough Bread",
+    "description": "A leavened bread made with naturally fermented starter culture. Tangy flavor from lactic and acetic acids; chewy texture with open crumb; traditional technique revived by artisan bakers."
+  },
+  {
+    "name": "Beef Steak",
+    "description": "A cut of muscle tissue from cattle, typically grilled or pan-seared. High in protein and iron; graded by marbling; cooking preferences vary from rare to well-done."
+  },
+  {
+    "name": "Broccoli",
+    "description": "A green vegetable with edible florets and stalks from the cabbage family. Rich in fiber, vitamin C, and sulforaphane compounds; steamed, roasted, or eaten raw; associated with health benefits."
+  },
+  {
+    "name": "Banana",
+    "description": "A curved yellow fruit of tropical cultivated plants. Soft sweet flesh rich in potassium; consumed fresh or in cooking; major global commodity with narrow genetic base."
+  },
+  {
+    "name": "Whole Wheat Grain",
+    "description": "The entire kernel of wheat including bran, germ, and endosperm. Higher fiber and nutrients than refined flour; used for bread and cereals; stone-ground or roller-milled."
+  },
+  {
+    "name": "Cheddar Cheese",
+    "description": "A firm cow's milk cheese originating from Somerset, England. Aged from months to years; sharp flavor intensifies with age; melts well for cooking."
+  },
+  {
+    "name": "Chicken Egg",
+    "description": "An ovum produced by domestic hens, consumed worldwide. Protein-rich with versatile culinary uses; shell color varies by breed; graded by size and quality."
+  },
+  {
+    "name": "Parmigiano-Reggiano",
+    "description": "An aged hard cheese from specific Italian regions with protected designation. Granular texture and umami flavor; aged minimum 12 months; grated or eaten in chunks."
+  },
+  {
+    "name": "Unsalted Butter",
+    "description": "A dairy product made by churning cream to separate butterfat. Yellow solid at room temperature; essential in baking and cooking; approximately 80% fat content."
+  },
+  {
+    "name": "Whole Cow's Milk",
+    "description": "A white liquid produced by lactating cattle. Contains fat, protein, calcium, and vitamins; pasteurized for safety; processed into numerous dairy products."
+  },
+  {
+    "name": "Greek Yogurt",
+    "description": "A strained fermented milk product with thick, creamy texture. Higher protein than regular yogurt; contains live probiotic cultures; used in cooking and eating fresh."
+  },
+  {
+    "name": "Honeycrisp Apple",
+    "description": "A modern apple cultivar with crisp texture and balanced sweet-tart flavor. Developed at University of Minnesota; stores well; commands premium prices."
+  },
+  {
+    "name": "Navel Orange",
+    "description": "A seedless citrus fruit with characteristic \"navel\" formation. Sweet flavor and easy peeling; high vitamin C content; California and Florida main producers."
+  },
+  {
+    "name": "Cavendish Banana",
+    "description": "The dominant commercially grown banana variety worldwide. Seedless and yellow when ripe; threatened by Panama disease; descended from limited genetic stock."
+  },
+  {
+    "name": "Concord Grape",
+    "description": "A slip-skin American grape variety with intense fruity flavor. Deep purple with natural bloom; used for juice, jelly, and wine; cold-hardy."
+  },
+  {
+    "name": "Roma Tomato",
+    "description": "A plum-shaped tomato variety with meaty flesh and few seeds. Ideal for sauces and canning; bright red when ripe; determinate growth habit."
+  },
+  {
+    "name": "Russet Potato",
+    "description": "A large starchy potato with rough brown skin. Ideal for baking and frying; fluffy texture when cooked; dominant variety in North American markets."
+  },
+  {
+    "name": "Nantes Carrot",
+    "description": "A cylindrical orange root vegetable with sweet flavor and crisp texture. High in beta-carotene; eaten raw or cooked; stores well in cool conditions."
+  },
+  {
+    "name": "Yellow Onion",
+    "description": "A pungent bulb vegetable with papery skin and layered flesh. Essential aromatic base for cooking worldwide; becomes sweet when caramelized; causes lacrimation when cut."
+  },
+  {
+    "name": "Garlic Bulb",
+    "description": "A pungent bulb composed of multiple cloves. Antimicrobial properties; foundational ingredient in cuisines worldwide; odor from sulfur compounds when crushed."
+  },
+  {
+    "name": "Romaine Lettuce",
+    "description": "A sturdy lettuce variety with elongated crisp leaves. Traditional Caesar salad green; relatively high nutritional content for lettuce; grows upright in heads."
+  },
+  {
+    "name": "Baby Spinach",
+    "description": "Young leaves of spinach harvested early for tender texture. High in iron, calcium, and vitamins; eaten raw in salads or cooked; available year-round."
+  },
+  {
+    "name": "Broccoli Floret",
+    "description": "The edible flower head portion of broccoli. Dense clusters of green buds; steamed, roasted, or stir-fried; contains glucosinolates with health benefits."
+  },
+  {
+    "name": "Bell Pepper",
+    "description": "A sweet pepper cultivar with thick flesh in various colors. Crisp and mild when raw; softens when cooked; red peppers sweeter than green."
+  },
+  {
+    "name": "Black Bean",
+    "description": "A small, shiny legume common in Latin American cuisines. High in protein and fiber; used in soups, tacos, and salads; long storage life when dried."
+  },
+  {
+    "name": "Raw Almond",
+    "description": "The edible seed of the almond tree in tan papery skin. High in healthy fats and vitamin E; eaten whole, sliced, or processed into milk and butter."
+  },
+  {
+    "name": "Sunflower Seed",
+    "description": "The edible kernel from sunflower heads. Nutty flavor and crunchy texture; source of vitamin E and selenium; eaten as snack or pressed for oil."
+  },
+  {
+    "name": "Raw Honey",
+    "description": "A viscous sweet substance produced by honey bees from flower nectar. Unprocessed and unpasteurized; contains enzymes and pollen; natural antimicrobial properties."
+  },
+  {
+    "name": "Ground Cumin",
+    "description": "A dried, ground spice from Cuminum cyminum seeds. Warm, earthy flavor essential to many cuisines; used in curry blends and Mexican dishes."
+  },
+  {
+    "name": "Fresh Basil",
+    "description": "An aromatic herb with bright green leaves and distinctive sweet flavor. Essential to Italian cuisine; used fresh or dried; multiple cultivars with varying flavors."
+  },
+  {
+    "name": "Black Tea",
+    "description": "Fully oxidized tea leaves producing a robust, dark brew. Higher caffeine than green tea; varieties include Assam, Darjeeling, and Earl Grey; world's most consumed tea type."
+  },
+  {
+    "name": "Arabica Coffee Bean",
+    "description": "Seeds of Coffea arabica, the dominant specialty coffee species. Complex flavor with natural sweetness; grown at high altitudes; more expensive than Robusta."
+  },
+  {
+    "name": "Cabernet Sauvignon Wine",
+    "description": "A full-bodied red wine from the grape of the same name. Tannic structure suitable for aging; flavors of black currant and cedar; originated in Bordeaux."
+  },
+  {
+    "name": "India Pale Ale",
+    "description": "A hoppy beer style with bitter flavor and higher alcohol content. Originally brewed strong for export to India; craft beer revival favorite; many substyles exist."
+  },
+  {
+    "name": "Fresh-Squeezed Orange Juice",
+    "description": "Liquid extracted from oranges without concentration or processing. Contains vitamin C and natural sugars; best consumed fresh; commercial versions often reconstituted."
+  },
+  {
+    "name": "Chicken Noodle Soup",
+    "description": "A broth-based soup with chicken pieces, vegetables, and noodles. Traditional comfort and remedy food; prepared commercially or from scratch; culturally associated with illness recovery."
+  },
+  {
+    "name": "Tomato Sauce",
+    "description": "A cooked preparation of tomatoes, often with herbs and aromatics. Base for pasta dishes and pizza; varies from smooth to chunky; preserved in jars or cans."
+  },
+  {
+    "name": "Extra Virgin Olive Oil",
+    "description": "Oil extracted from olives by mechanical means without chemical processing. Fruity flavor with peppery finish; monounsaturated fats considered heart-healthy; grades by acidity level."
+  },
+  {
+    "name": "Balsamic Vinegar",
+    "description": "An aged vinegar originating from Modena, Italy. Dark, complex, and slightly sweet; traditional versions aged decades; used in dressings and finishing dishes."
+  },
+  {
+    "name": "All-Purpose Flour",
+    "description": "Refined wheat flour with moderate protein content. Versatile for baking and cooking; bleached or unbleached versions; foundation of countless recipes."
+  },
+  {
+    "name": "Dried Spaghetti",
+    "description": "Long, cylindrical pasta made from durum wheat semolina. Italian staple paired with various sauces; standardized cooking times; originated in Italy."
+  },
+  {
+    "name": "Ramen Noodle",
+    "description": "A wheat noodle of Chinese origin popular in Japanese cuisine. Alkaline ingredients give distinctive yellow color and chewiness; served in broth with toppings."
+  },
+  {
+    "name": "Chocolate Layer Cake",
+    "description": "A multi-layered cake with chocolate in batter and frosting. Rich, sweet celebration dessert; American classic with numerous variations; requires multiple components."
+  },
+  {
+    "name": "Chocolate Chip Cookie",
+    "description": "A sweet baked treat with chocolate pieces embedded in dough. Invented in 1930s Massachusetts; crispy or chewy variations; iconic American cookie."
+  },
+  {
+    "name": "Gummy Bear",
+    "description": "A small fruit-flavored gelatin candy in bear shape. Created in Germany in 1920s; multiple colors and flavors; popular children's confection."
+  },
+  {
+    "name": "Dark Chocolate Bar",
+    "description": "Chocolate with high cocoa content and minimal sugar. Contains flavonoids with potential health benefits; bitter to semi-sweet flavor; minimum 70% cocoa for \"dark\" designation."
+  },
+  {
+    "name": "Vanilla Ice Cream",
+    "description": "A frozen dairy dessert flavored with vanilla. Smooth, creamy texture from churning during freezing; world's most popular ice cream flavor; basis for many variations."
+  },
+  {
+    "name": "Neapolitan Pizza",
+    "description": "A pizza style originating from Naples with thin center and puffy crust. Baked in wood-fired oven at high heat; San Marzano tomatoes and fresh mozzarella; protected traditional designation."
+  },
+  {
+    "name": "Club Sandwich",
+    "description": "A multi-layered sandwich with chicken, bacon, lettuce, and tomato. Typically triple-decker with toasted bread; secured with toothpicks; American lunch staple."
+  },
+  {
+    "name": "Caesar Salad",
+    "description": "A salad of romaine lettuce with creamy anchovy dressing and croutons. Created in Tijuana in 1920s; traditionally prepared tableside; often topped with grilled chicken."
+  },
+  {
+    "name": "Chef's Knife",
+    "description": "A large multipurpose kitchen knife with curved blade for rocking motion. Typically 8-10 inches; used for chopping, slicing, and mincing; most essential kitchen tool."
+  },
+  {
+    "name": "Dinner Fork",
+    "description": "A four-tined utensil for spearing and conveying food to mouth. Standard table setting component; evolved from two-tined medieval versions; size indicates formality level."
+  },
+  {
+    "name": "Soup Spoon",
+    "description": "A round-bowled utensil designed for consuming liquid foods. Larger than teaspoon; bowl shape varies by culture; used with formal dining protocol."
+  },
+  {
+    "name": "Ceramic Dinner Plate",
+    "description": "A flat, circular dish for serving individual portions of food. Typically 10-11 inches diameter; fired clay with glazed surface; standard table setting element."
+  },
+  {
+    "name": "Cereal Bowl",
+    "description": "A rounded vessel for holding breakfast cereals, soups, or other foods. Deeper than soup bowl; various materials and sizes; everyday dining essential."
+  },
+  {
+    "name": "Drinking Glass",
+    "description": "A cylindrical vessel without handles for consuming beverages. Transparent glass or plastic; various sizes for different drinks; part of standard table setting."
+  },
+  {
+    "name": "Stock Pot",
+    "description": "A large, tall cooking vessel for making stocks, soups, and boiling pasta. Heavy-gauge metal with lid; capacities from 8 to 20+ quarts; essential for batch cooking."
+  },
+  {
+    "name": "Cast Iron Skillet",
+    "description": "A heavy frying pan of molded iron requiring seasoning maintenance. Excellent heat retention and even cooking; lasts generations with care; improves with use."
+  },
+  {
+    "name": "Gas Range Oven",
+    "description": "A cooking appliance combining stovetop burners with enclosed baking chamber. Natural gas or propane fuel; precise temperature control; preferred by professional cooks."
+  },
+  {
+    "name": "Induction Cooktop",
+    "description": "A cooking surface using electromagnetic fields to heat ferrous cookware directly. Energy-efficient and responsive; stays cool except under pot; requires compatible cookware."
+  },
+  {
+    "name": "Refrigerator-Freezer",
+    "description": "An insulated appliance maintaining cold temperatures for food preservation. Compressor-based cooling system; essential modern household appliance; various configurations and sizes."
+  },
+  {
+    "name": "Claw Hammer",
+    "description": "A striking tool with metal head and curved claw for nail removal. Wooden, fiberglass, or steel handle; fundamental carpentry tool; weight varies by application."
+  },
+  {
+    "name": "Phillips Screwdriver",
+    "description": "A hand tool with cruciform tip for driving Phillips-head screws. Self-centering design prevents cam-out; various sizes; named after inventor Henry Phillips."
+  },
+  {
+    "name": "Adjustable Wrench",
+    "description": "A hand tool with movable jaw accommodating various bolt sizes. Also called crescent wrench; single tool replaces multiple fixed wrenches; essential home toolkit item."
+  },
+  {
+    "name": "Needle-Nose Pliers",
+    "description": "A hand tool with long, tapered jaws for gripping small objects. Useful in tight spaces; often includes wire cutters; essential for electrical and jewelry work."
+  },
+  {
+    "name": "Circular Saw",
+    "description": "A power tool with rotating toothed blade for cutting wood and other materials. Handheld or table-mounted versions; various blade types; requires safety precautions."
+  },
+  {
+    "name": "Cordless Drill",
+    "description": "A battery-powered tool for boring holes and driving screws. Rechargeable lithium-ion batteries; variable speed and torque settings; most popular power tool category."
+  },
+  {
+    "name": "Common Nail",
+    "description": "A metal fastener with flat head driven into materials with hammer. Various lengths and gauges; holds by friction and displacement; galvanized for outdoor use."
+  },
+  {
+    "name": "Wood Screw",
+    "description": "A threaded fastener that cuts its own threads in wood. Tapered body and various head styles; stronger than nails for certain applications; removed and reused easily."
+  },
+  {
+    "name": "Hex Bolt",
+    "description": "A threaded fastener with six-sided head for wrench tightening. Used with nuts for mechanical assemblies; various grades and materials; precise engineering component."
+  },
+  {
+    "name": "Mechanical Lever",
+    "description": "A rigid bar rotating around a fulcrum to multiply force or change direction. One of six classical simple machines; enables moving heavy loads; basis of countless mechanisms."
+  },
+  {
+    "name": "Block And Tackle Pulley",
+    "description": "A system of pulleys with rope for mechanical advantage in lifting. Multiplies force applied; used on ships and construction; reduces effort required to lift heavy loads."
+  },
+  {
+    "name": "Wagon Wheel",
+    "description": "A circular frame with spokes rotating around an axle for reduced friction transport. Revolutionary ancient invention; enabled wheeled vehicles; basis of modern transportation."
+  },
+  {
+    "name": "Rotating Axle",
+    "description": "A shaft on which wheels rotate to enable vehicle movement. Transmits rotational force; various configurations for different vehicles; essential mechanical component."
+  },
+  {
+    "name": "Mechanical Gear",
+    "description": "A toothed wheel that meshes with others to transmit rotational motion. Changes speed, torque, and direction; various types for different applications; precision manufacturing required."
+  },
+  {
+    "name": "Coil Spring",
+    "description": "A helical elastic device that stores mechanical energy when compressed or extended. Used in suspension, mattresses, and mechanisms; various materials and specifications."
+  },
+  {
+    "name": "Ball Bearing",
+    "description": "A rolling-element machine component reducing friction between rotating parts. Steel balls between races; enables smooth rotation; essential in motors and wheels."
+  },
+  {
+    "name": "Centrifugal Pump",
+    "description": "A machine using rotating impeller to move fluids through kinetic energy. Common for water supply and industrial processes; various sizes and materials; requires priming."
+  },
+  {
+    "name": "Ball Valve",
+    "description": "A flow control device using rotating spherical closure element. Quarter-turn operation; tight seal; used in plumbing and industrial applications."
+  },
+  {
+    "name": "Copper Water Pipe",
+    "description": "A tube of copper metal for conveying water in plumbing systems. Corrosion-resistant and long-lasting; joined by soldering or compression fittings; gradually replaced by PEX."
+  },
+  {
+    "name": "Electrical Wire",
+    "description": "A conductor, typically copper, insulated with plastic for carrying electrical current. Various gauges for different loads; color-coded for function; essential for electrical systems."
+  },
+  {
+    "name": "Coaxial Cable",
+    "description": "A shielded cable for transmitting high-frequency signals. Copper core surrounded by insulation and braided shield; used for cable television and internet; various grades."
+  },
+  {
+    "name": "Roller Chain",
+    "description": "A series of connected links for transmitting mechanical power. Used in bicycles, motorcycles, and industrial machinery; requires lubrication; various pitch sizes."
+  },
+  {
+    "name": "Nylon Rope",
+    "description": "A strong synthetic cordage made from woven nylon fibers. High strength-to-weight ratio; good elasticity and abrasion resistance; used for mooring, climbing, and general purpose."
+  },
+  {
+    "name": "Steel Hook",
+    "description": "A curved metal device for catching, holding, or pulling objects. Various sizes from fishing to industrial crane hooks; load-rated for safety; simple but essential."
+  },
+  {
+    "name": "Pin Tumbler Lock",
+    "description": "A cylinder lock mechanism using pins of varying lengths. Opened only by correct key profile; most common residential lock type; various security grades."
+  },
+  {
+    "name": "Metal Key",
+    "description": "A cut metal device for operating a specific lock mechanism. Unique bit pattern matches internal pins or levers; easily duplicated; symbolic of access and ownership."
+  },
+  {
+    "name": "Door Hinge",
+    "description": "A pivoting joint connecting door to frame and enabling swinging motion. Various materials and finishes; interior and exterior types; measured by size and weight capacity."
+  },
+  {
+    "name": "Door Handle",
+    "description": "A mechanism for unlatching and opening doors. Lever or knob types; various finishes and security levels; required to meet accessibility standards."
+  },
+  {
+    "name": "Control Knob",
+    "description": "A rotating interface element for adjusting settings on devices. Used on appliances, electronics, and machinery; tactile feedback important for usability."
+  },
+  {
+    "name": "Push Button",
+    "description": "A mechanical switch activated by pressing to make or break an electrical circuit. Momentary or latching types; various sizes and colors; ubiquitous interface element."
+  },
+  {
+    "name": "Toggle Switch",
+    "description": "An electrical switch operated by moving a lever between positions. Provides positive on-off indication; used in appliances and vehicles; various current ratings."
+  },
+  {
+    "name": "Rotary Dial",
+    "description": "A circular interface element for selecting values by rotation. Used on older telephones, safes, and equipment; tactile detents for precision; largely replaced by digital interfaces."
+  },
+  {
+    "name": "Analog Meter",
+    "description": "A measuring instrument displaying values on a graduated scale with moving needle. Provides continuous visual feedback; includes voltmeters, ammeters, and pressure gauges."
+  },
+  {
+    "name": "Pressure Gauge",
+    "description": "An instrument measuring fluid or gas pressure in systems. Dial or digital display; various ranges and units; essential for HVAC, automotive, and industrial applications."
+  },
+  {
+    "name": "Spring Scale",
+    "description": "A measuring device determining weight by spring deflection. Simple mechanical operation; various capacities; used in fishing, cooking, and laboratory applications."
+  },
+  {
+    "name": "Mercury Thermometer",
+    "description": "A temperature measuring device using thermal expansion of mercury in glass tube. Accurate and reliable; being phased out due to mercury toxicity; replaced by digital versions."
+  },
+  {
+    "name": "Magnetic Compass",
+    "description": "A navigation instrument using magnetized needle to indicate magnetic north. Essential for navigation before GPS; still used as backup; affected by local magnetic anomalies."
+  },
+  {
+    "name": "Mechanical Clock",
+    "description": "A timekeeping device using escapement mechanism and oscillating regulator. Spring or weight driven; historical engineering achievement; largely decorative today."
+  },
+  {
+    "name": "Digital Wristwatch",
+    "description": "A portable timekeeping device worn on wrist with electronic display. Quartz crystal oscillator for accuracy; various features and styles; largely replaced by smartphones."
+  },
+  {
+    "name": "Single-Family House",
+    "description": "A detached residential dwelling designed for one household. Various architectural styles and sizes; typically owner-occupied; includes yard and private amenities."
+  },
+  {
+    "name": "High-Rise Building",
+    "description": "A tall structure typically exceeding 75 feet with multiple floors. Steel or concrete frame construction; requires elevators; concentrates population in urban areas."
+  },
+  {
+    "name": "Observation Tower",
+    "description": "A tall structure designed primarily for viewing surroundings. Various construction types; tourist attractions and fire lookouts; often architecturally distinctive."
+  },
+  {
+    "name": "Suspension Bridge",
+    "description": "A bridge with deck hung from cables suspended between towers. Enables long spans over water or valleys; flexible under wind and seismic loads; iconic engineering achievements."
+  },
+  {
+    "name": "Paved Road",
+    "description": "A prepared surface for vehicular travel covered with asphalt or concrete. Marked with lanes and signs; maintained by government agencies; enables modern transportation."
+  },
+  {
+    "name": "Hiking Trail",
+    "description": "A cleared route through natural terrain for foot travel. Various difficulty levels; marked and maintained; provides access to wilderness recreation."
+  },
+  {
+    "name": "Brick Wall",
+    "description": "A vertical structure of stacked masonry units bonded with mortar. Load-bearing or decorative; various bond patterns; traditional construction method."
+  },
+  {
+    "name": "Chain-Link Fence",
+    "description": "A woven wire barrier for security and boundary definition. Galvanized or vinyl-coated steel; relatively inexpensive; used residential, commercial, and industrial."
+  },
+  {
+    "name": "Security Gate",
+    "description": "A controlled access point in a fence or wall. Manual or automated operation; various security levels; controls entry to properties and facilities."
+  },
+  {
+    "name": "Exterior Door",
+    "description": "A portal providing entry through building envelope. Weather-sealed and secure; various materials and styles; required emergency egress in buildings."
+  },
+  {
+    "name": "Double-Hung Window",
+    "description": "A window with two vertically sliding sashes. Traditional American style; both sashes operative; easy cleaning from interior."
+  },
+  {
+    "name": "Pitched Roof",
+    "description": "A roof structure with sloped surfaces shedding water and snow. Various angles and configurations; covered with shingles, tiles, or metal; most common in temperate climates."
+  },
+  {
+    "name": "Concrete Floor",
+    "description": "A horizontal surface of poured and cured concrete. Strong and durable; may be polished or covered; standard for basements and commercial buildings."
+  },
+  {
+    "name": "Suspended Ceiling",
+    "description": "A secondary ceiling hung below structural ceiling. Conceals utilities and improves acoustics; replaceable tiles; common in commercial interiors."
+  },
+  {
+    "name": "Spiral Staircase",
+    "description": "A staircase with steps arranged around a central column. Space-efficient design; dramatic visual element; various materials and styles."
+  },
+  {
+    "name": "Passenger Elevator",
+    "description": "A platform or cabin moving vertically to transport people between floors. Electric traction or hydraulic systems; essential for tall buildings; subject to safety codes."
+  },
+  {
+    "name": "Living Room",
+    "description": "A room in a residence for general social activities and relaxation. Typically largest room; contains seating and entertainment; center of domestic life."
+  },
+  {
+    "name": "Entrance Hallway",
+    "description": "A corridor connecting building entrance to interior rooms. Provides transition space; may include closets and seating; first impression of interior."
+  },
+  {
+    "name": "Residential Kitchen",
+    "description": "A room equipped for food storage, preparation, and cooking. Contains appliances, cabinets, and work surfaces; social center in modern homes; various layout configurations."
+  },
+  {
+    "name": "Full Bathroom",
+    "description": "A room containing toilet, sink, and bathing facility. Private hygiene space; plumbing and ventilation requirements; various sizes and appointments."
+  },
+  {
+    "name": "Master Bedroom",
+    "description": "The primary sleeping room in a residence, typically largest. Often includes en suite bathroom and closet; private retreat; various furniture configurations."
+  },
+  {
+    "name": "Corporate Office",
+    "description": "A room or space equipped for administrative and professional work. Contains desks, computers, and communication equipment; various configurations from private to open plan."
+  },
+  {
+    "name": "Manufacturing Factory",
+    "description": "A building housing industrial production of goods. Contains machinery and assembly lines; zoned industrial; subject to environmental and safety regulations."
+  },
+  {
+    "name": "Storage Warehouse",
+    "description": "A large building for storing goods before distribution. High ceilings and loading docks; minimal climate control; logistics hub in supply chains."
+  },
+  {
+    "name": "Retail Store",
+    "description": "A commercial establishment selling goods directly to consumers. Display and checkout areas; various sizes from boutique to big box; online competition increasing."
+  },
+  {
+    "name": "Commercial Restaurant",
+    "description": "An establishment preparing and serving food to paying customers. Kitchen, dining room, and service areas; various cuisines and service styles; subject to health regulations."
+  },
+  {
+    "name": "Boutique Hotel",
+    "description": "A lodging establishment providing temporary paid accommodation with distinctive character. Rooms and common areas; various service levels; smaller and more personalized than chains."
+  },
+  {
+    "name": "General Hospital",
+    "description": "A healthcare facility providing diagnosis and treatment of illness and injury. Emergency, inpatient, and outpatient services; complex building systems; 24-hour operation."
+  },
+  {
+    "name": "Public Elementary School",
+    "description": "An educational institution for children typically ages 5-11. Classrooms, cafeteria, and play areas; government-funded and operated; foundational education."
+  },
+  {
+    "name": "Christian Church",
+    "description": "A building for Christian religious worship and community activities. Sanctuary, offices, and meeting spaces; various architectural traditions; community gathering place."
+  }
+]

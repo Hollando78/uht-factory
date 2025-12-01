@@ -1,0 +1,802 @@
+[
+  {
+    "name": "Sports Team",
+    "description": "A group of players competing together in athletic contests. Professional or amateur; various sports; community identity."
+  },
+  {
+    "name": "Advisory Committee",
+    "description": "A group appointed to provide guidance on specific matters. Limited authority; expertise-based; governmental and organizational contexts."
+  },
+  {
+    "name": "Governing Board",
+    "description": "A group with authority over an organization's direction and policies. Fiduciary responsibility; elected or appointed; oversight function."
+  },
+  {
+    "name": "Advisory Council",
+    "description": "An assembly providing recommendations to an executive authority. Various compositions; formal or informal; governmental and organizational."
+  },
+  {
+    "name": "Political Party",
+    "description": "An organization seeking political power through electoral competition. Policy platform; candidate nomination; democratic system component."
+  },
+  {
+    "name": "Social Movement",
+    "description": "A collective effort seeking social or political change. Grassroots organization; various tactics; historical and contemporary examples."
+  },
+  {
+    "name": "Organized Religion",
+    "description": "An institution with shared beliefs, practices, and organizational structure. Clergy and laity; places of worship; significant social influence."
+  },
+  {
+    "name": "Religious Denomination",
+    "description": "A distinct branch within a larger religious tradition. Doctrinal or organizational differences; various sizes; interdenominational relations."
+  },
+  {
+    "name": "Religious Sect",
+    "description": "A small religious group, often separated from larger tradition. Distinctive beliefs or practices; sometimes pejorative term; various relationships to mainstream."
+  },
+  {
+    "name": "Cult",
+    "description": "A group with devoted following around charismatic leader or unusual beliefs. Often controlling; negative connotation; definitional debates."
+  },
+  {
+    "name": "Biological Parent",
+    "description": "An adult who has produced offspring through reproduction. Mother or father role; legal and emotional responsibilities; biological relationship."
+  },
+  {
+    "name": "Minor Child",
+    "description": "A young person below the age of legal majority. Dependent status; developmental stages; protected legal status."
+  },
+  {
+    "name": "Brother Or Sister",
+    "description": "A person sharing one or both parents with another. Birth order effects; lifelong relationship; various dynamics."
+  },
+  {
+    "name": "Married Spouse",
+    "description": "A person legally united in marriage to another. Legal rights and responsibilities; various cultural forms; recognized relationship."
+  },
+  {
+    "name": "Personal Friend",
+    "description": "A person with whom one shares mutual affection and trust. Voluntary relationship; various intimacy levels; social support function."
+  },
+  {
+    "name": "Residential Neighbor",
+    "description": "A person living in proximity to another. Geographic relationship; social expectations varying; community building potential."
+  },
+  {
+    "name": "Unknown Stranger",
+    "description": "A person one has not previously met or known. Social distance; caution and curiosity; potential relationship beginning."
+  },
+  {
+    "name": "Group Leader",
+    "description": "A person directing or guiding the activities of others. Formal or informal authority; various leadership styles; responsibility for outcomes."
+  },
+  {
+    "name": "Group Follower",
+    "description": "A person who accepts guidance and direction from a leader. Supporting role; various motivations; essential to group function."
+  },
+  {
+    "name": "School Teacher",
+    "description": "A professional instructing students in educational settings. Various levels and subjects; pedagogical training; significant social influence."
+  },
+  {
+    "name": "University Student",
+    "description": "A person enrolled in educational institution for learning. Various levels; degree-seeking; transitional life stage."
+  },
+  {
+    "name": "Medical Doctor",
+    "description": "A professional qualified to diagnose and treat illness. Extensive training; licensed practice; high responsibility and status."
+  },
+  {
+    "name": "Registered Nurse",
+    "description": "A healthcare professional providing patient care under medical supervision. Varied specializations; direct patient contact; essential healthcare role."
+  },
+  {
+    "name": "Attorney At Law",
+    "description": "A professional qualified to practice law and represent clients. Bar admission; various specializations; adversarial and advisory roles."
+  },
+  {
+    "name": "Court Judge",
+    "description": "An official presiding over legal proceedings and rendering decisions. Appointed or elected; impartiality expected; significant authority."
+  },
+  {
+    "name": "Uniformed Police Officer",
+    "description": "A sworn law enforcement officer in identifiable uniform. Public order maintenance; arrest authority; community presence."
+  },
+  {
+    "name": "Military Soldier",
+    "description": "A person serving in ground forces of a nation's military. Enlisted or officer rank; training and discipline; combat potential."
+  },
+  {
+    "name": "Firefighter",
+    "description": "A trained professional responding to fires and emergencies. Fire suppression and rescue; shift work; physical demands."
+  },
+  {
+    "name": "Professional Engineer",
+    "description": "A professional applying scientific principles to design and build systems. Licensed practice; various disciplines; problem-solving focus."
+  },
+  {
+    "name": "Research Scientist",
+    "description": "A professional conducting systematic investigation to expand knowledge. Various fields; academic or industry employment; publication expectations."
+  },
+  {
+    "name": "Visual Artist",
+    "description": "A person creating works primarily for aesthetic contemplation. Various media and styles; commercial and fine art; creative expression."
+  },
+  {
+    "name": "Published Writer",
+    "description": "A person creating written works for publication. Various forms and genres; often freelance; creative and commercial aspects."
+  },
+  {
+    "name": "Professional Musician",
+    "description": "A person earning primary income through musical performance or creation. Various genres and contexts; skill development years; competitive field."
+  },
+  {
+    "name": "Film Actor",
+    "description": "A performer portraying characters in motion pictures. Various roles and styles; celebrity potential; collaborative art form."
+  },
+  {
+    "name": "Film Director",
+    "description": "The creative lead responsible for visual and dramatic aspects of film production. Artistic vision; management skills; final creative authority."
+  },
+  {
+    "name": "Film Producer",
+    "description": "A person responsible for business and organizational aspects of film production. Financing and logistics; creative involvement varying; project management."
+  },
+  {
+    "name": "Professional Chef",
+    "description": "A trained culinary professional managing kitchen operations. Food preparation expertise; menu development; restaurant or institutional settings."
+  },
+  {
+    "name": "Agricultural Farmer",
+    "description": "A person cultivating land and raising crops or livestock. Various scales and methods; essential food production; economic and weather challenges."
+  },
+  {
+    "name": "Construction Worker",
+    "description": "A person performing physical labor in building construction. Various trades; safety hazards; project-based employment."
+  },
+  {
+    "name": "Auto Mechanic",
+    "description": "A person diagnosing and repairing motor vehicles. Technical training; diagnostic skills; changing with vehicle technology."
+  },
+  {
+    "name": "Licensed Electrician",
+    "description": "A trained professional installing and maintaining electrical systems. Code compliance; safety critical; licensed practice."
+  },
+  {
+    "name": "Licensed Plumber",
+    "description": "A trained professional installing and maintaining water and waste systems. Code compliance; physical work; licensed practice."
+  },
+  {
+    "name": "Commercial Driver",
+    "description": "A person operating vehicles for commercial transportation purposes. Licensing requirements; route work; automation threat."
+  },
+  {
+    "name": "Commercial Pilot",
+    "description": "A licensed professional operating aircraft for transportation. Extensive training; safety responsibility; flight and ground duties."
+  },
+  {
+    "name": "Merchant Sailor",
+    "description": "A person working on commercial shipping vessels. Various roles; extended time at sea; global shipping industry."
+  },
+  {
+    "name": "Retail Merchant",
+    "description": "A person selling goods directly to consumers. Physical or online business; customer service; inventory management."
+  },
+  {
+    "name": "Commercial Banker",
+    "description": "A professional managing financial services for businesses and individuals. Lending and deposits; relationship management; regulated industry."
+  },
+  {
+    "name": "Certified Accountant",
+    "description": "A professional maintaining and auditing financial records. Various certifications; tax and audit services; business essential."
+  },
+  {
+    "name": "Department Manager",
+    "description": "A person responsible for supervising a defined organizational unit. Planning and oversight; personnel management; middle management tier."
+  },
+  {
+    "name": "Corporate Executive",
+    "description": "A senior manager with broad authority in a business organization. Strategic decisions; significant compensation; public visibility."
+  },
+  {
+    "name": "Office Employee",
+    "description": "A person working in administrative or professional capacity for employer. Various roles; salary or hourly compensation; organizational context."
+  },
+  {
+    "name": "Business Employer",
+    "description": "A person or entity hiring workers in exchange for compensation. Legal obligations; management authority; economic risk."
+  },
+  {
+    "name": "Paying Customer",
+    "description": "A person purchasing goods or services from a business. Consumer rights; market power; relationship with seller."
+  },
+  {
+    "name": "Professional Client",
+    "description": "A person engaging professional services from an expert. Fiduciary relationship; confidentiality expectations; service recipient."
+  },
+  {
+    "name": "Medical Patient",
+    "description": "A person receiving medical treatment or care. Healthcare recipient; rights and responsibilities; medical relationship."
+  },
+  {
+    "name": "Crime Victim",
+    "description": "A person who has suffered harm from criminal act. Legal status; support services; justice system role."
+  },
+  {
+    "name": "Court Witness",
+    "description": "A person providing testimony in legal proceedings. Oath obligation; various types; justice system role."
+  },
+  {
+    "name": "Incarcerated Prisoner",
+    "description": "A person confined in penal institution. Restricted rights; rehabilitation potential; institutional life."
+  },
+  {
+    "name": "Displaced Refugee",
+    "description": "A person forced to flee home due to persecution, conflict, or disaster. International protection; resettlement challenges; legal status."
+  },
+  {
+    "name": "International Immigrant",
+    "description": "A person who has moved to a country different from birthplace. Various legal statuses; integration challenges; cultural transition."
+  },
+  {
+    "name": "Money",
+    "description": "A medium of exchange, store of value, and unit of account. Physical and digital forms; government-issued typically; essential economic infrastructure."
+  },
+  {
+    "name": "Currency",
+    "description": "The official money system of a country or region. Exchange rates; central bank management; various denominations."
+  },
+  {
+    "name": "Metal Coin",
+    "description": "A small flat piece of metal used as money. Various denominations; historical and current forms; minting process."
+  },
+  {
+    "name": "Paper Banknote",
+    "description": "A piece of paper currency representing monetary value. Various denominations; security features; central bank issued."
+  },
+  {
+    "name": "Credit",
+    "description": "The ability to borrow money or obtain goods with deferred payment. Trust-based system; interest charges; creditworthiness assessment."
+  },
+  {
+    "name": "Financial Debt",
+    "description": "An obligation to repay borrowed money or value. Various types and terms; interest accumulation; legal enforcement."
+  },
+  {
+    "name": "Bank Loan",
+    "description": "A sum of money borrowed from financial institution with repayment terms. Principal and interest; collateral requirements; approval process."
+  },
+  {
+    "name": "Interest Rate",
+    "description": "The proportion of principal charged or paid for borrowing money. Percentage expression; various types and terms; economic significance."
+  },
+  {
+    "name": "Financial Investment",
+    "description": "The allocation of money with expectation of generating returns. Various vehicles and strategies; risk-return tradeoff; professional management available."
+  },
+  {
+    "name": "Stock Share",
+    "description": "A unit of ownership in a corporation. Equity representation; voting rights potential; price fluctuation."
+  },
+  {
+    "name": "Corporate Bond",
+    "description": "A debt security issued by company promising repayment with interest. Fixed income investment; credit rating; various maturities."
+  },
+  {
+    "name": "Investment Fund",
+    "description": "A pooled investment vehicle managed professionally. Mutual funds and ETFs; diversification benefit; fee structures."
+  },
+  {
+    "name": "Financial Asset",
+    "description": "A resource with economic value owned by individual or entity. Various types; balance sheet item; valuation methods."
+  },
+  {
+    "name": "Financial Liability",
+    "description": "An obligation owed by individual or entity. Debt and other obligations; balance sheet item; settlement required."
+  },
+  {
+    "name": "Owner's Equity",
+    "description": "The residual value of assets after deducting liabilities. Ownership interest; balance sheet item; various calculations."
+  },
+  {
+    "name": "Business Capital",
+    "description": "Financial resources available for investment in productive activities. Various sources; essential for growth; allocation decisions."
+  },
+  {
+    "name": "Business Profit",
+    "description": "The excess of revenue over expenses in business operation. Success metric; distribution potential; taxation subject."
+  },
+  {
+    "name": "Business Loss",
+    "description": "The excess of expenses over revenue in business operation. Failure indicator; tax implications; capital depletion."
+  },
+  {
+    "name": "Sales Revenue",
+    "description": "Income received from selling goods or services. Top line metric; recognition timing; growth indicator."
+  },
+  {
+    "name": "Business Expense",
+    "description": "Costs incurred in conducting business operations. Various categories; deductibility; management focus."
+  },
+  {
+    "name": "Financial Budget",
+    "description": "A plan allocating financial resources over specified period. Income and expense projections; control tool; various types."
+  },
+  {
+    "name": "Government Tax",
+    "description": "A mandatory financial charge imposed by governmental authority. Income, sales, property types; public revenue source; compliance obligations."
+  },
+  {
+    "name": "Market Price",
+    "description": "The amount buyers are willing to pay for goods or services. Supply and demand determined; fluctuating; information signal."
+  },
+  {
+    "name": "Production Cost",
+    "description": "The expense of creating goods or services. Direct and indirect components; pricing factor; efficiency target."
+  },
+  {
+    "name": "Economic Value",
+    "description": "The worth of goods, services, or assets in exchange or use. Subjective and objective measures; various determination methods; fundamental concept."
+  },
+  {
+    "name": "Commercial Market",
+    "description": "A system where buyers and sellers exchange goods and services. Price mechanism; various structures; regulated or free."
+  },
+  {
+    "name": "Commercial Trade",
+    "description": "The buying and selling of goods and services. Various scales; domestic and international; economic foundation."
+  },
+  {
+    "name": "Currency Exchange",
+    "description": "The conversion of one currency to another at determined rate. Market-based or fixed rates; trading markets; international commerce necessity."
+  },
+  {
+    "name": "Financial Transaction",
+    "description": "An exchange of value between parties. Various types and amounts; recorded and verified; contract law applicability."
+  },
+  {
+    "name": "Legal Contract",
+    "description": "A binding agreement between parties creating legal obligations. Various forms; essential elements required; enforcement mechanisms."
+  },
+  {
+    "name": "Business Agreement",
+    "description": "An understanding between parties regarding mutual obligations. Formal or informal; various purposes; relationship foundation."
+  },
+  {
+    "name": "Commercial Invoice",
+    "description": "A document requesting payment for goods or services provided. Amount and terms specified; accounting record; legal document."
+  },
+  {
+    "name": "Payment Receipt",
+    "description": "A document acknowledging payment received. Transaction record; proof of payment; various formats."
+  },
+  {
+    "name": "Financial Payment",
+    "description": "The transfer of money from one party to another. Various methods; settlement of obligation; transaction completion."
+  },
+  {
+    "name": "Employee Salary",
+    "description": "Fixed periodic compensation for professional employment. Annual or monthly amount; exempt from overtime; benefits included."
+  },
+  {
+    "name": "Hourly Wage",
+    "description": "Compensation calculated by hours worked. Non-exempt status; overtime applicability; minimum wage floors."
+  },
+  {
+    "name": "Sales Commission",
+    "description": "Compensation based on percentage of sales generated. Performance incentive; variable income; sales role compensation."
+  },
+  {
+    "name": "Stock Dividend",
+    "description": "Distribution of corporate profits to shareholders. Cash or stock form; board declared; income source."
+  },
+  {
+    "name": "Insurance Policy",
+    "description": "A contract transferring risk from policyholder to insurer. Premium payments; various coverages; claims process."
+  },
+  {
+    "name": "Retirement Pension",
+    "description": "Regular payments to person after retirement from employment. Defined benefit or contribution; government or private; retirement income."
+  },
+  {
+    "name": "Conscious Thought",
+    "description": "A mental process of reasoning, remembering, or imagining with awareness. Distinguishes human cognition; various types; philosophy of mind subject."
+  },
+  {
+    "name": "Novel Idea",
+    "description": "A new mental conception or notion. Creative origin; various significance levels; innovation source."
+  },
+  {
+    "name": "Abstract Concept",
+    "description": "A mental category or notion not tied to specific instances. Higher-order thinking; language-enabled; philosophical investigation subject."
+  },
+  {
+    "name": "Scientific Theory",
+    "description": "A well-substantiated explanation of natural phenomena. Predictive power; subject to testing; scientific knowledge form."
+  },
+  {
+    "name": "Research Hypothesis",
+    "description": "A proposed explanation made as starting point for investigation. Testable statement; scientific method component; prediction basis."
+  },
+  {
+    "name": "Personal Belief",
+    "description": "An acceptance that something is true or exists. Various bases; influences behavior; subject to change."
+  },
+  {
+    "name": "Personal Opinion",
+    "description": "A view or judgment not necessarily based on fact. Subjective assessment; expression freedom; debatable."
+  },
+  {
+    "name": "Human Knowledge",
+    "description": "Information, understanding, and skills acquired through experience or education. Accumulated and transmitted; various types; truth connection."
+  },
+  {
+    "name": "Deep Understanding",
+    "description": "Comprehension of meaning, significance, or nature of something. Beyond surface knowledge; synthesis required; wisdom component."
+  },
+  {
+    "name": "Practical Wisdom",
+    "description": "The ability to apply knowledge and experience judiciously. Age-associated; decision quality; philosophical virtue."
+  },
+  {
+    "name": "General Intelligence",
+    "description": "The capacity to learn, reason, and solve problems effectively. Various theories; measurable aspects; nature-nurture debates."
+  },
+  {
+    "name": "Human Memory",
+    "description": "The mental capacity to store and recall information and experiences. Short and long-term types; encoding and retrieval; identity foundation."
+  },
+  {
+    "name": "Creative Imagination",
+    "description": "The mental faculty of forming images and concepts not present to senses. Creative thought basis; problem-solving resource; human distinctive."
+  },
+  {
+    "name": "Creative Ability",
+    "description": "The capacity to generate novel and valuable ideas or products. Various domains; development possible; economic and artistic value."
+  },
+  {
+    "name": "Logical Reasoning",
+    "description": "The process of deriving conclusions from premises according to valid rules. Formal systems; critical thinking component; error-prone when informal."
+  },
+  {
+    "name": "Rational Thought",
+    "description": "The capacity for objective, evidence-based thinking. Human distinctive; idealized standard; various impediments."
+  },
+  {
+    "name": "Intuitive Knowing",
+    "description": "Immediate understanding without conscious reasoning. Pattern recognition basis; expertise-associated; unreliable but useful."
+  },
+  {
+    "name": "Sensory Perception",
+    "description": "The organization and interpretation of sensory information. Multiple modalities; subjective experience; cognitive construction."
+  },
+  {
+    "name": "Focused Attention",
+    "description": "The mental concentration of awareness on selected stimuli. Limited capacity; selective process; task performance factor."
+  },
+  {
+    "name": "Human Consciousness",
+    "description": "The state of awareness of one's existence, sensations, and thoughts. Philosophy of mind central problem; brain relationship; subjective quality."
+  },
+  {
+    "name": "Human Mind",
+    "description": "The totality of mental processes and capacities. Brain relationship debated; various faculties; personal identity basis."
+  },
+  {
+    "name": "Immortal Soul",
+    "description": "The immaterial essence of a person, often considered immortal. Religious and philosophical concept; various traditions; mind-body problem related."
+  },
+  {
+    "name": "Human Spirit",
+    "description": "The non-physical part of a person relating to emotions, character, and will. Various meanings; religious and secular uses; vitality connotation."
+  },
+  {
+    "name": "Night Dream",
+    "description": "Mental experiences occurring during sleep. REM sleep associated; meaning debated; universal human experience."
+  },
+  {
+    "name": "Future Vision",
+    "description": "A mental image of possible future state or condition. Planning resource; motivation source; leadership quality."
+  },
+  {
+    "name": "Personal Goal",
+    "description": "A desired result or outcome one intends to achieve. Motivation driver; SMART criteria; success factor."
+  },
+  {
+    "name": "Action Plan",
+    "description": "A detailed scheme for achieving objectives. Steps and timeline; contingencies; implementation guide."
+  },
+  {
+    "name": "Strategic Approach",
+    "description": "A high-level plan for achieving long-term aims. Resource allocation; competitive advantage; organizational guidance."
+  },
+  {
+    "name": "Active Decision",
+    "description": "A conclusion reached after consideration of alternatives. Various processes; quality variation; responsibility assumption."
+  },
+  {
+    "name": "Conscious Choice",
+    "description": "A selection made from available alternatives with awareness. Freedom assumption; responsibility basis; decision subset."
+  },
+  {
+    "name": "Identified Problem",
+    "description": "A situation perceived as unsatisfactory requiring resolution. Definition important; various types; solution-seeking trigger."
+  },
+  {
+    "name": "Effective Solution",
+    "description": "An answer or method resolving a problem satisfactorily. Quality criteria; implementation required; evaluation possible."
+  },
+  {
+    "name": "Open Question",
+    "description": "An inquiry seeking information or explanation. Various types; learning driver; conversation tool."
+  },
+  {
+    "name": "Direct Answer",
+    "description": "A response providing requested information or explanation. Relevance expected; completeness varying; question correspondence."
+  },
+  {
+    "name": "Objective Truth",
+    "description": "Correspondence between statement and reality. Philosophical debate subject; scientific aim; various theories."
+  },
+  {
+    "name": "Deliberate Falsehood",
+    "description": "A statement contrary to fact or reality. Error or deception; various consequences; truth opposite."
+  },
+  {
+    "name": "Verified Fact",
+    "description": "Something demonstrated to be true or existing. Evidence-supported; objective character; knowledge basis."
+  },
+  {
+    "name": "Invented Fiction",
+    "description": "Something imagined or made up, not factual. Literary and other uses; entertainment and insight; fact contrast."
+  },
+  {
+    "name": "Objective Reality",
+    "description": "The state of things as they actually exist. Philosophical question; perception relationship; science assumption."
+  },
+  {
+    "name": "Perceptual Illusion",
+    "description": "A false perception or belief. Sensory or cognitive causes; entertainment and danger; reality contrast."
+  },
+  {
+    "name": "Human Emotion",
+    "description": "A complex psychological state involving subjective experience and physiological response. Various taxonomies; behavior influence; universal yet cultural."
+  },
+  {
+    "name": "Felt Feeling",
+    "description": "An emotional state or reaction, often more subtle than emotion. Subjective experience; awareness varying; mood relationship."
+  },
+  {
+    "name": "Experienced Happiness",
+    "description": "A state of well-being and contentment. Pursuit goal; various theories; measurement attempts."
+  },
+  {
+    "name": "Felt Sadness",
+    "description": "An emotional pain associated with loss, disappointment, or sorrow. Universal experience; depression relationship; tears associated."
+  },
+  {
+    "name": "Felt Anger",
+    "description": "A strong feeling of displeasure and hostility. Threat response; expression varying; management important."
+  },
+  {
+    "name": "Felt Fear",
+    "description": "An unpleasant emotion caused by perceived threat or danger. Survival function; anxiety relationship; courage opposite."
+  },
+  {
+    "name": "Emotional Surprise",
+    "description": "A brief emotional state from unexpected event. Orientation response; positive or negative valence; attention-getting."
+  },
+  {
+    "name": "Felt Disgust",
+    "description": "A strong feeling of aversion or revulsion. Contamination avoidance origin; moral extension; facial expression distinctive."
+  },
+  {
+    "name": "Romantic Love",
+    "description": "An intense feeling of deep affection and attachment. Various types; relationship foundation; cultural expressions."
+  },
+  {
+    "name": "Intense Hatred",
+    "description": "A feeling of intense dislike or hostility. Destructive potential; group and individual targets; opposite of love."
+  },
+  {
+    "name": "Experienced Joy",
+    "description": "An intense feeling of happiness and pleasure. Peak experience; various triggers; well-being indicator."
+  },
+  {
+    "name": "Deep Grief",
+    "description": "Intense sorrow especially from death of loved one. Process stages; healing timeline; support needed."
+  },
+  {
+    "name": "Felt Hope",
+    "description": "An optimistic expectation about future outcomes. Coping resource; motivation source; realistic or unrealistic."
+  },
+  {
+    "name": "Experienced Despair",
+    "description": "Complete loss of hope. Depression relationship; existential crisis; suffering state."
+  },
+  {
+    "name": "Personal Pride",
+    "description": "Satisfaction from achievements, qualities, or possessions. Healthy or excessive forms; social recognition related; sin in some traditions."
+  },
+  {
+    "name": "Felt Shame",
+    "description": "A painful feeling from consciousness of wrong or foolish behavior. Social emotion; self-evaluation; guilt distinction."
+  },
+  {
+    "name": "Experienced Guilt",
+    "description": "A feeling of responsibility for wrongdoing. Moral emotion; behavior correction function; neurotic forms possible."
+  },
+  {
+    "name": "Felt Envy",
+    "description": "A feeling of discontent at another's advantages or possessions. Comparison-based; motivation or destruction; sin in some traditions."
+  },
+  {
+    "name": "Romantic Jealousy",
+    "description": "Fear of rivalry in affection or possessive suspicion. Relationship emotion; insecurity related; destructive potential."
+  },
+  {
+    "name": "Felt Gratitude",
+    "description": "A feeling of thankfulness and appreciation. Prosocial emotion; well-being associated; expression beneficial."
+  },
+  {
+    "name": "Deep Compassion",
+    "description": "Sympathetic concern for suffering of others with desire to help. Empathy beyond; altruism basis; religious virtue."
+  },
+  {
+    "name": "Cognitive Empathy",
+    "description": "The ability to understand and share feelings of another. Perspective-taking; social skill; psychopathy deficit."
+  },
+  {
+    "name": "Emotional Sympathy",
+    "description": "Feelings of pity and sorrow for another's misfortune. Support expression; empathy related; action motivating."
+  },
+  {
+    "name": "Felt Anxiety",
+    "description": "A feeling of worry, nervousness, or unease about uncertain outcome. Normal and disorder forms; physical symptoms; treatment available."
+  },
+  {
+    "name": "Psychological Stress",
+    "description": "Mental or emotional strain from demanding circumstances. Various causes; health effects; management strategies."
+  },
+  {
+    "name": "Inner Peace",
+    "description": "A state of mental and emotional calmness with positive outlook. Spiritual goal; stress absence; meditation associated."
+  },
+  {
+    "name": "Emotional Calm",
+    "description": "A state of tranquility and composure. Stress opposite; regulation achievement; desirable state."
+  },
+  {
+    "name": "Felt Excitement",
+    "description": "A state of heightened energy and enthusiasm. Anticipation related; arousal increase; positive valence usually."
+  },
+  {
+    "name": "Experienced Boredom",
+    "description": "A state of weary tedium from lack of interest. Attention deficit; motivation problem; creativity potential."
+  },
+  {
+    "name": "Felt Loneliness",
+    "description": "A distressing experience of isolation or lack of companionship. Social need unmet; health effects; epidemic concerns."
+  },
+  {
+    "name": "Moral Good",
+    "description": "That which is morally right, beneficial, or virtuous. Various theories; behavior standard; evil opposite."
+  },
+  {
+    "name": "Moral Evil",
+    "description": "That which is morally wrong, harmful, or wicked. Various conceptions; suffering cause; good opposite."
+  },
+  {
+    "name": "Moral Rightness",
+    "description": "Correctness according to ethical standards. Action quality; judgment subject; culture varying."
+  },
+  {
+    "name": "Moral Wrongness",
+    "description": "Incorrectness according to ethical standards. Prohibition basis; judgment subject; rightness opposite."
+  },
+  {
+    "name": "Social Justice",
+    "description": "Fair treatment and equitable distribution of benefits in society. Political concept; various theories; movement basis."
+  },
+  {
+    "name": "Social Injustice",
+    "description": "Unfair treatment or unequal distribution in society. Reform target; suffering cause; justice opposite."
+  },
+  {
+    "name": "Procedural Fairness",
+    "description": "Impartial treatment according to rules without favoritism. Justice component; institution expectation; trust basis."
+  },
+  {
+    "name": "Social Equality",
+    "description": "The state of being equal in status, rights, or opportunities. Political ideal; various dimensions; discrimination opposite."
+  },
+  {
+    "name": "Political Freedom",
+    "description": "The power to act, speak, or think without restraint. Various types; rights protection; responsibility accompaniment."
+  },
+  {
+    "name": "Civil Liberty",
+    "description": "Freedom from arbitrary governmental interference with individual rights. Constitutional protection; legal tradition; authority limit."
+  },
+  {
+    "name": "Human Rights",
+    "description": "Moral principles or norms for human behavior standards. Universal claim; legal codification; dignity basis."
+  },
+  {
+    "name": "Moral Duty",
+    "description": "A moral obligation to perform certain actions. Deontological focus; role-based; conscience enforcement."
+  },
+  {
+    "name": "Personal Responsibility",
+    "description": "The state of being accountable for something within one's control. Agency assumption; blame basis; maturity marker."
+  },
+  {
+    "name": "Legal Obligation",
+    "description": "A binding requirement to do or refrain from something. Law or contract basis; enforcement possible; compliance expected."
+  },
+  {
+    "name": "Moral Virtue",
+    "description": "A morally good character trait or quality. Excellence type; habit development; eudaimonia component."
+  },
+  {
+    "name": "Moral Vice",
+    "description": "A morally bad character trait or habit. Virtue opposite; degradation; habit formation."
+  },
+  {
+    "name": "Personal Honesty",
+    "description": "The quality of being truthful and free from deceit. Virtue; trust basis; deception opposite."
+  },
+  {
+    "name": "Deliberate Dishonesty",
+    "description": "The quality of being untruthful or deceptive. Vice; trust destruction; honesty opposite."
+  },
+  {
+    "name": "Personal Integrity",
+    "description": "The quality of being honest with strong moral principles. Character wholeness; consistency; corruption opposite."
+  },
+  {
+    "name": "Institutional Corruption",
+    "description": "Dishonest or fraudulent conduct, especially by powerful persons. Trust destruction; crime often; reform target."
+  },
+  {
+    "name": "Personal Honor",
+    "description": "High respect earned through achievement or ethical conduct. Social recognition; self-respect; shame avoidance."
+  },
+  {
+    "name": "Human Dignity",
+    "description": "The inherent worth of every human being deserving respect. Rights basis; universal claim; degradation opposite."
+  },
+  {
+    "name": "Interpersonal Respect",
+    "description": "Due regard for feelings, wishes, and rights of others. Social virtue; relationship basis; contempt opposite."
+  },
+  {
+    "name": "Interpersonal Trust",
+    "description": "Firm belief in reliability, truth, or ability of someone. Relationship foundation; social capital; betrayal vulnerable."
+  },
+  {
+    "name": "Personal Loyalty",
+    "description": "Faithful adherence to person, cause, or institution. Relationship virtue; group cohesion; betrayal opposite."
+  },
+  {
+    "name": "Personal Betrayal",
+    "description": "Violation of trust or confidence. Relationship destruction; emotional harm; loyalty opposite."
+  },
+  {
+    "name": "Shown Mercy",
+    "description": "Compassionate treatment of those in distress or deserving punishment. Divine attribute; justice tempering; cruelty opposite."
+  },
+  {
+    "name": "Deliberate Cruelty",
+    "description": "Willful causing of pain or suffering to others. Vice; sadism connection; mercy opposite."
+  },
+  {
+    "name": "Given Forgiveness",
+    "description": "The act of pardoning offense or overlooking wrongdoing. Relationship healing; resentment release; demanding virtue."
+  },
+  {
+    "name": "Sought Revenge",
+    "description": "Retaliation for injury or wrong received. Justice alternative; cycle risk; forgiveness opposite."
+  }
+]
