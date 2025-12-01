@@ -8,7 +8,7 @@ import json
 async def debug_gemini_response():
     """Debug the actual Gemini API response structure"""
     
-    api_key = "AIzaSyDG24Lx2dLRatCR_NQxVKp626GlYPb1bnc"
+    api_key = ""
     model = "gemini-2.5-flash-image"
     
     prompt = "Create a simple blue circle"
