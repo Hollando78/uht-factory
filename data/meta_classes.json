@@ -1,0 +1,1011 @@
+{
+  "version": "1.2",
+  "generated_at": "2025-12-03T12:30:00Z",
+  "threshold_percent": 3.0,
+  "total_meta_classes": 27,
+  "meta_classes": [
+    {
+      "id": "abstract_12",
+      "layer": "Abstract",
+      "hex": "12",
+      "binary": "00010010",
+      "active_bits": [
+        20,
+        23
+      ],
+      "trait_names": [
+        "Compositional",
+        "Temporal"
+      ],
+      "name": "Temporal Structure",
+      "description": "Entities with modular composition that unfold or evolve over time. Common in processes, narratives, sequences, and dynamic systems.",
+      "frequency_percent": 28.91,
+      "entity_count": 3179
+    },
+    {
+      "id": "physical_c7",
+      "layer": "Physical",
+      "hex": "C7",
+      "binary": "11000111",
+      "active_bits": [
+        1,
+        2,
+        6,
+        7,
+        8
+      ],
+      "trait_names": [
+        "Physical Object",
+        "Synthetic",
+        "Observable",
+        "Physical Medium",
+        "Active"
+      ],
+      "name": "Active Synthetic Object",
+      "description": "Manufactured physical entities that exhibit autonomous behavior while being composed of observable matter. Includes machines, vehicles, robots, and powered devices.",
+      "frequency_percent": 25.56,
+      "entity_count": 2811
+    },
+    {
+      "id": "functional_50",
+      "layer": "Functional",
+      "hex": "50",
+      "binary": "01010000",
+      "active_bits": [
+        10,
+        12
+      ],
+      "trait_names": [
+        "Outputs Effect",
+        "State-Transforming"
+      ],
+      "name": "Dynamic Effector",
+      "description": "Entities that produce measurable effects and undergo internal state changes. Includes tools, processors, and transformative systems.",
+      "frequency_percent": 24.19,
+      "entity_count": 2660
+    },
+    {
+      "id": "social_50",
+      "layer": "Social",
+      "hex": "50",
+      "binary": "01010000",
+      "active_bits": [
+        26,
+        28
+      ],
+      "trait_names": [
+        "Institutionally Defined",
+        "Regulated"
+      ],
+      "name": "Institutional Entity",
+      "description": "Entities defined by formal rules and subject to regulatory frameworks. Includes official categories, licensed items, and institutionally recognized objects.",
+      "frequency_percent": 23.27,
+      "entity_count": 2559
+    },
+    {
+      "id": "abstract_10",
+      "layer": "Abstract",
+      "hex": "10",
+      "binary": "00010000",
+      "active_bits": [
+        20
+      ],
+      "trait_names": [
+        "Compositional"
+      ],
+      "name": "Modular Entity",
+      "description": "Entities with structured parts or hierarchical organization. Common in systems, collections, and composite structures.",
+      "frequency_percent": 16.71,
+      "entity_count": 1838
+    },
+    {
+      "id": "physical_00",
+      "layer": "Physical",
+      "hex": "00",
+      "binary": "00000000",
+      "active_bits": [],
+      "trait_names": [],
+      "name": "Non-Physical Entity",
+      "description": "Entities without physical attributes. Includes abstract concepts, ideas, processes, and purely informational objects.",
+      "frequency_percent": 15.98,
+      "entity_count": 1758
+    },
+    {
+      "id": "abstract_00",
+      "layer": "Abstract",
+      "hex": "00",
+      "binary": "00000000",
+      "active_bits": [],
+      "trait_names": [],
+      "name": "Concrete Entity",
+      "description": "Entities without abstract/symbolic qualities. Represents tangible, literal objects without representational or meta-level properties.",
+      "frequency_percent": 15.48,
+      "entity_count": 1703
+    },
+    {
+      "id": "functional_88",
+      "layer": "Functional",
+      "hex": "88",
+      "binary": "10001000",
+      "active_bits": [
+        9,
+        13
+      ],
+      "trait_names": [
+        "Intentionally Designed",
+        "Human-Interactive"
+      ],
+      "name": "Human Interface",
+      "description": "Entities deliberately designed for human interaction and use. Includes consumer products, user interfaces, and personal tools.",
+      "frequency_percent": 10.78,
+      "entity_count": 1186
+    },
+    {
+      "id": "physical_c6",
+      "layer": "Physical",
+      "hex": "C6",
+      "binary": "11000110",
+      "active_bits": [
+        1,
+        2,
+        6,
+        7
+      ],
+      "trait_names": [
+        "Physical Object",
+        "Synthetic",
+        "Observable",
+        "Physical Medium"
+      ],
+      "name": "Static Artifact",
+      "description": "Manufactured observable objects that are passive (not self-acting). Includes furniture, structures, containers, and static equipment.",
+      "frequency_percent": 10.3,
+      "entity_count": 1133
+    },
+    {
+      "id": "functional_00",
+      "layer": "Functional",
+      "hex": "00",
+      "binary": "00000000",
+      "active_bits": [],
+      "trait_names": [],
+      "name": "Passive Entity",
+      "description": "Entities without functional attributes. Neither designed for a purpose nor producing effects. Includes natural objects and raw materials.",
+      "frequency_percent": 8.92,
+      "entity_count": 981
+    },
+    {
+      "id": "social_d8",
+      "layer": "Social",
+      "hex": "D8",
+      "binary": "11011000",
+      "active_bits": [
+        25,
+        26,
+        28,
+        29
+      ],
+      "trait_names": [
+        "Social Construct",
+        "Institutionally Defined",
+        "Regulated",
+        "Economically Significant"
+      ],
+      "name": "Economic Institution",
+      "description": "Socially constructed entities that are institutionally defined, regulated, and economically significant. Includes currencies, financial instruments, and commercial entities.",
+      "frequency_percent": 7.16,
+      "entity_count": 787
+    },
+    {
+      "id": "social_00",
+      "layer": "Social",
+      "hex": "00",
+      "binary": "00000000",
+      "active_bits": [],
+      "trait_names": [],
+      "name": "Natural Entity",
+      "description": "Entities without social attributes. Exists independently of human social constructs, institutions, or economic systems.",
+      "frequency_percent": 6.22,
+      "entity_count": 684
+    },
+    {
+      "id": "social_08",
+      "layer": "Social",
+      "hex": "08",
+      "binary": "00001000",
+      "active_bits": [
+        29
+      ],
+      "trait_names": [
+        "Economically Significant"
+      ],
+      "name": "Economic Asset",
+      "description": "Entities with economic value or market impact. Includes commodities, resources, and tradeable items.",
+      "frequency_percent": 5.86,
+      "entity_count": 644
+    },
+    {
+      "id": "social_10",
+      "layer": "Social",
+      "hex": "10",
+      "binary": "00010000",
+      "active_bits": [
+        28
+      ],
+      "trait_names": [
+        "Regulated"
+      ],
+      "name": "Regulated Entity",
+      "description": "Entities subject to rules, norms, or formal regulation. Includes controlled substances, licensed activities, and standardized objects.",
+      "frequency_percent": 5.75,
+      "entity_count": 632
+    },
+    {
+      "id": "physical_04",
+      "layer": "Physical",
+      "hex": "04",
+      "binary": "00000100",
+      "active_bits": [
+        6
+      ],
+      "trait_names": [
+        "Observable"
+      ],
+      "name": "Observable Phenomenon",
+      "description": "Entities detectable by senses or instruments but lacking other physical traits. Includes phenomena, events, and observable patterns.",
+      "frequency_percent": 5.68,
+      "entity_count": 625
+    },
+    {
+      "id": "social_18",
+      "layer": "Social",
+      "hex": "18",
+      "binary": "00011000",
+      "active_bits": [
+        28,
+        29
+      ],
+      "trait_names": [
+        "Regulated",
+        "Economically Significant"
+      ],
+      "name": "Regulated Asset",
+      "description": "Economically significant entities under regulatory control. Includes securities, controlled goods, and regulated commodities.",
+      "frequency_percent": 5.28,
+      "entity_count": 581
+    },
+    {
+      "id": "abstract_02",
+      "layer": "Abstract",
+      "hex": "02",
+      "binary": "00000010",
+      "active_bits": [
+        23
+      ],
+      "trait_names": [
+        "Temporal"
+      ],
+      "name": "Temporal Entity",
+      "description": "Entities defined primarily by their relationship to time. Includes events, periods, schedules, and time-bound phenomena.",
+      "frequency_percent": 4.86,
+      "entity_count": 534
+    },
+    {
+      "id": "functional_c8",
+      "layer": "Functional",
+      "hex": "C8",
+      "binary": "11001000",
+      "active_bits": [
+        9,
+        10,
+        13
+      ],
+      "trait_names": [
+        "Intentionally Designed",
+        "Outputs Effect",
+        "Human-Interactive"
+      ],
+      "name": "Interactive Tool",
+      "description": "Purpose-built entities that produce effects through human interaction. Includes hand tools, appliances, and user-operated equipment.",
+      "frequency_percent": 4.61,
+      "entity_count": 507
+    },
+    {
+      "id": "social_80",
+      "layer": "Social",
+      "hex": "80",
+      "binary": "10000000",
+      "active_bits": [
+        25
+      ],
+      "trait_names": [
+        "Social Construct"
+      ],
+      "name": "Social Construct",
+      "description": "Entities that exist by collective agreement or shared understanding. Includes roles, statuses, conventions, and cultural concepts.",
+      "frequency_percent": 4.47,
+      "entity_count": 492
+    },
+    {
+      "id": "physical_a7",
+      "layer": "Physical",
+      "hex": "A7",
+      "binary": "10100111",
+      "active_bits": [
+        1,
+        3,
+        6,
+        7,
+        8
+      ],
+      "trait_names": [
+        "Physical Object",
+        "Biological/Biomimetic",
+        "Observable",
+        "Physical Medium",
+        "Active"
+      ],
+      "name": "Active Biological Entity",
+      "description": "Living or bio-inspired physical entities that exhibit autonomous behavior. Includes organisms, bio-robots, and organic active systems.",
+      "frequency_percent": 4.26,
+      "entity_count": 469
+    },
+    {
+      "id": "functional_80",
+      "layer": "Functional",
+      "hex": "80",
+      "binary": "10000000",
+      "active_bits": [
+        9
+      ],
+      "trait_names": [
+        "Intentionally Designed"
+      ],
+      "name": "Designed Artifact",
+      "description": "Entities created with deliberate purpose but without specific output effects. Includes decorative objects, art, and purposeful but passive items.",
+      "frequency_percent": 4.04,
+      "entity_count": 444
+    },
+    {
+      "id": "social_40",
+      "layer": "Social",
+      "hex": "40",
+      "binary": "01000000",
+      "active_bits": [
+        26
+      ],
+      "trait_names": [
+        "Institutionally Defined"
+      ],
+      "name": "Institutional Category",
+      "description": "Entities defined by formal institutions but not necessarily regulated. Includes official classifications, standards, and institutional types.",
+      "frequency_percent": 3.97,
+      "entity_count": 437
+    },
+    {
+      "id": "physical_d6",
+      "layer": "Physical",
+      "hex": "D6",
+      "binary": "11010110",
+      "active_bits": [
+        1,
+        2,
+        4,
+        6,
+        7
+      ],
+      "trait_names": [
+        "Physical Object",
+        "Synthetic",
+        "Powered",
+        "Observable",
+        "Physical Medium"
+      ],
+      "name": "Powered Artifact",
+      "description": "Manufactured objects that require external power but are not self-acting. Includes electrical appliances, powered displays, and energy-dependent equipment.",
+      "frequency_percent": 3.79,
+      "entity_count": 417
+    },
+    {
+      "id": "functional_84",
+      "layer": "Functional",
+      "hex": "84",
+      "binary": "10000100",
+      "active_bits": [
+        9,
+        14
+      ],
+      "trait_names": [
+        "Intentionally Designed",
+        "System-integrated"
+      ],
+      "name": "System Component",
+      "description": "Purpose-built entities designed to function within larger systems. Includes parts, modules, and integrated components.",
+      "frequency_percent": 3.77,
+      "entity_count": 415
+    },
+    {
+      "id": "physical_66",
+      "layer": "Physical",
+      "hex": "66",
+      "binary": "01100110",
+      "active_bits": [
+        2,
+        3,
+        6,
+        7
+      ],
+      "trait_names": [
+        "Synthetic",
+        "Biological/Biomimetic",
+        "Observable",
+        "Physical Medium"
+      ],
+      "name": "Hybrid Material",
+      "description": "Entities combining synthetic and biological properties. Includes bio-plastics, organic electronics, and bio-synthetic composites.",
+      "frequency_percent": 3.75,
+      "entity_count": 412
+    },
+    {
+      "id": "physical_87",
+      "layer": "Physical",
+      "hex": "87",
+      "binary": "10000111",
+      "active_bits": [
+        1,
+        6,
+        7,
+        8
+      ],
+      "trait_names": [
+        "Physical Object",
+        "Observable",
+        "Physical Medium",
+        "Active"
+      ],
+      "name": "Natural Active Object",
+      "description": "Non-synthetic physical entities that exhibit autonomous behavior. Includes natural phenomena, living organisms, and self-moving natural objects.",
+      "frequency_percent": 3.7,
+      "entity_count": 407
+    },
+    {
+      "id": "functional_d0",
+      "layer": "Functional",
+      "hex": "D0",
+      "binary": "11010000",
+      "active_bits": [
+        9,
+        10,
+        12
+      ],
+      "trait_names": [
+        "Intentionally Designed",
+        "Outputs Effect",
+        "State-Transforming"
+      ],
+      "name": "Processing System",
+      "description": "Purpose-built entities that transform inputs into outputs with state changes. Includes processors, converters, and transformation machinery.",
+      "frequency_percent": 3.66,
+      "entity_count": 402
+    },
+    {
+      "id": "social_c0",
+      "layer": "Social",
+      "hex": "C0",
+      "binary": "11000000",
+      "active_bits": [
+        25,
+        26
+      ],
+      "trait_names": [
+        "Social Construct",
+        "Institutionally Defined"
+      ],
+      "name": "Formal Institution",
+      "description": "Socially constructed entities with formal institutional definition. Includes organizations, official bodies, and recognized institutions.",
+      "frequency_percent": 3.63,
+      "entity_count": 399
+    },
+    {
+      "id": "social_48",
+      "layer": "Social",
+      "hex": "48",
+      "binary": "01001000",
+      "active_bits": [
+        26,
+        29
+      ],
+      "trait_names": [
+        "Institutionally Defined",
+        "Economically Significant"
+      ],
+      "name": "Economic Category",
+      "description": "Institutionally defined entities with economic significance. Includes product categories, market segments, and trade classifications.",
+      "frequency_percent": 3.62,
+      "entity_count": 398
+    },
+    {
+      "id": "functional_8c",
+      "layer": "Functional",
+      "hex": "8C",
+      "binary": "10001100",
+      "active_bits": [
+        9,
+        13,
+        14
+      ],
+      "trait_names": [
+        "Intentionally Designed",
+        "Human-Interactive",
+        "System-integrated"
+      ],
+      "name": "Integrated Interface",
+      "description": "Purpose-built entities for human interaction within larger systems. Includes control panels, dashboards, and integrated user interfaces.",
+      "frequency_percent": 3.52,
+      "entity_count": 387
+    },
+    {
+      "id": "abstract_50",
+      "layer": "Abstract",
+      "hex": "50",
+      "binary": "01010000",
+      "active_bits": [
+        18,
+        20
+      ],
+      "trait_names": [
+        "Signalling",
+        "Compositional"
+      ],
+      "name": "Structured Signal",
+      "description": "Entities that convey information through modular structure. Includes coded messages, formatted data, and structured communications.",
+      "frequency_percent": 3.36,
+      "entity_count": 370
+    },
+    {
+      "id": "abstract_40",
+      "layer": "Abstract",
+      "hex": "40",
+      "binary": "01000000",
+      "active_bits": [
+        18
+      ],
+      "trait_names": [
+        "Signalling"
+      ],
+      "name": "Signal Entity",
+      "description": "Entities primarily serving to convey information or meaning. Includes signs, symbols, indicators, and communicative objects.",
+      "frequency_percent": 2.59,
+      "entity_count": 285
+    },
+    {
+      "id": "abstract_30",
+      "layer": "Abstract",
+      "hex": "30",
+      "binary": "00110000",
+      "active_bits": [
+        19,
+        20
+      ],
+      "trait_names": [
+        "Rule-governed",
+        "Compositional"
+      ],
+      "name": "Formal System",
+      "description": "Entities with rule-based modular structure. Includes protocols, grammars, logical systems, and formal languages.",
+      "frequency_percent": 2.51,
+      "entity_count": 276
+    },
+    {
+      "id": "abstract_70",
+      "layer": "Abstract",
+      "hex": "70",
+      "binary": "01110000",
+      "active_bits": [
+        18,
+        19,
+        20
+      ],
+      "trait_names": [
+        "Signalling",
+        "Rule-governed",
+        "Compositional"
+      ],
+      "name": "Formal Language",
+      "description": "Structured signalling systems governed by explicit rules. Includes programming languages, formal notations, and codified communication systems.",
+      "frequency_percent": 2.18,
+      "entity_count": 240
+    }
+  ],
+  "cross_domain": [
+    {
+      "id": "cross_c7501250",
+      "uht_code": "C7501250",
+      "layers": {
+        "physical": {
+          "hex": "C7",
+          "traits": [
+            "Physical Object",
+            "Synthetic",
+            "Observable",
+            "Physical Medium",
+            "Active"
+          ]
+        },
+        "functional": {
+          "hex": "50",
+          "traits": [
+            "Outputs Effect",
+            "State-Transforming"
+          ]
+        },
+        "abstract": {
+          "hex": "12",
+          "traits": [
+            "Compositional",
+            "Temporal"
+          ]
+        },
+        "social": {
+          "hex": "50",
+          "traits": [
+            "Institutionally Defined",
+            "Regulated"
+          ]
+        }
+      },
+      "name": "Regulated Industrial Machine",
+      "description": "Active manufactured devices that produce outputs and undergo state changes, with temporal dynamics and institutional regulation. The dominant archetype for industrial equipment, power tools, and regulated machinery.",
+      "frequency_percent": 15.38,
+      "entity_count": 1691
+    },
+    {
+      "id": "cross_c7501210",
+      "uht_code": "C7501210",
+      "layers": {
+        "physical": {
+          "hex": "C7",
+          "traits": [
+            "Physical Object",
+            "Synthetic",
+            "Observable",
+            "Physical Medium",
+            "Active"
+          ]
+        },
+        "functional": {
+          "hex": "50",
+          "traits": [
+            "Outputs Effect",
+            "State-Transforming"
+          ]
+        },
+        "abstract": {
+          "hex": "12",
+          "traits": [
+            "Compositional",
+            "Temporal"
+          ]
+        },
+        "social": {
+          "hex": "10",
+          "traits": [
+            "Regulated"
+          ]
+        }
+      },
+      "name": "Regulated Active Device",
+      "description": "Active synthetic devices under regulatory oversight that produce effects over time. Similar to industrial machines but without institutional definition requirements.",
+      "frequency_percent": 3.19,
+      "entity_count": 351
+    },
+    {
+      "id": "cross_c7d01250",
+      "uht_code": "C7D01250",
+      "layers": {
+        "physical": {
+          "hex": "C7",
+          "traits": [
+            "Physical Object",
+            "Synthetic",
+            "Observable",
+            "Physical Medium",
+            "Active"
+          ]
+        },
+        "functional": {
+          "hex": "D0",
+          "traits": [
+            "Intentionally Designed",
+            "Outputs Effect",
+            "State-Transforming"
+          ]
+        },
+        "abstract": {
+          "hex": "12",
+          "traits": [
+            "Compositional",
+            "Temporal"
+          ]
+        },
+        "social": {
+          "hex": "50",
+          "traits": [
+            "Institutionally Defined",
+            "Regulated"
+          ]
+        }
+      },
+      "name": "Interactive Industrial System",
+      "description": "Human-interactive active devices designed for specific purposes, producing effects and changing state under institutional regulation. Includes control panels, operating machinery, and interactive industrial equipment.",
+      "frequency_percent": 2.45,
+      "entity_count": 269
+    },
+    {
+      "id": "cross_c7500250",
+      "uht_code": "C7500250",
+      "layers": {
+        "physical": {
+          "hex": "C7",
+          "traits": [
+            "Physical Object",
+            "Synthetic",
+            "Observable",
+            "Physical Medium",
+            "Active"
+          ]
+        },
+        "functional": {
+          "hex": "50",
+          "traits": [
+            "Outputs Effect",
+            "State-Transforming"
+          ]
+        },
+        "abstract": {
+          "hex": "02",
+          "traits": [
+            "Temporal"
+          ]
+        },
+        "social": {
+          "hex": "50",
+          "traits": [
+            "Institutionally Defined",
+            "Regulated"
+          ]
+        }
+      },
+      "name": "Signalling Industrial Device",
+      "description": "Active synthetic devices that transmit signals while producing effects, under institutional regulation. Includes communication equipment, sensors, and broadcasting machinery.",
+      "frequency_percent": 2.04,
+      "entity_count": 224
+    },
+    {
+      "id": "cross_87501250",
+      "uht_code": "87501250",
+      "layers": {
+        "physical": {
+          "hex": "87",
+          "traits": [
+            "Physical Object",
+            "Observable",
+            "Physical Medium",
+            "Active"
+          ]
+        },
+        "functional": {
+          "hex": "50",
+          "traits": [
+            "Outputs Effect",
+            "State-Transforming"
+          ]
+        },
+        "abstract": {
+          "hex": "12",
+          "traits": [
+            "Compositional",
+            "Temporal"
+          ]
+        },
+        "social": {
+          "hex": "50",
+          "traits": [
+            "Institutionally Defined",
+            "Regulated"
+          ]
+        }
+      },
+      "name": "Bio-Industrial Artifact",
+      "description": "Passive biomimetic or biological manufactured objects that produce effects under institutional regulation. Includes bio-engineered products, medical devices, and organic industrial materials.",
+      "frequency_percent": 1.24,
+      "entity_count": 136
+    }
+  ],
+  "emergent": [
+    {
+      "id": "emergent_meta_abstraction",
+      "type": "rare_trait",
+      "name": "Self-Referential Abstraction",
+      "description": "Extremely rare entities with the Meta trait - concepts that refer to or describe themselves or other concepts. Only 0.3% of entities have this trait.",
+      "defining_traits": [
+        "Meta"
+      ],
+      "entity_count": 20,
+      "examples": [
+        "Compound Noun",
+        "Placeholder Name",
+        "Unclassified Viruses",
+        "Conceptual Art",
+        "Auto-Destructive Art"
+      ],
+      "insight": "Meta almost never co-occurs with Physical traits - self-referential concepts are purely abstract"
+    },
+    {
+      "id": "emergent_structural_artifact",
+      "type": "rare_trait",
+      "name": "Load-Bearing Structure",
+      "description": "Rare physical entities with internal structural properties. Only 1.5% of entities have this trait - includes buildings, bridges, and engineered frameworks.",
+      "defining_traits": [
+        "Structural",
+        "Physical Object"
+      ],
+      "entity_count": 30,
+      "examples": [
+        "Developing Skin",
+        "Annulus",
+        "Fish Skin",
+        "Geology of Ceres",
+        "Graft"
+      ],
+      "insight": "Structural entities rarely have Social or Abstract traits - pure engineering focus"
+    },
+    {
+      "id": "emergent_critical_infrastructure",
+      "type": "rare_trait",
+      "name": "Critical Infrastructure",
+      "description": "Entities essential for larger system function. Only 3% of entities - includes core components, foundational services, and irreplaceable system elements.",
+      "defining_traits": [
+        "System-Essential",
+        "System-integrated"
+      ],
+      "entity_count": 30,
+      "examples": [
+        "Adult Skin",
+        "Developing Skin",
+        "Pig's Skin",
+        "Roe-Deer Lung",
+        "Fetal Skin"
+      ],
+      "insight": "System-Essential correlates strongly with Regulated - critical things need rules"
+    },
+    {
+      "id": "emergent_pure_abstraction",
+      "type": "layer_pattern",
+      "name": "Pure Abstraction",
+      "description": "Entities with no physical traits whatsoever (Physical layer = 00). Includes concepts, ideas, processes, and mathematical objects.",
+      "defining_traits": [],
+      "anti_traits": [
+        "Physical Object",
+        "Observable",
+        "Physical Medium"
+      ],
+      "entity_count": 30,
+      "examples": [
+        "Gnotobiology",
+        "Male Homoerotic",
+        "Ana-Ana",
+        "Moral Vice",
+        "Personal Betrayal"
+      ],
+      "insight": "16% of entities have zero physical traits - a substantial 'idea space'"
+    },
+    {
+      "id": "emergent_regulated_effector",
+      "type": "cross_layer_correlation",
+      "name": "Regulated Effector",
+      "description": "Entities that produce effects AND are subject to regulation. This is the strongest Functional\u2192Social correlation - 45% of effect-producing entities are regulated.",
+      "defining_traits": [
+        "Outputs Effect",
+        "Regulated"
+      ],
+      "entity_count": 4969,
+      "examples": [
+        "Barium-134",
+        "Barium-136",
+        "Hafnium-180m5",
+        "Hafnium-181m2",
+        "Protactinium-217m"
+      ],
+      "insight": "Strong emergent pattern: things that DO things get RULES - regulatory capture is ontological"
+    },
+    {
+      "id": "emergent_observable_composite",
+      "type": "cross_layer_correlation",
+      "name": "Observable Composite",
+      "description": "Things you can see that have internal structure. Strongest Physical\u2192Abstract correlation - 77% of observable things have compositional structure.",
+      "defining_traits": [
+        "Observable",
+        "Compositional"
+      ],
+      "entity_count": 6186,
+      "examples": [
+        "Hammer (hand tool)",
+        "Barium-134",
+        "Barium-135",
+        "Barium-136",
+        "Hafnium-180m5"
+      ],
+      "insight": "Visibility and structure are deeply linked - we perceive things AS structured"
+    },
+    {
+      "id": "emergent_ritual_object",
+      "type": "rare_trait",
+      "name": "Ritual Object",
+      "description": "Entities with ritualistic or ceremonial significance. Only 5% of entities - includes religious items, ceremonial objects, and cultural artifacts.",
+      "defining_traits": [
+        "Ritualised"
+      ],
+      "entity_count": 30,
+      "examples": [
+        "Magical Girl Anime",
+        "School Life",
+        "School Anime and Manga",
+        "Seichi Junrei",
+        "Egyptian Blue"
+      ],
+      "insight": "Ritualised correlates with Identity-Linked and Social Construct - rituals define group identity"
+    },
+    {
+      "id": "emergent_digital_entity",
+      "type": "rare_trait",
+      "name": "Digital Entity",
+      "description": "Entities existing primarily in digital/virtual form. Only 4.5% of entities - includes software, digital art, virtual objects, and online phenomena.",
+      "defining_traits": [
+        "Digital/Virtual"
+      ],
+      "entity_count": 30,
+      "examples": [
+        "Cancelled Anime",
+        "School Anime and Manga",
+        "Seichi Junrei",
+        "Fantasy Anime",
+        "Original Net Animation"
+      ],
+      "insight": "Digital entities often lack Physical Object trait but have Signalling - they transmit, not exist"
+    },
+    {
+      "id": "emergent_minimally_classified",
+      "type": "distribution_edge",
+      "name": "Minimally Classified",
+      "description": "Entities with 1-3 traits - at the edge of classification. These may be underspecified, highly abstract, or represent fundamental primitives.",
+      "defining_traits": [],
+      "entity_count": 539,
+      "examples": [
+        "Yellow (1 traits)",
+        "Felt Fear (1 traits)",
+        "Achromatic Color (1 traits)",
+        "Buff (1 traits)",
+        "Vertical Height (1 traits)"
+      ],
+      "insight": "539 entities have \u22643 traits - classification boundary cases or ontological primitives"
+    },
+    {
+      "id": "emergent_maximally_complex",
+      "type": "distribution_edge",
+      "name": "Ontological Nexus",
+      "description": "Entities with 18+ traits - maximally complex objects that touch many ontological categories. Often key cultural or technological artifacts.",
+      "defining_traits": [],
+      "entity_count": 179,
+      "examples": [
+        "Jury (22 traits)",
+        "Court Judge (22 traits)",
+        "Government (22 traits)",
+        "Monarch of Great Britain (22 traits)",
+        "Cognitive Radio (22 traits)"
+      ],
+      "insight": "302 entities have 18+ traits - these are ontological 'hubs' connecting many categories"
+    }
+  ],
+  "total_emergent": 10
+}

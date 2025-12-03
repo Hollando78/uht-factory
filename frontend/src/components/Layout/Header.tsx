@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   AppBar,
   Toolbar,
@@ -15,8 +14,7 @@ import {
   Refresh as RefreshIcon,
   Settings as SettingsIcon,
   Close as CloseIcon,
-  CheckCircle as CheckIcon,
-  Warning as WarningIcon
+  CheckCircle as CheckIcon
 } from '@mui/icons-material';
 import { useApp } from '../../context/AppContext';
 

@@ -1,4 +1,3 @@
-import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { CssBaseline, Box } from '@mui/material';
@@ -6,12 +5,14 @@ import { AppProvider } from './context/AppContext';
 import Header from './components/Layout/Header';
 import Sidebar from './components/Layout/Sidebar';
 import TraitsView from './components/Traits/TraitsView';
+import MetaClassesView from './components/MetaClasses/MetaClassesView';
 import ClassificationView from './components/Classification/ClassificationView';
 import GraphView from './components/Graph/GraphView';
 import ComparisonView from './components/Comparison/ComparisonView';
 import ListView from './components/ListView/ListView';
 import GalleryView from './components/Gallery/GalleryView';
 import EntityDetails from './components/Entity/EntityDetails';
+import TraitAnalytics from './components/Analytics/TraitAnalytics';
 
 // Dark theme optimized for graph visualization
 const darkTheme = createTheme({
@@ -98,12 +99,14 @@ function App() {
                 <Routes>
                   <Route path="/" element={<ClassificationView />} />
                   <Route path="/traits" element={<TraitsView />} />
+                  <Route path="/meta-classes" element={<MetaClassesView />} />
                   <Route path="/classify" element={<ClassificationView />} />
                   <Route path="/graph" element={<GraphView />} />
                   <Route path="/comparison" element={<ComparisonView />} />
                   <Route path="/list" element={<ListView />} />
                   <Route path="/gallery" element={<GalleryView />} />
                   <Route path="/entity/:uuid" element={<EntityDetails />} />
+                  <Route path="/analytics" element={<TraitAnalytics />} />
                 </Routes>
               </Box>
             </Box>

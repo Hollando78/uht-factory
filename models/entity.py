@@ -9,13 +9,22 @@ class EntityInput(BaseModel):
     description: Optional[str] = Field(None, max_length=5000, description="Entity description")
     context: Optional[str] = Field(None, max_length=2000, description="Additional context")
     attributes: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Custom attributes")
-    
+
+    # Wikidata metadata (optional)
+    wikidata_qid: Optional[str] = Field(None, pattern="^Q[0-9]+$", description="Wikidata Q-ID")
+    wikidata_type: Optional[str] = Field(None, pattern="^Q[0-9]+$", description="Wikidata type Q-ID")
+    wikidata_type_label: Optional[str] = Field(None, max_length=200, description="Wikidata type label")
+    sitelinks_count: Optional[int] = Field(None, ge=0, description="Wikidata sitelinks count")
+
     class Config:
         json_schema_extra = {
             "example": {
                 "name": "smartphone",
                 "description": "A portable electronic device combining phone and computer features",
-                "context": "Modern digital communication device"
+                "context": "Modern digital communication device",
+                "wikidata_qid": "Q22645",
+                "wikidata_type": "Q17517",
+                "wikidata_type_label": "mobile phone"
             }
         }
 
@@ -29,15 +38,21 @@ class Entity(BaseModel):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: Optional[datetime] = None
     version: int = Field(default=1, description="Classification version")
-    
+
     # Classification details
     layer_classifications: List[Dict] = Field(default_factory=list)
     trait_evaluations: List[Dict] = Field(default_factory=list)
-    
+
     # Metadata
     classification_time_ms: Optional[float] = Field(None, description="Time to classify in ms")
     llm_model_version: Optional[str] = None
     confidence_score: Optional[float] = Field(None, ge=0.0, le=1.0)
+
+    # Wikidata metadata (optional)
+    wikidata_qid: Optional[str] = Field(None, description="Wikidata Q-ID")
+    wikidata_type: Optional[str] = Field(None, description="Wikidata type Q-ID")
+    wikidata_type_label: Optional[str] = Field(None, description="Wikidata type label")
+    sitelinks_count: Optional[int] = Field(None, description="Wikidata sitelinks count")
     
     class Config:
         json_schema_extra = {

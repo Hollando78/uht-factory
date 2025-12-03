@@ -1,15 +1,14 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { 
-  Box, Card, CardContent, Typography, Button, Paper, Tooltip, 
-  Drawer, List, ListItem, ListItemText, ListItemIcon, Switch, 
-  FormControlLabel, Divider, Chip, Slider, ButtonGroup,
-  IconButton, Collapse, FormControl, InputLabel, Select, MenuItem
+import { useEffect, useRef, useState } from 'react';
+import type { FC } from 'react';
+import {
+  Box, Card, CardContent, Typography, Button, Paper,
+  Drawer, List, ListItem, Switch,
+  FormControlLabel, Divider, Slider, ButtonGroup,
+  IconButton, FormControl, Select, MenuItem
 } from '@mui/material';
 import ForceGraph3D from 'react-force-graph-3d';
 import {
   Settings as SettingsIcon,
-  Visibility as VisibilityIcon,
-  VisibilityOff as VisibilityOffIcon,
   AccountTree as TreeIcon,
   ScatterPlot as ScatterIcon,
   GridOn as GridIcon,
@@ -24,7 +23,7 @@ import API from '../../services/api';
 const API_BASE_URL = 'http://localhost:8100';
 
 // Custom tooltip component for image preview
-const ImageTooltip: React.FC<{
+const ImageTooltip: FC<{
   node: any;
   position: { x: number; y: number };
   visible: boolean;
@@ -122,7 +121,7 @@ const ImageTooltip: React.FC<{
             ) : imageUrl ? (
               <Box sx={{ mt: 1 }}>
                 <img
-                  src={`${API_BASE_URL}${imageUrl}`}
+                  src={imageUrl.startsWith('http') ? imageUrl : `${API_BASE_URL}${imageUrl}`}
                   alt={node.name}
                   style={{
                     width: '100%',
@@ -153,11 +152,43 @@ const ImageTooltip: React.FC<{
   );
 };
 
+interface GraphNode {
+  id: string;
+  name: string;
+  type: string;
+  uht_code?: string;
+  color: string;
+  val: number;
+  opacity?: number;
+  shape?: string;
+  layer?: string;
+  bit?: number;
+  description?: string;
+  layer_dominance?: string;
+  trait_count?: number;
+  // Force-directed layout positions
+  fx?: number;
+  fy?: number;
+  fz?: number;
+}
+
+interface GraphLink {
+  source: string;
+  target: string;
+  type: string;
+  distance?: number;
+}
+
+interface GraphData {
+  nodes: GraphNode[];
+  links: GraphLink[];
+}
+
 export default function GraphView() {
   const { state, actions } = useApp();
-  const fgRef = useRef();
-  const [graphData, setGraphData] = useState({ nodes: [], links: [] });
-  const [filteredData, setFilteredData] = useState({ nodes: [], links: [] });
+  const fgRef = useRef<any>(null);
+  const [graphData, setGraphData] = useState<GraphData>({ nodes: [], links: [] });
+  const [filteredData, setFilteredData] = useState<GraphData>({ nodes: [], links: [] });
   const [hoveredNode, setHoveredNode] = useState<any>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   
@@ -246,51 +277,6 @@ export default function GraphView() {
     setFilteredData({ nodes: filteredNodes, links: filteredLinks });
   }, [graphData, showLayers, showTraits, showEntities, layerFilter]);
 
-  const getNodeColor = (entity: any) => {
-    // Color by dominant layer
-    if (!entity.layers) return '#FFFFFF';
-    
-    const layerCounts = {
-      Physical: parseInt(entity.layers.Physical, 16).toString(2).split('1').length - 1,
-      Functional: parseInt(entity.layers.Functional, 16).toString(2).split('1').length - 1,
-      Abstract: parseInt(entity.layers.Abstract, 16).toString(2).split('1').length - 1,
-      Social: parseInt(entity.layers.Social, 16).toString(2).split('1').length - 1
-    };
-    
-    const dominant = Object.entries(layerCounts).reduce((a, b) => a[1] > b[1] ? a : b)[0];
-    
-    const colors = {
-      Physical: '#FF6B35',
-      Functional: '#00E5FF',
-      Abstract: '#9C27B0',
-      Social: '#4CAF50'
-    };
-    
-    return colors[dominant as keyof typeof colors] || '#FFFFFF';
-  };
-
-  const calculateUHTSimilarity = (code1: string, code2: string) => {
-    if (!code1 || !code2) return 0;
-    
-    const bin1 = parseInt(code1, 16).toString(2).padStart(32, '0');
-    const bin2 = parseInt(code2, 16).toString(2).padStart(32, '0');
-    
-    let matches = 0;
-    for (let i = 0; i < 32; i++) {
-      if (bin1[i] === bin2[i]) matches++;
-    }
-    
-    return matches / 32;
-  };
-
-  // Custom node geometries for visual distinction
-  const getNodeGeometry = (node: any) => {
-    if (node.type === 'layer') return 'sphere';
-    if (node.type === 'trait') return 'box';
-    // Entities get custom shapes based on selection
-    return entityShape;
-  };
-
   // Auto-layout functions
   const applyLayout = () => {
     const fg = fgRef.current;
@@ -299,7 +285,7 @@ export default function GraphView() {
     switch (layout) {
       case 'hierarchical':
         // Position layers at center, traits in rings, entities on outside
-        filteredData.nodes.forEach((node, i) => {
+        filteredData.nodes.forEach((node) => {
           if (node.type === 'layer') {
             const angle = (node.layer === 'Physical' ? 0 : 
                           node.layer === 'Functional' ? Math.PI/2 : 
@@ -313,7 +299,7 @@ export default function GraphView() {
                               node.layer === 'Functional' ? Math.PI/2 : 
                               node.layer === 'Abstract' ? Math.PI : 
                               3*Math.PI/2;
-            const traitAngle = layerAngle + (node.bit % 8) * Math.PI / 4;
+            const traitAngle = layerAngle + ((node.bit || 0) % 8) * Math.PI / 4;
             node.fx = Math.cos(traitAngle) * 200;
             node.fy = Math.sin(traitAngle) * 200;
             node.fz = 0;
@@ -415,7 +401,6 @@ export default function GraphView() {
             linkOpacity={0.7}
             linkWidth={(link: any) => link.type === 'trait_to_layer' ? 2 : 1}
             linkColor={(link: any) => link.type === 'trait_to_layer' ? '#888' : '#666'}
-            linkDistance={linkDistance}
             backgroundColor="rgba(30, 30, 40, 1)"
             showNavInfo={false}
             controlType="orbit"
@@ -631,7 +616,7 @@ export default function GraphView() {
           </Typography>
           <Slider
             value={linkDistance}
-            onChange={(e, value) => setLinkDistance(value as number)}
+            onChange={(_, value) => setLinkDistance(value as number)}
             min={20}
             max={100}
             step={5}

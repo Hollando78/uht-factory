@@ -45,7 +45,7 @@ async def get_entity(uuid: str):
 async def search_entities(
     uht_pattern: Optional[str] = Query(None, description="UHT code pattern to match"),
     name_contains: Optional[str] = Query(None, description="Entity name contains"),
-    limit: int = Query(100, ge=1, le=5000),
+    limit: int = Query(100, ge=1, le=50000),
     offset: int = Query(0, ge=0)
 ):
     """Search entities with filters"""

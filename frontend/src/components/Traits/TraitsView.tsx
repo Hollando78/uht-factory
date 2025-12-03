@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Box,
   Card,
@@ -17,10 +17,10 @@ import {
   DialogContent,
   DialogActions,
   LinearProgress,
-  Grid,
   Tooltip,
   IconButton
 } from '@mui/material';
+import Grid from '@mui/material/Grid';
 import {
   Psychology as TraitsIcon,
   Upload as UploadIcon,
@@ -426,7 +426,7 @@ export default function TraitsView() {
           </Typography>
           <Grid container spacing={2}>
             {Object.entries(layerDescriptions).map(([layer, description]) => (
-              <Grid item xs={12} sm={6} md={3} key={layer}>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }} key={layer}>
                 <Card sx={{ 
                   border: `2px solid ${layerColors[layer]}`,
                   backgroundColor: `${layerColors[layer]}10`
@@ -458,7 +458,7 @@ export default function TraitsView() {
       ) : (
         <Grid container spacing={3}>
           {filteredTraits.map((trait) => (
-            <Grid item xs={12} sm={6} md={4} lg={3} key={trait.bit}>
+            <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={trait.bit}>
               <TraitCard
                 trait={trait}
                 onUploadImage={handleUploadImage}

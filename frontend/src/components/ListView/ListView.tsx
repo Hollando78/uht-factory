@@ -67,6 +67,68 @@ interface EntityMetrics {
 // Cache for computed metrics
 const metricsCache = new Map<string, EntityMetrics>();
 
+// Cache for API data (persists across navigation)
+let entitiesCache: { data: UHTEntity[]; timestamp: number } | null = null;
+let traitsCache: { data: Trait[]; timestamp: number } | null = null;
+const CACHE_TTL = 60000; // 1 minute cache
+
+// LocalStorage keys for filter persistence
+const STORAGE_KEYS = {
+  searchQuery: 'listView_searchQuery',
+  selectedLayers: 'listView_selectedLayers',
+  minTraitCount: 'listView_minTraitCount',
+  traitFilter: 'listView_traitFilter',
+  hexFilters: 'listView_hexFilters'
+};
+
+// Hex filter per layer (Physical, Functional, Abstract, Social)
+type HexFilters = {
+  Physical: string;
+  Functional: string;
+  Abstract: string;
+  Social: string;
+};
+
+const DEFAULT_HEX_FILTERS: HexFilters = { Physical: '', Functional: '', Abstract: '', Social: '' };
+
+// Load persisted filters from localStorage
+const loadPersistedFilters = () => {
+  try {
+    const searchQuery = localStorage.getItem(STORAGE_KEYS.searchQuery) || '';
+    const selectedLayers = JSON.parse(localStorage.getItem(STORAGE_KEYS.selectedLayers) || '[]');
+    const minTraitCount = localStorage.getItem(STORAGE_KEYS.minTraitCount);
+    const traitFilter = JSON.parse(localStorage.getItem(STORAGE_KEYS.traitFilter) || 'null');
+    const hexFilters = JSON.parse(localStorage.getItem(STORAGE_KEYS.hexFilters) || 'null');
+
+    return {
+      searchQuery,
+      selectedLayers: Array.isArray(selectedLayers) ? selectedLayers : [],
+      minTraitCount: minTraitCount ? parseInt(minTraitCount) : '',
+      traitFilter: traitFilter || null,
+      hexFilters: hexFilters || DEFAULT_HEX_FILTERS
+    };
+  } catch {
+    return { searchQuery: '', selectedLayers: [], minTraitCount: '', traitFilter: null, hexFilters: DEFAULT_HEX_FILTERS };
+  }
+};
+
+// Save filters to localStorage
+const saveFilter = (key: keyof typeof STORAGE_KEYS, value: any) => {
+  try {
+    if (typeof value === 'object') {
+      localStorage.setItem(STORAGE_KEYS[key], JSON.stringify(value));
+    } else {
+      localStorage.setItem(STORAGE_KEYS[key], String(value));
+    }
+  } catch {
+    // Ignore storage errors
+  }
+};
+
+const clearPersistedFilters = () => {
+  Object.values(STORAGE_KEYS).forEach(key => localStorage.removeItem(key));
+};
+
 const computeEntityMetrics = (uhtCode: string): EntityMetrics => {
   if (!uhtCode || uhtCode.length !== 8) {
     return { dominantLayer: 'Unknown', layerCounts: [0, 0, 0, 0], totalTraits: 0 };
@@ -99,13 +161,45 @@ const getBinaryFromUHT = (uhtCode: string): string => {
   return parseInt(uhtCode, 16).toString(2).padStart(32, '0');
 };
 
+// Layer byte positions in UHT code (each layer is 2 hex chars)
+const LAYER_BYTE_POSITIONS: Record<string, [number, number]> = {
+  Physical: [0, 2],    // chars 0-1
+  Functional: [2, 4],  // chars 2-3
+  Abstract: [4, 6],    // chars 4-5
+  Social: [6, 8]       // chars 6-7
+};
+
+const matchesHexFilters = (uhtCode: string, hexFilters: HexFilters): boolean => {
+  if (!uhtCode || uhtCode.length !== 8) return false;
+  const upperCode = uhtCode.toUpperCase();
+
+  for (const [layer, filter] of Object.entries(hexFilters)) {
+    if (!filter) continue; // Empty filter = don't care
+    const upperFilter = filter.toUpperCase();
+    const [start, end] = LAYER_BYTE_POSITIONS[layer];
+    const layerHex = upperCode.slice(start, end);
+
+    // Support partial match: "A" matches "A0", "A7", "AF", etc.
+    if (!layerHex.startsWith(upperFilter)) {
+      return false;
+    }
+  }
+  return true;
+};
+
+const countActiveHexFilters = (hexFilters: HexFilters): number => {
+  return Object.values(hexFilters).filter(v => v.length > 0).length;
+};
+
 const matchesTraitFilter = (uhtCode: string, filter: TraitFilterState, activeCount: number): boolean => {
   if (activeCount === 0) return true;
   const binary = getBinaryFromUHT(uhtCode);
 
+  // AND logic: all non-X filters must match
   for (const [bit, value] of Object.entries(filter)) {
     if (value === 'X') continue;
-    const bitIndex = 32 - parseInt(bit);
+    // Bit 1 = index 0 (MSB), Bit 32 = index 31 (LSB)
+    const bitIndex = parseInt(bit) - 1;
     const hasTrait = binary[bitIndex] === '1';
     if (value === '1' && !hasTrait) return false;
     if (value === '0' && hasTrait) return false;
@@ -237,19 +331,62 @@ export default function ListView() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Filter state
-  const [searchQuery, setSearchQuery] = useState('');
-  const [deferredSearch, setDeferredSearch] = useState('');
-  const [selectedLayers, setSelectedLayers] = useState<string[]>([]);
-  const [minTraitCount, setMinTraitCount] = useState<number | ''>('');
-  const [traitFilter, setTraitFilter] = useState<TraitFilterState>(() => {
+  // Load persisted filters on initial render
+  const persistedFilters = useMemo(() => loadPersistedFilters(), []);
+  const defaultTraitFilter = useMemo(() => {
     const initial: TraitFilterState = {};
     for (let i = 1; i <= 32; i++) initial[i] = 'X';
     return initial;
-  });
+  }, []);
+
+  // Filter state - initialized from localStorage
+  const [searchQuery, setSearchQueryState] = useState(persistedFilters.searchQuery);
+  const [deferredSearch, setDeferredSearch] = useState(persistedFilters.searchQuery);
+  const [selectedLayers, setSelectedLayersState] = useState<string[]>(persistedFilters.selectedLayers);
+  const [minTraitCount, setMinTraitCountState] = useState<number | ''>(persistedFilters.minTraitCount);
+  const [traitFilter, setTraitFilterState] = useState<TraitFilterState>(
+    persistedFilters.traitFilter || defaultTraitFilter
+  );
   const [traitFilterDialogOpen, setTraitFilterDialogOpen] = useState(false);
   const [sortField] = useState<SortField>('name');
   const [sortDirection] = useState<SortDirection>('asc');
+
+  // Wrapped setters that also persist to localStorage
+  const setSearchQuery = useCallback((value: string) => {
+    setSearchQueryState(value);
+    saveFilter('searchQuery', value);
+  }, []);
+
+  const setSelectedLayers = useCallback((value: string[]) => {
+    setSelectedLayersState(value);
+    saveFilter('selectedLayers', value);
+  }, []);
+
+  const setMinTraitCount = useCallback((value: number | '') => {
+    setMinTraitCountState(value);
+    saveFilter('minTraitCount', value === '' ? '' : value);
+  }, []);
+
+  const setTraitFilter = useCallback((value: TraitFilterState) => {
+    setTraitFilterState(value);
+    saveFilter('traitFilter', value);
+  }, []);
+
+  // Hex filter state
+  const [hexFilters, setHexFiltersState] = useState<HexFilters>(persistedFilters.hexFilters);
+
+  const setHexFilters = useCallback((value: HexFilters) => {
+    setHexFiltersState(value);
+    saveFilter('hexFilters', value);
+  }, []);
+
+  const updateHexFilter = useCallback((layer: keyof HexFilters, value: string) => {
+    // Only allow valid hex characters (0-9, A-F), max 2 chars
+    const cleanValue = value.toUpperCase().replace(/[^0-9A-F]/g, '').slice(0, 2);
+    setHexFilters({ ...hexFilters, [layer]: cleanValue });
+  }, [hexFilters, setHexFilters]);
+
+  const activeHexFilterCount = useMemo(() => countActiveHexFilters(hexFilters), [hexFilters]);
 
   // Debounce search with transition
   useEffect(() => {
@@ -261,13 +398,30 @@ export default function ListView() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (forceRefresh = false) => {
+    const now = Date.now();
+
+    // Check cache first (unless force refresh)
+    if (!forceRefresh && entitiesCache && traitsCache &&
+        now - entitiesCache.timestamp < CACHE_TTL &&
+        now - traitsCache.timestamp < CACHE_TTL) {
+      setEntities(entitiesCache.data);
+      setTraits(traitsCache.data);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       const [entitiesData, traitsData] = await Promise.all([
         entityAPI.getAllEntities(),
         traitsAPI.getAllTraits()
       ]);
+
+      // Update cache
+      entitiesCache = { data: entitiesData, timestamp: now };
+      traitsCache = { data: traitsData.traits || [], timestamp: now };
+
       setEntities(entitiesData);
       setTraits(traitsData.traits || []);
       setError(null);
@@ -288,6 +442,7 @@ export default function ListView() {
     const query = deferredSearch.toLowerCase().trim();
     const hasLayerFilter = selectedLayers.length > 0;
     const hasMinTraits = minTraitCount !== '' && minTraitCount > 0;
+    const hasHexFilters = activeHexFilterCount > 0;
 
     const result: Array<{ entity: UHTEntity; metrics: EntityMetrics; layerColor: string }> = [];
 
@@ -298,6 +453,7 @@ export default function ListView() {
       if (hasLayerFilter && !selectedLayers.includes(metrics.dominantLayer)) continue;
       if (hasMinTraits && metrics.totalTraits < minTraitCount) continue;
       if (!matchesTraitFilter(entity.uht_code, traitFilter, activeTraitFilterCount)) continue;
+      if (hasHexFilters && !matchesHexFilters(entity.uht_code, hexFilters)) continue;
 
       // Search filter (most expensive, do last)
       if (query) {
@@ -327,7 +483,7 @@ export default function ListView() {
     });
 
     return result;
-  }, [entities, deferredSearch, selectedLayers, minTraitCount, traitFilter, activeTraitFilterCount, sortField, sortDirection]);
+  }, [entities, deferredSearch, selectedLayers, minTraitCount, traitFilter, activeTraitFilterCount, hexFilters, activeHexFilterCount, sortField, sortDirection]);
 
   const rowVirtualizer = useVirtualizer({
     count: flatList.length,
@@ -343,19 +499,21 @@ export default function ListView() {
     const cleared: TraitFilterState = {};
     for (let i = 1; i <= 32; i++) cleared[i] = 'X';
     setTraitFilter(cleared);
-  }, []);
+    setHexFilters(DEFAULT_HEX_FILTERS);
+    clearPersistedFilters();
+  }, [setSearchQuery, setSelectedLayers, setMinTraitCount, setTraitFilter, setHexFilters]);
 
   const handleEntityClick = useCallback((uuid: string) => {
     navigate(`/entity/${uuid}`);
   }, [navigate]);
 
-  const hasAnyFilter = searchQuery || selectedLayers.length > 0 || minTraitCount !== '' || activeTraitFilterCount > 0;
+  const hasAnyFilter = searchQuery || selectedLayers.length > 0 || minTraitCount !== '' || activeTraitFilterCount > 0 || activeHexFilterCount > 0;
 
   if (error) {
     return (
       <Box sx={{ p: 3 }}>
         <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
-        <Button onClick={fetchData} startIcon={<RefreshIcon />}>Retry</Button>
+        <Button onClick={() => fetchData(true)} startIcon={<RefreshIcon />}>Retry</Button>
       </Box>
     );
   }
@@ -376,71 +534,176 @@ export default function ListView() {
           {isPending && <CircularProgress size={16} />}
         </Box>
 
-        {/* Filters */}
-        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+        {/* Filters - standardized UI */}
+        <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center' }}>
+          {/* Search */}
           <TextField
             size="small"
             placeholder="Search entities..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            sx={{ minWidth: 200 }}
+            sx={{
+              width: 220,
+              '& .MuiOutlinedInput-root': {
+                height: 36,
+                backgroundColor: 'rgba(255,255,255,0.03)'
+              }
+            }}
             InputProps={{
-              startAdornment: <InputAdornment position="start"><SearchIcon color="action" /></InputAdornment>,
+              startAdornment: <InputAdornment position="start"><SearchIcon sx={{ fontSize: 18, color: 'text.secondary' }} /></InputAdornment>,
               endAdornment: searchQuery && (
                 <InputAdornment position="end">
-                  <IconButton size="small" onClick={() => setSearchQuery('')}><ClearIcon fontSize="small" /></IconButton>
+                  <IconButton size="small" onClick={() => setSearchQuery('')} sx={{ p: 0.5 }}>
+                    <ClearIcon sx={{ fontSize: 16 }} />
+                  </IconButton>
                 </InputAdornment>
               )
             }}
           />
 
-          <FormControl size="small" sx={{ minWidth: 160 }}>
-            <InputLabel>Filter by Layer</InputLabel>
+          <Divider orientation="vertical" flexItem sx={{ mx: 0.5, borderColor: 'rgba(255,255,255,0.1)' }} />
+
+          {/* Layer Filter */}
+          <FormControl size="small" sx={{ minWidth: 140 }}>
+            <InputLabel sx={{ fontSize: '0.85rem' }}>Layer</InputLabel>
             <Select
               multiple
               value={selectedLayers}
               onChange={(e) => setSelectedLayers(e.target.value as string[])}
-              input={<OutlinedInput label="Filter by Layer" />}
+              input={<OutlinedInput label="Layer" />}
+              sx={{
+                height: 36,
+                backgroundColor: selectedLayers.length > 0 ? 'rgba(0, 229, 255, 0.08)' : 'rgba(255,255,255,0.03)',
+                '& .MuiSelect-select': { py: 0.75 }
+              }}
               renderValue={(selected) => (
                 <Box sx={{ display: 'flex', gap: 0.5 }}>
                   {selected.map((layer) => (
                     <Chip key={layer} label={layer.slice(0, 1)} size="small"
-                      sx={{ height: 20, fontSize: '0.7rem', backgroundColor: LAYER_COLORS[layer], color: 'white' }} />
+                      sx={{ height: 18, fontSize: '0.65rem', backgroundColor: LAYER_COLORS[layer], color: 'white' }} />
                   ))}
                 </Box>
               )}
             >
               {LAYERS.map((layer) => (
                 <MenuItem key={layer.name} value={layer.name}>
-                  <Checkbox checked={selectedLayers.includes(layer.name)} />
-                  <Box sx={{ width: 12, height: 12, borderRadius: '50%', backgroundColor: layer.color, mr: 1 }} />
-                  <ListItemText primary={layer.name} />
+                  <Checkbox checked={selectedLayers.includes(layer.name)} size="small" />
+                  <Box sx={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: layer.color, mr: 1 }} />
+                  <ListItemText primary={layer.name} primaryTypographyProps={{ fontSize: '0.85rem' }} />
                 </MenuItem>
               ))}
             </Select>
           </FormControl>
 
+          {/* Min Traits */}
           <TextField
             size="small"
             type="number"
             label="Min Traits"
             value={minTraitCount}
             onChange={(e) => setMinTraitCount(e.target.value === '' ? '' : parseInt(e.target.value))}
-            sx={{ width: 90 }}
+            sx={{
+              width: 100,
+              '& .MuiOutlinedInput-root': {
+                height: 36,
+                backgroundColor: minTraitCount !== '' ? 'rgba(0, 229, 255, 0.08)' : 'rgba(255,255,255,0.03)'
+              },
+              '& .MuiInputLabel-root': { fontSize: '0.85rem' }
+            }}
             inputProps={{ min: 0, max: 32 }}
           />
 
-          <Badge badgeContent={activeTraitFilterCount} color="primary">
-            <Button size="small" variant={activeTraitFilterCount > 0 ? 'contained' : 'outlined'}
-              startIcon={<TuneIcon />} onClick={() => setTraitFilterDialogOpen(true)}>Traits</Button>
+          {/* Traits Filter */}
+          <Badge badgeContent={activeTraitFilterCount} color="primary" sx={{ '& .MuiBadge-badge': { fontSize: '0.65rem', minWidth: 16, height: 16 } }}>
+            <Button
+              size="small"
+              variant={activeTraitFilterCount > 0 ? 'contained' : 'outlined'}
+              startIcon={<TuneIcon sx={{ fontSize: 16 }} />}
+              onClick={() => setTraitFilterDialogOpen(true)}
+              sx={{
+                height: 36,
+                textTransform: 'none',
+                fontSize: '0.85rem',
+                px: 2
+              }}
+            >
+              Traits
+            </Button>
           </Badge>
 
-          {hasAnyFilter && (
-            <Button size="small" startIcon={<ClearIcon />} onClick={clearFilters} variant="outlined" color="secondary">Clear</Button>
-          )}
+          <Divider orientation="vertical" flexItem sx={{ mx: 0.5, borderColor: 'rgba(255,255,255,0.1)' }} />
 
+          {/* Hex Filters per Layer */}
+          <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
+            <Typography variant="caption" sx={{ color: 'text.secondary', mr: 0.5 }}>Hex:</Typography>
+            {LAYERS.map((layer) => (
+              <TextField
+                key={layer.name}
+                size="small"
+                placeholder={layer.name.slice(0, 1)}
+                value={hexFilters[layer.name as keyof HexFilters]}
+                onChange={(e) => updateHexFilter(layer.name as keyof HexFilters, e.target.value)}
+                sx={{
+                  width: 48,
+                  '& .MuiOutlinedInput-root': {
+                    height: 36,
+                    backgroundColor: hexFilters[layer.name as keyof HexFilters]
+                      ? `${layer.color}20`
+                      : 'rgba(255,255,255,0.03)',
+                    borderColor: hexFilters[layer.name as keyof HexFilters] ? layer.color : undefined
+                  },
+                  '& .MuiOutlinedInput-input': {
+                    textAlign: 'center',
+                    fontFamily: 'monospace',
+                    fontSize: '0.85rem',
+                    textTransform: 'uppercase',
+                    p: '8px 4px'
+                  }
+                }}
+                inputProps={{ maxLength: 2 }}
+                title={`${layer.name} layer hex filter (e.g. A7)`}
+              />
+            ))}
+          </Box>
+
+          <Divider orientation="vertical" flexItem sx={{ mx: 0.5, borderColor: 'rgba(255,255,255,0.1)' }} />
+
+          {/* Clear All Filters - always visible */}
+          <Button
+            size="small"
+            startIcon={<ClearIcon sx={{ fontSize: 16 }} />}
+            onClick={clearFilters}
+            variant="outlined"
+            color={hasAnyFilter ? 'error' : 'inherit'}
+            disabled={!hasAnyFilter}
+            sx={{
+              height: 36,
+              textTransform: 'none',
+              fontSize: '0.85rem',
+              px: 2,
+              borderColor: hasAnyFilter ? undefined : 'rgba(255,255,255,0.2)',
+              color: hasAnyFilter ? undefined : 'text.secondary'
+            }}
+          >
+            Clear Filters
+          </Button>
+
+          {/* Refresh */}
           <Box sx={{ ml: 'auto' }}>
-            <IconButton size="small" onClick={fetchData} disabled={loading}><RefreshIcon /></IconButton>
+            <IconButton
+              size="small"
+              onClick={() => fetchData(true)}
+              disabled={loading}
+              sx={{
+                width: 36,
+                height: 36,
+                backgroundColor: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                '&:hover': { backgroundColor: 'rgba(255,255,255,0.08)' }
+              }}
+            >
+              <RefreshIcon sx={{ fontSize: 18 }} />
+            </IconButton>
           </Box>
         </Box>
       </Paper>

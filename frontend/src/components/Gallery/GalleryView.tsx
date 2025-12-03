@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import type { FC, SyntheticEvent } from 'react';
 import {
   Box,
   Card,
@@ -14,7 +15,6 @@ import {
   Dialog,
   DialogContent,
   IconButton,
-  Skeleton,
   Fab
 } from '@mui/material';
 import {
@@ -61,8 +61,15 @@ const layerColors: Record<string, string> = {
 
 const API_BASE_URL = 'http://localhost:8100';
 
+// Helper to get correct image URL (handles both local and external URLs)
+const getImageUrl = (url: string) => {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  return `${API_BASE_URL}${url}`;
+};
+
 // Draggable Card Component
-const DraggableCard: React.FC<{
+const DraggableCard: FC<{
   item: GalleryItem;
   position: CardPosition;
   onPositionChange: (uuid: string, position: Partial<CardPosition>) => void;
@@ -73,7 +80,6 @@ const DraggableCard: React.FC<{
   const cardRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [imageAspectRatio, setImageAspectRatio] = useState(1);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.detail === 2) return; // Ignore double clicks
@@ -111,10 +117,8 @@ const DraggableCard: React.FC<{
     }
   }, [isDragging, handleMouseMove, handleMouseUp]);
 
-  const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    const img = e.target as HTMLImageElement;
-    const ratio = img.naturalWidth / img.naturalHeight;
-    setImageAspectRatio(ratio);
+  const handleImageLoad = (_e: SyntheticEvent<HTMLImageElement>) => {
+    // Image loaded successfully
   };
 
   return (
@@ -142,7 +146,7 @@ const DraggableCard: React.FC<{
     >
       <CardMedia
         component="img"
-        image={`${API_BASE_URL}${item.image_url}`}
+        image={getImageUrl(item.image_url)}
         alt={item.name}
         sx={{
           height: position.height * 0.7,
@@ -269,7 +273,7 @@ const ImagePreviewDialog: React.FC<{
         </IconButton>
         
         <img
-          src={`${API_BASE_URL}${item.image_url}`}
+          src={getImageUrl(item.image_url)}
           alt={item.name}
           style={{
             maxWidth: '90vw',
@@ -326,7 +330,7 @@ export default function GalleryView() {
   const [error, setError] = useState<string | null>(null);
   const [layerFilter, setLayerFilter] = useState<string>('');
   const [cardPositions, setCardPositions] = useState<Record<string, CardPosition>>({});
-  const [selectedCard, setSelectedCard] = useState<string | null>(null);
+  const [, setSelectedCard] = useState<string | null>(null);
   const [previewItem, setPreviewItem] = useState<GalleryItem | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'freeform'>('grid');
   const [nextZIndex, setNextZIndex] = useState(1000);
@@ -340,6 +344,7 @@ export default function GalleryView() {
     try {
       setLoading(true);
       const url = new URL(`${API_BASE_URL}/api/v1/images/gallery`);
+      url.searchParams.set('limit', '500');  // Fetch up to 500 items
       if (layer) {
         url.searchParams.set('layer_filter', layer);
       }
@@ -350,7 +355,9 @@ export default function GalleryView() {
       }
       
       const data: GalleryResponse = await response.json();
-      setGallery(data.gallery || []);
+      // Shuffle the gallery items randomly
+      const shuffled = [...(data.gallery || [])].sort(() => Math.random() - 0.5);
+      setGallery(shuffled);
       setError(null);
     } catch (err) {
       console.error('Gallery fetch error:', err);

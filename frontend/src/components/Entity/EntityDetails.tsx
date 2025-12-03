@@ -343,6 +343,139 @@ const LayerSection: React.FC<{
   );
 };
 
+// Similar Entities Card Component
+const SimilarEntitiesCard: React.FC<{
+  entities: any[];
+  loading: boolean;
+  onEntityClick: (uuid: string) => void;
+}> = ({ entities, loading, onEntityClick }) => {
+  const getDominantLayer = (uhtCode: string): string => {
+    if (!uhtCode || uhtCode.length !== 8) return 'Physical';
+    try {
+      const physical = uhtCode.slice(0, 2);
+      const functional = uhtCode.slice(2, 4);
+      const abstract = uhtCode.slice(4, 6);
+      const social = uhtCode.slice(6, 8);
+
+      const counts: Record<string, number> = {
+        Physical: (parseInt(physical, 16)).toString(2).split('1').length - 1,
+        Functional: (parseInt(functional, 16)).toString(2).split('1').length - 1,
+        Abstract: (parseInt(abstract, 16)).toString(2).split('1').length - 1,
+        Social: (parseInt(social, 16)).toString(2).split('1').length - 1
+      };
+
+      return Object.entries(counts).reduce((a, b) => a[1] > b[1] ? a : b)[0];
+    } catch {
+      return 'Physical';
+    }
+  };
+
+  const getLayerColor = (layer: string): string => {
+    const colors: Record<string, string> = {
+      Physical: '#FF6B35',
+      Functional: '#00E5FF',
+      Abstract: '#9C27B0',
+      Social: '#4CAF50'
+    };
+    return colors[layer] || '#FF6B35';
+  };
+
+  return (
+    <Card sx={{ mt: 3 }}>
+      <CardContent>
+        <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <SimilarIcon color="primary" />
+          Similar Entities
+        </Typography>
+
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
+            <CircularProgress size={24} />
+          </Box>
+        ) : entities.length === 0 ? (
+          <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
+            No similar entities found (threshold: 28+ matching bits)
+          </Typography>
+        ) : (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            {entities.map((entity, index) => {
+              const dominantLayer = getDominantLayer(entity.uht_code);
+              const layerColor = getLayerColor(dominantLayer);
+
+              return (
+                <Paper
+                  key={entity.uuid || index}
+                  onClick={() => onEntityClick(entity.uuid)}
+                  sx={{
+                    p: 1.5,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2,
+                    border: `1px solid ${layerColor}30`,
+                    '&:hover': {
+                      backgroundColor: `${layerColor}10`,
+                      borderColor: `${layerColor}50`
+                    },
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  <Box
+                    sx={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: '50%',
+                      backgroundColor: layerColor,
+                      flexShrink: 0
+                    }}
+                  />
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      flex: 1,
+                      fontWeight: 500,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    {entity.name}
+                  </Typography>
+                  <Chip
+                    label={entity.uht_code}
+                    size="small"
+                    sx={{
+                      fontFamily: 'monospace',
+                      fontSize: '0.7rem',
+                      backgroundColor: `${layerColor}20`,
+                      color: layerColor,
+                      fontWeight: 600
+                    }}
+                  />
+                  <Tooltip title={`${entity.similarity_score}/32 bits match`}>
+                    <Chip
+                      label={`${Math.round((entity.similarity_score / 32) * 100)}%`}
+                      size="small"
+                      sx={{
+                        minWidth: 50,
+                        backgroundColor: entity.similarity_score >= 30 ? '#4CAF5030' :
+                                        entity.similarity_score >= 28 ? '#FF980030' : '#75757530',
+                        color: entity.similarity_score >= 30 ? '#4CAF50' :
+                               entity.similarity_score >= 28 ? '#FF9800' : '#757575',
+                        fontWeight: 600
+                      }}
+                    />
+                  </Tooltip>
+                </Paper>
+              );
+            })}
+          </Box>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
 export default function EntityDetails() {
   const { uuid } = useParams<{ uuid: string }>();
   const navigate = useNavigate();
@@ -356,6 +489,8 @@ export default function EntityDetails() {
   const [imageError, setImageError] = useState(false);
   const [generatingImage, setGeneratingImage] = useState(false);
   const [imageGenError, setImageGenError] = useState<string | null>(null);
+  const [similarEntities, setSimilarEntities] = useState<any[]>([]);
+  const [loadingSimilar, setLoadingSimilar] = useState(false);
 
   const fetchEntity = async () => {
     if (!uuid) return;
@@ -366,9 +501,21 @@ export default function EntityDetails() {
         entityAPI.getEntity(uuid),
         traitsAPI.getAllTraits()
       ]);
-      setEntity(entityData as EntityData);
+      setEntity(entityData as unknown as EntityData);
       setAllTraits(traitsData.traits || []);
       setError(null);
+
+      // Fetch similar entities in background
+      setLoadingSimilar(true);
+      try {
+        const similarData = await entityAPI.findSimilarEntities(uuid, 28);
+        setSimilarEntities(similarData.similar_entities?.slice(0, 10) || []);
+      } catch (similarErr) {
+        console.error('Failed to fetch similar entities:', similarErr);
+        setSimilarEntities([]);
+      } finally {
+        setLoadingSimilar(false);
+      }
     } catch (err) {
       console.error('Failed to fetch entity:', err);
       setError(err instanceof Error ? err.message : 'Failed to load entity');
@@ -466,6 +613,7 @@ export default function EntityDetails() {
   const getImageUrl = () => {
     if (!entity?.image_url) return null;
     if (entity.image_url.startsWith('data:')) return entity.image_url;
+    if (entity.image_url.startsWith('http://') || entity.image_url.startsWith('https://')) return entity.image_url;
     return `${API_BASE_URL}${entity.image_url}`;
   };
 
@@ -655,6 +803,13 @@ export default function EntityDetails() {
                 </Box>
               </CardContent>
             </Card>
+
+            {/* Similar Entities */}
+            <SimilarEntitiesCard
+              entities={similarEntities}
+              loading={loadingSimilar}
+              onEntityClick={(uuid) => navigate(`/entity/${uuid}`)}
+            />
           </Grid>
 
           {/* Right Column - Traits */}

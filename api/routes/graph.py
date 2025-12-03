@@ -177,28 +177,38 @@ async def get_full_graph(
 ):
     """
     Get complete trait-centric graph data for 3D visualization.
-    
+
     Returns a structured graph with:
     - 4 layer nodes (Physical, Functional, Abstract, Social)
     - 32 trait nodes (connected to their respective layers)
     - Entity nodes (connected only to traits they possess)
-    
+
     This creates a meaningful visualization of the UHT taxonomy
     instead of arbitrary similarity connections.
     """
     try:
-        # Get nodes and links in parallel
+        # Get nodes first
         nodes_response = await get_graph_nodes(limit=node_limit, neo4j_client=neo4j_client)
-        links_response = await get_graph_links(similarity_threshold=similarity_threshold, neo4j_client=neo4j_client)
-        
         nodes = nodes_response["nodes"]
-        links = links_response["links"]
-        
+
+        # Build set of valid node IDs
+        valid_node_ids = {n["id"] for n in nodes}
+
+        # Get links
+        links_response = await get_graph_links(similarity_threshold=similarity_threshold, neo4j_client=neo4j_client)
+        all_links = links_response["links"]
+
+        # Filter links to only include those where both source and target exist in nodes
+        links = [
+            link for link in all_links
+            if link["source"] in valid_node_ids and link["target"] in valid_node_ids
+        ]
+
         # Count different node types for stats
         layer_nodes = [n for n in nodes if n.get("type") == "layer"]
         trait_nodes = [n for n in nodes if n.get("type") == "trait"]
         entity_nodes = [n for n in nodes if n.get("type") == "entity"]
-        
+
         return {
             "nodes": nodes,
             "links": links,
@@ -211,7 +221,7 @@ async def get_full_graph(
                 "entity_limit": node_limit
             }
         }
-        
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get full graph: {str(e)}")
 

@@ -41,3 +41,9 @@ htmlcov/
 .coverage
 llm_api_key
 gemini_api_key
+
+# Data files (generated/temporary)
+data/wikidata_*
+data/*_progress.json
+data/*_results.json
+!data/meta_classes.json

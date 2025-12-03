@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Box,
-  Grid,
   Card,
   CardContent,
   Typography,
@@ -9,8 +8,6 @@ import {
   Button,
   Paper,
   Chip,
-  Avatar,
-  Divider,
   Accordion,
   AccordionSummary,
   AccordionDetails,
@@ -19,14 +16,12 @@ import {
   FormControlLabel,
   Switch
 } from '@mui/material';
+import Grid from '@mui/material/Grid';
 import {
   ExpandMore as ExpandMoreIcon,
   Psychology as BrainIcon,
-  Speed as SpeedIcon,
-  Image as ImageIcon,
   AutoAwesome as AutoIcon,
-  CheckCircle as CheckIcon,
-  Warning as WarningIcon
+  CheckCircle as CheckIcon
 } from '@mui/icons-material';
 import { useApp } from '../../context/AppContext';
 import API from '../../services/api';
@@ -98,7 +93,7 @@ export default function ClassificationView() {
       };
 
       const response = await API.classification.classifyEntity(request);
-      const entity = response.entity || response.data;
+      const entity = (response as any).entity || (response as any).data || response;
       
       setClassificationResult(entity);
       actions.setSelectedEntity(entity);
@@ -119,7 +114,7 @@ export default function ClassificationView() {
     <Box sx={{ height: '100%', overflow: 'auto', p: 3 }}>
       <Grid container spacing={3}>
         {/* Input Panel */}
-        <Grid item xs={12} md={6}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
@@ -255,7 +250,7 @@ export default function ClassificationView() {
         </Grid>
 
         {/* Results Panel */}
-        <Grid item xs={12} md={6}>
+        <Grid size={{ xs: 12, md: 6 }}>
           {classificationResult ? (
             <ClassificationResults entity={classificationResult} />
           ) : (
@@ -284,7 +279,6 @@ interface ClassificationResultsProps {
 
 function ClassificationResults({ entity }: ClassificationResultsProps) {
   const activeTraits = entity.trait_evaluations?.filter(t => t.applicable) || [];
-  const inactiveTraits = entity.trait_evaluations?.filter(t => !t.applicable) || [];
 
   const layerColors = {
     Physical: '#FF6B35',
@@ -324,7 +318,7 @@ function ClassificationResults({ entity }: ClassificationResultsProps) {
             const activeCount = binary.split('1').length - 1;
             
             return (
-              <Grid item xs={6} sm={3} key={layer}>
+              <Grid size={{ xs: 6, sm: 3 }} key={layer}>
                 <Paper sx={{ p: 1.5, textAlign: 'center', bgcolor: 'background.default' }}>
                   <Typography variant="subtitle2" sx={{ color: layerColors[layer as keyof typeof layerColors] }}>
                     {layer}

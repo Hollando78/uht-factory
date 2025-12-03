@@ -70,7 +70,7 @@ export const entityAPI = {
 
   getAllEntities: async (): Promise<UHTEntity[]> => {
     const response = await api.get('/entities/', {
-      params: { limit: 5000 }
+      params: { limit: 50000 }
     });
     return response.data.entities || [];
   }

@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   Drawer,
   List,
@@ -17,9 +16,10 @@ import {
   Compare as CompareIcon,
   PhotoLibrary as GalleryIcon,
   Hub as NodeIcon,
-  Speed as DashboardIcon,
   Category as TraitsIcon,
-  TableChart as ListIcon
+  TableChart as ListIcon,
+  Analytics as AnalyticsIcon,
+  AutoAwesome as MetaClassIcon
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
@@ -39,6 +39,12 @@ const navItems: NavItem[] = [
     label: 'Canonical Traits',
     icon: <TraitsIcon />,
     description: 'View the 32 fundamental traits'
+  },
+  {
+    path: '/meta-classes',
+    label: 'Meta-Classes',
+    icon: <MetaClassIcon />,
+    description: 'Emergent trait archetypes'
   },
   {
     path: '/classify',
@@ -69,6 +75,12 @@ const navItems: NavItem[] = [
     label: 'Gallery',
     icon: <GalleryIcon />,
     description: 'Browse entity images'
+  },
+  {
+    path: '/analytics',
+    label: 'Trait Analytics',
+    icon: <AnalyticsIcon />,
+    description: 'Statistics & co-occurrence'
   }
 ];
 
