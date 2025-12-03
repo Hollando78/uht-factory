@@ -107,6 +107,15 @@ export const entityAPI = {
       params: { limit: 50000 }
     });
     return response.data.entities || [];
+  },
+
+  updateEntity: async (uuid: string, update: {
+    name?: string;
+    description?: string;
+    additional_context?: string;
+  }): Promise<UHTEntity> => {
+    const response = await api.patch(`/entities/${uuid}`, update);
+    return response.data;
   }
 };
 

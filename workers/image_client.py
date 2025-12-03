@@ -10,14 +10,15 @@ import uuid
 
 logger = logging.getLogger(__name__)
 
-# UHT Visual Identity - Painterly Style
-UHT_STYLE_PREFIX = """Painterly gouache illustration. Soft brushstrokes, visible texture,
-rich saturated colors on warm cream paper background. Hand-crafted artistic feel like
-vintage scientific illustrations or children's book art. Warm, inviting, slightly whimsical."""
+# UHT Visual Identity - Clean, realistic illustration style
+UHT_STYLE_PREFIX = """Clean, detailed illustration in a realistic style.
+Natural lighting, accurate proportions, rich colors. Like a high-quality
+encyclopedia or nature documentary still. Clear, informative, visually appealing."""
 
 UHT_NEGATIVE = """Do NOT include any text, labels, words, letters, numbers, watermarks,
 signatures, captions, UI elements, diagrams, or infographics. No writing of any kind.
-Avoid photorealistic rendering, harsh digital edges, or generic 3D renders."""
+Avoid surreal distortions, abstract shapes, psychedelic effects, or dream-like imagery.
+No floating objects, impossible physics, or fantasy elements unless the subject requires it."""
 
 
 def is_physical_entity(uht_code: str) -> bool:
@@ -36,30 +37,33 @@ def build_uht_image_prompt(entity_name: str, description: str = "", uht_code: st
     """
     Build a UHT-styled image prompt.
 
-    Physical entities (high physical traits) -> literal object depiction
-    Conceptual entities (low physical traits) -> artistic interpretation
+    Physical entities -> literal, realistic depiction
+    Conceptual entities -> concrete scene showing the concept in action
     """
-    # Truncate description to first sentence or 100 chars
+    # Truncate description to first sentence or 150 chars for more context
     brief_desc = ""
     if description:
-        brief_desc = description.split('.')[0][:100].strip()
+        brief_desc = description.split('.')[0][:150].strip()
         if brief_desc and not brief_desc.endswith('.'):
             brief_desc += '.'
 
     if is_physical_entity(uht_code):
-        # Tangible objects: show the actual thing
-        subject = f"A {entity_name}."
+        # Tangible objects: show the actual thing realistically
+        subject = f"A realistic depiction of: {entity_name}."
         if brief_desc:
             subject += f" {brief_desc}"
-        composition = """Show the object itself against a simple warm-toned background.
-Center composition, gentle shadows, artistic but clearly recognizable."""
+        composition = """Show this subject clearly and accurately. Use a clean,
+simple background that doesn't distract. The subject should be immediately
+recognizable and true to life. Good lighting, natural colors."""
     else:
-        # Abstract concepts: artistic interpretation
-        subject = f'An artistic interpretation of the concept "{entity_name}".'
+        # Abstract concepts: show a concrete scene that demonstrates the concept
+        subject = f"A scene depicting the concept of {entity_name} in action."
         if brief_desc:
-            subject += f" {brief_desc}"
-        composition = """Create a symbolic, evocative composition capturing the essence of this concept.
-Use visual metaphors, flowing forms, and expressive colors. Abstract but emotionally resonant."""
+            subject += f" Context: {brief_desc}"
+        composition = """Show real people, places, or objects that illustrate this concept.
+Use a specific, concrete scenario rather than abstract symbolism.
+The viewer should understand what the concept means by looking at the scene.
+Grounded in reality, like a documentary photograph or realistic illustration."""
 
     return f"{UHT_STYLE_PREFIX}\n\n{subject}\n\n{composition}\n\n{UHT_NEGATIVE}"
 

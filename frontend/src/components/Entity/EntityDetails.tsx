@@ -28,9 +28,11 @@ import {
   Code as CodeIcon,
   Category as TraitIcon,
   CompareArrows as SimilarIcon,
-  Refresh as RefreshIcon
+  Refresh as RefreshIcon,
+  AutoAwesome as PreprocessIcon,
+  Psychology as ClassifyIcon
 } from '@mui/icons-material';
-import { entityAPI, traitsAPI, imageAPI, getApiKey } from '../../services/api';
+import { entityAPI, traitsAPI, imageAPI, preprocessAPI, classificationAPI, getApiKey } from '../../services/api';
 import { useMobile } from '../../context/MobileContext';
 import type { Trait } from '../../types';
 
@@ -559,6 +561,18 @@ export default function EntityDetails() {
   const [imageGenError, setImageGenError] = useState<string | null>(null);
   const [similarEntities, setSimilarEntities] = useState<any[]>([]);
   const [loadingSimilar, setLoadingSimilar] = useState(false);
+  const [reprocessing, setReprocessing] = useState(false);
+  const [reclassifying, setReclassifying] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+  const [preprocessResult, setPreprocessResult] = useState<{
+    suggested_name: string;
+    suggested_description: string;
+    additional_context: string;
+    confidence: number;
+    reasoning: string;
+  } | null>(null);
+  const [acceptingPreprocess, setAcceptingPreprocess] = useState(false);
 
   const fetchEntity = async () => {
     if (!uuid) return;
@@ -638,6 +652,117 @@ export default function EntityDetails() {
       setImageGenError(errorMessage);
     } finally {
       setGeneratingImage(false);
+    }
+  };
+
+  const handleReprocess = async () => {
+    if (!entity?.name) return;
+
+    const apiKey = getApiKey();
+    if (!apiKey) {
+      setActionError('API key required. Please configure your API key in Settings.');
+      return;
+    }
+
+    setReprocessing(true);
+    setActionError(null);
+    setActionSuccess(null);
+    setPreprocessResult(null);
+
+    try {
+      const result = await preprocessAPI.preprocessEntity(entity.name);
+      setPreprocessResult({
+        suggested_name: result.suggested_name,
+        suggested_description: result.suggested_description,
+        additional_context: result.additional_context,
+        confidence: result.confidence,
+        reasoning: result.reasoning
+      });
+    } catch (err) {
+      console.error('Reprocessing failed:', err);
+      const errorMessage = (err as any)?.response?.data?.detail ||
+                          (err instanceof Error ? err.message : 'Failed to reprocess entity');
+      setActionError(errorMessage);
+    } finally {
+      setReprocessing(false);
+    }
+  };
+
+  const handleAcceptPreprocess = async () => {
+    if (!preprocessResult || !entity?.uuid) return;
+
+    setAcceptingPreprocess(true);
+    setActionError(null);
+
+    try {
+      // First update the entity with suggested name, description, and context
+      await entityAPI.updateEntity(entity.uuid, {
+        name: preprocessResult.suggested_name,
+        description: preprocessResult.suggested_description,
+        additional_context: preprocessResult.additional_context
+      });
+
+      // Then re-classify with the updated info (optional but keeps classification in sync)
+      await classificationAPI.classifyEntity({
+        entity: {
+          name: preprocessResult.suggested_name,
+          description: preprocessResult.suggested_description
+        },
+        use_cache: false,
+        detailed: true,
+        generate_image: false,
+        generate_embedding: true
+      });
+
+      // Refresh entity data
+      await fetchEntity();
+      setPreprocessResult(null);
+      setActionSuccess(`Entity updated: "${preprocessResult.suggested_name}"`);
+    } catch (err) {
+      console.error('Accept preprocessing failed:', err);
+      const errorMessage = (err as any)?.response?.data?.detail ||
+                          (err instanceof Error ? err.message : 'Failed to apply preprocessing suggestions');
+      setActionError(errorMessage);
+    } finally {
+      setAcceptingPreprocess(false);
+    }
+  };
+
+  const handleReclassify = async () => {
+    if (!entity?.name) return;
+
+    const apiKey = getApiKey();
+    if (!apiKey) {
+      setActionError('API key required. Please configure your API key in Settings.');
+      return;
+    }
+
+    setReclassifying(true);
+    setActionError(null);
+    setActionSuccess(null);
+
+    try {
+      const result = await classificationAPI.classifyEntity({
+        entity: {
+          name: entity.name,
+          description: entity.description
+        },
+        use_cache: false,
+        detailed: true,
+        generate_image: false,
+        generate_embedding: true
+      });
+
+      // Refresh entity data to get the new classification
+      await fetchEntity();
+      setActionSuccess('Re-classification complete! Entity updated.');
+    } catch (err) {
+      console.error('Reclassification failed:', err);
+      const errorMessage = (err as any)?.response?.data?.detail ||
+                          (err instanceof Error ? err.message : 'Failed to reclassify entity');
+      setActionError(errorMessage);
+    } finally {
+      setReclassifying(false);
     }
   };
 
@@ -804,6 +929,38 @@ export default function EntityDetails() {
                       </IconButton>
                     </span>
                   </Tooltip>
+                  <Tooltip title="Re-process (AI Enhancement)">
+                    <span>
+                      <IconButton
+                        size="small"
+                        onClick={handleReprocess}
+                        disabled={reprocessing || reclassifying}
+                        sx={{ ml: 0.5 }}
+                      >
+                        {reprocessing ? (
+                          <CircularProgress size={20} />
+                        ) : (
+                          <PreprocessIcon sx={{ color: '#FF9800' }} />
+                        )}
+                      </IconButton>
+                    </span>
+                  </Tooltip>
+                  <Tooltip title="Re-classify Entity">
+                    <span>
+                      <IconButton
+                        size="small"
+                        onClick={handleReclassify}
+                        disabled={reprocessing || reclassifying}
+                        sx={{ ml: 0.5 }}
+                      >
+                        {reclassifying ? (
+                          <CircularProgress size={20} />
+                        ) : (
+                          <ClassifyIcon sx={{ color: '#9C27B0' }} />
+                        )}
+                      </IconButton>
+                    </span>
+                  </Tooltip>
                 </Box>
 
                 {/* Image generation error */}
@@ -811,6 +968,76 @@ export default function EntityDetails() {
                   <Alert severity="error" sx={{ mb: 2 }} onClose={() => setImageGenError(null)}>
                     {imageGenError}
                   </Alert>
+                )}
+
+                {/* Action error/success */}
+                {actionError && (
+                  <Alert severity="error" sx={{ mb: 2 }} onClose={() => setActionError(null)}>
+                    {actionError}
+                  </Alert>
+                )}
+                {actionSuccess && (
+                  <Alert severity="success" sx={{ mb: 2 }} onClose={() => setActionSuccess(null)}>
+                    {actionSuccess}
+                  </Alert>
+                )}
+
+                {/* Preprocessing suggestions panel */}
+                {preprocessResult && (
+                  <Paper sx={{
+                    mb: 2,
+                    p: 2,
+                    border: '1px solid #FF9800',
+                    backgroundColor: 'rgba(255, 152, 0, 0.08)'
+                  }}>
+                    <Typography variant="subtitle2" sx={{ color: '#FF9800', mb: 1.5, fontWeight: 600 }}>
+                      AI Preprocessing Suggestions ({Math.round(preprocessResult.confidence * 100)}% confidence)
+                    </Typography>
+
+                    <Box sx={{ mb: 1.5 }}>
+                      <Typography variant="caption" color="text.secondary">Suggested Name:</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                        {preprocessResult.suggested_name}
+                      </Typography>
+                    </Box>
+
+                    <Box sx={{ mb: 1.5 }}>
+                      <Typography variant="caption" color="text.secondary">Suggested Description:</Typography>
+                      <Typography variant="body2" sx={{ fontSize: '0.85rem' }}>
+                        {preprocessResult.suggested_description}
+                      </Typography>
+                    </Box>
+
+                    {preprocessResult.reasoning && (
+                      <Box sx={{ mb: 1.5 }}>
+                        <Typography variant="caption" color="text.secondary">Reasoning:</Typography>
+                        <Typography variant="body2" sx={{ fontSize: '0.8rem', fontStyle: 'italic', color: 'text.secondary' }}>
+                          {preprocessResult.reasoning}
+                        </Typography>
+                      </Box>
+                    )}
+
+                    <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
+                      <Button
+                        size="small"
+                        variant="contained"
+                        color="warning"
+                        onClick={handleAcceptPreprocess}
+                        disabled={acceptingPreprocess}
+                        startIcon={acceptingPreprocess ? <CircularProgress size={16} /> : <CheckIcon />}
+                      >
+                        {acceptingPreprocess ? 'Applying...' : 'Accept & Re-classify'}
+                      </Button>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        onClick={() => setPreprocessResult(null)}
+                        disabled={acceptingPreprocess}
+                      >
+                        Dismiss
+                      </Button>
+                    </Box>
+                  </Paper>
                 )}
 
                 {/* Stats */}

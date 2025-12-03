@@ -1,10 +1,19 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 from typing import Optional, List, Any, Dict
+from pydantic import BaseModel
 import os
 from neo4j.time import DateTime as Neo4jDateTime
 
 from models.entity import EntitySearch
 from db.neo4j_client import Neo4jClient
+from api.middleware.api_key_auth import require_classify
+
+
+class EntityUpdate(BaseModel):
+    """Request model for updating an entity."""
+    name: Optional[str] = None
+    description: Optional[str] = None
+    additional_context: Optional[str] = None
 
 
 def serialize_entity(entity: Dict[str, Any]) -> Dict[str, Any]:
@@ -122,21 +131,78 @@ async def delete_entity(uuid: str):
     """Delete an entity (admin only)"""
     # Would implement auth check here
     neo4j = await get_neo4j_client()
-    
+
     try:
         query = """
         MATCH (e:Entity {uuid: $uuid})
         DETACH DELETE e
         RETURN count(e) as deleted
         """
-        
+
         async with neo4j.driver.session() as session:
             result = await session.run(query, uuid=uuid)
             record = await result.single()
-            
+
             if record["deleted"] == 0:
                 raise HTTPException(status_code=404, detail="Entity not found")
-            
+
             return {"message": f"Entity {uuid} deleted"}
+    finally:
+        await neo4j.close()
+
+
+@router.patch("/{uuid}")
+async def update_entity(
+    uuid: str,
+    update: EntityUpdate,
+    key_data: dict = Depends(require_classify)
+):
+    """
+    Update an entity's name, description, or additional context.
+
+    **Requires API key with 'classify' scope.**
+
+    Only provided fields will be updated. Null fields are ignored.
+    """
+    neo4j = await get_neo4j_client()
+
+    try:
+        # Build dynamic SET clause for only provided fields
+        set_clauses = []
+        params = {"uuid": uuid}
+
+        if update.name is not None:
+            set_clauses.append("e.name = $name")
+            params["name"] = update.name
+
+        if update.description is not None:
+            set_clauses.append("e.description = $description")
+            params["description"] = update.description
+
+        if update.additional_context is not None:
+            set_clauses.append("e.additional_context = $additional_context")
+            params["additional_context"] = update.additional_context
+
+        if not set_clauses:
+            raise HTTPException(status_code=400, detail="No fields to update")
+
+        # Always update the updated_at timestamp
+        set_clauses.append("e.updated_at = datetime()")
+
+        query = f"""
+        MATCH (e:Entity {{uuid: $uuid}})
+        SET {', '.join(set_clauses)}
+        RETURN e
+        """
+
+        async with neo4j.driver.session() as session:
+            result = await session.run(query, **params)
+            record = await result.single()
+
+            if not record:
+                raise HTTPException(status_code=404, detail="Entity not found")
+
+            entity = dict(record["e"])
+            return serialize_entity(entity)
     finally:
         await neo4j.close()
