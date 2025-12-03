@@ -1,7 +1,8 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { CssBaseline, Box } from '@mui/material';
+import { CssBaseline, Box, Drawer, useMediaQuery } from '@mui/material';
 import { AppProvider } from './context/AppContext';
+import { MobileProvider, useMobile } from './context/MobileContext';
 import Header from './components/Layout/Header';
 import Sidebar from './components/Layout/Sidebar';
 import TraitsView from './components/Traits/TraitsView';
@@ -14,7 +15,7 @@ import GalleryView from './components/Gallery/GalleryView';
 import EntityDetails from './components/Entity/EntityDetails';
 import TraitAnalytics from './components/Analytics/TraitAnalytics';
 
-// Dark theme optimized for graph visualization
+// Dark theme optimized for graph visualization with responsive typography
 const darkTheme = createTheme({
   palette: {
     mode: 'dark',
@@ -39,10 +40,36 @@ const darkTheme = createTheme({
       fontSize: '2rem',
       fontWeight: 600,
       color: '#00E5FF',
+      '@media (max-width:600px)': {
+        fontSize: '1.5rem',
+      },
     },
     h2: {
       fontSize: '1.5rem',
       fontWeight: 500,
+      '@media (max-width:600px)': {
+        fontSize: '1.25rem',
+      },
+    },
+    h3: {
+      '@media (max-width:600px)': {
+        fontSize: '1.1rem',
+      },
+    },
+    h4: {
+      '@media (max-width:600px)': {
+        fontSize: '1rem',
+      },
+    },
+    h5: {
+      '@media (max-width:600px)': {
+        fontSize: '0.95rem',
+      },
+    },
+    h6: {
+      '@media (max-width:600px)': {
+        fontSize: '0.9rem',
+      },
     },
   },
   components: {
@@ -51,6 +78,15 @@ const darkTheme = createTheme({
         root: {
           textTransform: 'none',
           borderRadius: 8,
+          minHeight: 44, // Touch-friendly
+        },
+      },
+    },
+    MuiIconButton: {
+      styleOverrides: {
+        root: {
+          minWidth: 44,
+          minHeight: 44,
         },
       },
     },
@@ -63,8 +99,89 @@ const darkTheme = createTheme({
         },
       },
     },
+    MuiTextField: {
+      styleOverrides: {
+        root: {
+          '& .MuiInputBase-root': {
+            minHeight: 48, // Touch-friendly input
+          },
+        },
+      },
+    },
   },
 });
+
+const SIDEBAR_WIDTH = 240;
+
+// Inner app component that uses mobile context
+function AppContent() {
+  const { isMobile, isTablet, drawerOpen, closeDrawer } = useMobile();
+  const showDrawer = isMobile || isTablet;
+
+  return (
+    <Box sx={{
+      display: 'flex',
+      height: '100dvh', // Use dynamic viewport height for mobile
+      overflow: 'hidden'
+    }}>
+      {/* Desktop Sidebar - always visible */}
+      {!showDrawer && <Sidebar />}
+
+      {/* Mobile/Tablet Drawer */}
+      {showDrawer && (
+        <Drawer
+          anchor="left"
+          open={drawerOpen}
+          onClose={closeDrawer}
+          sx={{
+            '& .MuiDrawer-paper': {
+              width: SIDEBAR_WIDTH,
+              backgroundColor: 'background.paper',
+            },
+          }}
+        >
+          <Sidebar onNavigate={closeDrawer} />
+        </Drawer>
+      )}
+
+      {/* Main Content Area */}
+      <Box sx={{
+        flexGrow: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+        minWidth: 0,
+        width: showDrawer ? '100%' : `calc(100% - ${SIDEBAR_WIDTH}px)`,
+      }}>
+        {/* Header */}
+        <Header />
+
+        {/* Main Content */}
+        <Box sx={{
+          flexGrow: 1,
+          overflow: 'hidden',
+          position: 'relative',
+          display: 'flex',
+          flexDirection: 'column',
+          minWidth: 0
+        }}>
+          <Routes>
+            <Route path="/" element={<ClassificationView />} />
+            <Route path="/traits" element={<TraitsView />} />
+            <Route path="/meta-classes" element={<MetaClassesView />} />
+            <Route path="/classify" element={<ClassificationView />} />
+            <Route path="/graph" element={<GraphView />} />
+            <Route path="/comparison" element={<ComparisonView />} />
+            <Route path="/list" element={<ListView />} />
+            <Route path="/gallery" element={<GalleryView />} />
+            <Route path="/entity/:uuid" element={<EntityDetails />} />
+            <Route path="/analytics" element={<TraitAnalytics />} />
+          </Routes>
+        </Box>
+      </Box>
+    </Box>
+  );
+}
 
 function App() {
   return (
@@ -72,45 +189,9 @@ function App() {
       <CssBaseline />
       <AppProvider>
         <Router>
-          <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
-            {/* Sidebar */}
-            <Sidebar />
-            
-            {/* Main Content Area */}
-            <Box sx={{
-              flexGrow: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              overflow: 'hidden',
-              minWidth: 0
-            }}>
-              {/* Header */}
-              <Header />
-              
-              {/* Main Content */}
-              <Box sx={{
-                flexGrow: 1,
-                overflow: 'hidden',
-                position: 'relative',
-                display: 'flex',
-                flexDirection: 'column',
-                minWidth: 0
-              }}>
-                <Routes>
-                  <Route path="/" element={<ClassificationView />} />
-                  <Route path="/traits" element={<TraitsView />} />
-                  <Route path="/meta-classes" element={<MetaClassesView />} />
-                  <Route path="/classify" element={<ClassificationView />} />
-                  <Route path="/graph" element={<GraphView />} />
-                  <Route path="/comparison" element={<ComparisonView />} />
-                  <Route path="/list" element={<ListView />} />
-                  <Route path="/gallery" element={<GalleryView />} />
-                  <Route path="/entity/:uuid" element={<EntityDetails />} />
-                  <Route path="/analytics" element={<TraitAnalytics />} />
-                </Routes>
-              </Box>
-            </Box>
-          </Box>
+          <MobileProvider>
+            <AppContent />
+          </MobileProvider>
         </Router>
       </AppProvider>
     </ThemeProvider>

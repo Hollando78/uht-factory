@@ -1,5 +1,4 @@
 import {
-  Drawer,
   List,
   ListItem,
   ListItemButton,
@@ -23,6 +22,7 @@ import {
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
+import { useMobile } from '../../context/MobileContext';
 
 const SIDEBAR_WIDTH = 240;
 
@@ -31,6 +31,7 @@ interface NavItem {
   label: string;
   icon: React.ReactElement;
   description: string;
+  hideOnMobile?: boolean;
 }
 
 const navItems: NavItem[] = [
@@ -56,7 +57,8 @@ const navItems: NavItem[] = [
     path: '/graph',
     label: '3D Graph',
     icon: <GraphIcon />,
-    description: 'Explore entity relationships'
+    description: 'Explore entity relationships',
+    hideOnMobile: true
   },
   {
     path: '/comparison',
@@ -80,33 +82,47 @@ const navItems: NavItem[] = [
     path: '/analytics',
     label: 'Trait Analytics',
     icon: <AnalyticsIcon />,
-    description: 'Statistics & co-occurrence'
+    description: 'Statistics & co-occurrence',
+    hideOnMobile: true
   }
 ];
 
-export default function Sidebar() {
+interface SidebarProps {
+  onNavigate?: () => void; // Called when a nav item is clicked (for mobile drawer close)
+}
+
+export default function Sidebar({ onNavigate }: SidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { state } = useApp();
+  const { isMobile } = useMobile();
+
+  // Filter out mobile-hidden items when on mobile
+  const visibleNavItems = isMobile
+    ? navItems.filter(item => !item.hideOnMobile)
+    : navItems;
 
   const isSelected = (path: string) => location.pathname === path;
 
+  const handleNavClick = (path: string) => {
+    navigate(path);
+    onNavigate?.(); // Close drawer on mobile
+  };
+
   return (
-    <Drawer
-      variant="permanent"
+    <Box
       sx={{
         width: SIDEBAR_WIDTH,
         flexShrink: 0,
-        '& .MuiDrawer-paper': {
-          width: SIDEBAR_WIDTH,
-          boxSizing: 'border-box',
-          backgroundColor: 'rgba(10, 10, 10, 0.95)',
-          borderRight: '1px solid rgba(0, 229, 255, 0.3)',
-          backdropFilter: 'blur(10px)'
-        },
+        height: '100%',
+        backgroundColor: 'rgba(10, 10, 10, 0.95)',
+        borderRight: '1px solid rgba(0, 229, 255, 0.3)',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
       }}
     >
-      <Box sx={{ overflow: 'auto' }}>
+      <Box sx={{ overflow: 'auto', flex: 1 }}>
         {/* Header */}
         <Box sx={{ p: 2, textAlign: 'center' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1 }}>
@@ -127,13 +143,14 @@ export default function Sidebar() {
 
         {/* Navigation */}
         <List sx={{ px: 1, py: 2 }}>
-          {navItems.map((item) => (
+          {visibleNavItems.map((item) => (
             <ListItem key={item.path} disablePadding sx={{ mb: 1 }}>
               <ListItemButton
                 selected={isSelected(item.path)}
-                onClick={() => navigate(item.path)}
+                onClick={() => handleNavClick(item.path)}
                 sx={{
                   borderRadius: 2,
+                  minHeight: 48, // Touch-friendly
                   '&.Mui-selected': {
                     backgroundColor: 'rgba(0, 229, 255, 0.15)',
                     '&:hover': {
@@ -145,13 +162,13 @@ export default function Sidebar() {
                   },
                 }}
               >
-                <ListItemIcon sx={{ 
+                <ListItemIcon sx={{
                   color: isSelected(item.path) ? 'primary.main' : 'text.secondary',
                   minWidth: 40
                 }}>
                   {item.icon}
                 </ListItemIcon>
-                <ListItemText 
+                <ListItemText
                   primary={item.label}
                   secondary={item.description}
                   primaryTypographyProps={{
@@ -176,27 +193,27 @@ export default function Sidebar() {
           <Typography variant="subtitle2" sx={{ color: 'text.secondary', mb: 2 }}>
             System Status
           </Typography>
-          
+
           <Box sx={{ mb: 2 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
               <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.8rem' }}>
                 Graph Nodes
               </Typography>
-              <Chip 
-                label={state.graphData.nodes.length} 
-                size="small" 
+              <Chip
+                label={state.graphData.nodes.length}
+                size="small"
                 color="primary"
                 sx={{ fontSize: '0.7rem' }}
               />
             </Box>
-            
+
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
               <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.8rem' }}>
                 Selected Entity
               </Typography>
-              <Chip 
-                label={state.selectedEntity ? '1' : '0'} 
-                size="small" 
+              <Chip
+                label={state.selectedEntity ? '1' : '0'}
+                size="small"
                 color={state.selectedEntity ? 'secondary' : 'default'}
                 sx={{ fontSize: '0.7rem' }}
               />
@@ -208,7 +225,7 @@ export default function Sidebar() {
             <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.8rem', mb: 1 }}>
               Current View
             </Typography>
-            <Chip 
+            <Chip
               label={state.currentView}
               size="small"
               variant="outlined"
@@ -217,14 +234,14 @@ export default function Sidebar() {
             />
           </Box>
         </Box>
-
-        {/* Footer */}
-        <Box sx={{ mt: 'auto', p: 2, textAlign: 'center' }}>
-          <Typography variant="caption" sx={{ color: 'text.disabled', fontSize: '0.7rem' }}>
-            Powered by GPT-4o mini
-          </Typography>
-        </Box>
       </Box>
-    </Drawer>
+
+      {/* Footer */}
+      <Box sx={{ p: 2, textAlign: 'center', borderTop: '1px solid rgba(0, 229, 255, 0.1)' }}>
+        <Typography variant="caption" sx={{ color: 'text.disabled', fontSize: '0.7rem' }}>
+          Powered by GPT-4o mini
+        </Typography>
+      </Box>
+    </Box>
   );
 }

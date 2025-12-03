@@ -91,7 +91,7 @@ const emergentTypeLabels: Record<string, string> = {
   distribution_edge: 'Distribution Edge'
 };
 
-const API_BASE_URL = 'http://localhost:8100';
+const API_BASE_URL = '';
 
 // Meta-Class Card Component
 const MetaClassCard: React.FC<{ metaClass: MetaClass }> = ({ metaClass }) => {

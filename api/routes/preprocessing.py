@@ -11,6 +11,7 @@ from models.entity import (
     DuplicateCheck
 )
 from pydantic import BaseModel
+from api.middleware.api_key_auth import require_preprocess
 
 router = APIRouter()
 
@@ -40,10 +41,13 @@ async def get_neo4j_client():
 @router.post("/preprocess", response_model=EntityPreProcessing)
 async def preprocess_entity(
     entity_name: str,
-    llm_client: BaseLLMClient = Depends(get_llm_client)
+    llm_client: BaseLLMClient = Depends(get_llm_client),
+    key_data: dict = Depends(require_preprocess)  # Require API key with preprocess scope
 ):
     """
     Pre-process an entity name with AI enhancement suggestions.
+
+    **Requires API key with 'preprocess' scope.**
 
     Uses configured LLM provider (OpenRouter free models by default) to:
     1. Suggest an optimal entity name
@@ -55,13 +59,13 @@ async def preprocess_entity(
         # Create preprocessing prompt
         prompt = f"""
         Analyze and enhance the following entity for classification: "{entity_name}"
-        
+
         Please provide JSON response with:
         1. An optimized entity name (clear, unambiguous, standardized)
         2. A concise but comprehensive description (2-3 sentences)
         3. Additional context that would help with classification
         4. A confidence score (0.0-1.0) for your suggestions
-        
+
         Respond with valid JSON in this format:
         {{
             "suggested_name": "optimized name",
@@ -70,21 +74,34 @@ async def preprocess_entity(
             "confidence": 0.85,
             "reasoning": "explanation of changes"
         }}
-        
+
         Entity: {entity_name}
         """
-        
+
         # Get AI response
         response = await llm_client.get_completion(
             prompt=prompt,
             temperature=0.3
         )
-        
-        # Parse response (simplified - would need better JSON parsing)
+
+        # Parse response - extract JSON from possible markdown wrapping
         import json
+        import re
         try:
+            # Try direct parse first
             result = json.loads(response)
-        except:
+        except json.JSONDecodeError:
+            # Extract JSON from markdown code blocks or raw text
+            json_match = re.search(r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}', response, re.DOTALL)
+            if json_match:
+                try:
+                    result = json.loads(json_match.group())
+                except json.JSONDecodeError:
+                    result = None
+            else:
+                result = None
+
+        if not result:
             # Fallback if JSON parsing fails
             result = {
                 "suggested_name": entity_name,
@@ -93,7 +110,7 @@ async def preprocess_entity(
                 "confidence": 0.5,
                 "reasoning": "AI preprocessing failed, using fallback values."
             }
-        
+
         return EntityPreProcessing(
             original_name=entity_name,
             suggested_name=result.get("suggested_name", entity_name),
@@ -102,7 +119,7 @@ async def preprocess_entity(
             confidence=result.get("confidence", 0.5),
             reasoning=result.get("reasoning", "AI enhancement applied")
         )
-        
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Preprocessing failed: {str(e)}")
 
@@ -114,7 +131,9 @@ async def check_duplicate(
 ):
     """
     Check if an entity already exists in the graph database.
-    
+
+    **No authentication required** - this is a read-only database query.
+
     Performs fuzzy matching on entity names and returns any potential
     duplicates with similarity scores.
     """
@@ -123,21 +142,21 @@ async def check_duplicate(
         query = """
         MATCH (e:Entity)
         WHERE e.name IS NOT NULL
-        WITH e, 
+        WITH e,
              apoc.text.levenshteinSimilarity(toLower($entity_name), toLower(e.name)) AS similarity
         WHERE similarity >= $threshold
-        RETURN e.uuid as uuid, e.name as name, e.uht_code as uht_code, 
+        RETURN e.uuid as uuid, e.name as name, e.uht_code as uht_code,
                e.description as description, similarity
         ORDER BY similarity DESC
         LIMIT 1
         """
-        
+
         result = await neo4j_client.execute_query(
-            query, 
-            entity_name=entity_name.lower(), 
+            query,
+            entity_name=entity_name.lower(),
             threshold=threshold
         )
-        
+
         if result and len(result) > 0:
             # Found a potential duplicate
             entity = result[0]
@@ -158,7 +177,7 @@ async def check_duplicate(
                 similarity=0.0,
                 existing_entity=None
             )
-            
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Duplicate check failed: {str(e)}")
 
@@ -166,33 +185,100 @@ async def check_duplicate(
 async def enhance_entity(
     request: PreprocessRequest,
     llm_client: BaseLLMClient = Depends(get_llm_client),
-    neo4j_client: Neo4jClient = Depends(get_neo4j_client)
+    neo4j_client: Neo4jClient = Depends(get_neo4j_client),
+    key_data: dict = Depends(require_preprocess)  # Require API key with preprocess scope
 ):
     """
     Combined preprocessing and duplicate checking endpoint.
-    
+
+    **Requires API key with 'preprocess' scope.**
+
     Performs both AI enhancement and duplicate detection in a single call
     for optimal user experience.
     """
     try:
         # Run preprocessing and duplicate check in parallel
-        preprocess_task = preprocess_entity(request.entity_name, llm_client)
+        # Note: We pass the key_data through since preprocess_entity requires it
+        preprocess_task = _preprocess_entity_internal(request.entity_name, llm_client)
         duplicate_task = check_duplicate(request.entity_name, neo4j_client=neo4j_client)
-        
+
         preprocessing, duplicate_check = await asyncio.gather(
             preprocess_task,
             duplicate_task
         )
-        
+
         return {
             "preprocessing": preprocessing,
             "duplicate_check": duplicate_check,
             "recommendations": {
                 "proceed": not duplicate_check.exists or duplicate_check.similarity < 0.9,
-                "message": "Entity looks unique" if not duplicate_check.exists 
+                "message": "Entity looks unique" if not duplicate_check.exists
                           else f"Similar entity found: {duplicate_check.existing_entity['name']}"
             }
         }
-        
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Enhancement failed: {str(e)}")
+
+
+async def _preprocess_entity_internal(entity_name: str, llm_client: BaseLLMClient) -> EntityPreProcessing:
+    """Internal preprocessing function without auth check (for use in enhance endpoint)."""
+    try:
+        prompt = f"""
+        Analyze and enhance the following entity for classification: "{entity_name}"
+
+        Please provide JSON response with:
+        1. An optimized entity name (clear, unambiguous, standardized)
+        2. A concise but comprehensive description (2-3 sentences)
+        3. Additional context that would help with classification
+        4. A confidence score (0.0-1.0) for your suggestions
+
+        Respond with valid JSON in this format:
+        {{
+            "suggested_name": "optimized name",
+            "suggested_description": "clear description",
+            "additional_context": "helpful context",
+            "confidence": 0.85,
+            "reasoning": "explanation of changes"
+        }}
+
+        Entity: {entity_name}
+        """
+
+        response = await llm_client.get_completion(prompt=prompt, temperature=0.3)
+
+        import json
+        import re
+        try:
+            result = json.loads(response)
+        except json.JSONDecodeError:
+            # Extract JSON from markdown code blocks or raw text
+            json_match = re.search(r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}', response, re.DOTALL)
+            if json_match:
+                try:
+                    result = json.loads(json_match.group())
+                except json.JSONDecodeError:
+                    result = None
+            else:
+                result = None
+
+        if not result:
+            result = {
+                "suggested_name": entity_name,
+                "suggested_description": f"A {entity_name.lower()} entity requiring classification.",
+                "additional_context": "No additional context available.",
+                "confidence": 0.5,
+                "reasoning": "AI preprocessing failed, using fallback values."
+            }
+
+        return EntityPreProcessing(
+            original_name=entity_name,
+            suggested_name=result.get("suggested_name", entity_name),
+            suggested_description=result.get("suggested_description", ""),
+            additional_context=result.get("additional_context", ""),
+            confidence=result.get("confidence", 0.5),
+            reasoning=result.get("reasoning", "AI enhancement applied")
+        )
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Preprocessing failed: {str(e)}")

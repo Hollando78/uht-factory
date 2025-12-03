@@ -20,7 +20,7 @@ import {
 import { useApp } from '../../context/AppContext';
 import API from '../../services/api';
 
-const API_BASE_URL = 'http://localhost:8100';
+const API_BASE_URL = '';
 
 // Custom tooltip component for image preview
 const ImageTooltip: FC<{

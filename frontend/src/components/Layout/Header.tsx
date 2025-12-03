@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   AppBar,
   Toolbar,
@@ -14,41 +15,71 @@ import {
   Refresh as RefreshIcon,
   Settings as SettingsIcon,
   Close as CloseIcon,
-  CheckCircle as CheckIcon
+  CheckCircle as CheckIcon,
+  Menu as MenuIcon
 } from '@mui/icons-material';
 import { useApp } from '../../context/AppContext';
+import { useMobile } from '../../context/MobileContext';
+import SettingsDialog from './SettingsDialog';
 
 export default function Header() {
   const { state, actions } = useApp();
+  const { isMobile, isTablet, toggleDrawer } = useMobile();
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
+  const showHamburger = isMobile || isTablet;
   const isLoading = Object.values(state.loading).some(loading => loading);
   const loadingText = getLoadingText(state.loading);
 
   const handleRefresh = () => {
-    // Implement refresh logic based on current view
     window.location.reload();
   };
 
   return (
     <>
-      <AppBar 
-        position="static" 
+      <AppBar
+        position="static"
         elevation={0}
-        sx={{ 
+        sx={{
           backgroundColor: 'rgba(26, 26, 26, 0.95)',
           borderBottom: '1px solid rgba(0, 229, 255, 0.3)',
           backdropFilter: 'blur(10px)'
         }}
       >
-        <Toolbar sx={{ minHeight: '64px !important' }}>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+        <Toolbar sx={{ minHeight: { xs: '56px', sm: '64px' }, px: { xs: 1, sm: 2 } }}>
+          {/* Hamburger Menu for Mobile */}
+          {showHamburger && (
+            <IconButton
+              color="inherit"
+              aria-label="open drawer"
+              edge="start"
+              onClick={toggleDrawer}
+              sx={{ mr: 1 }}
+            >
+              <MenuIcon />
+            </IconButton>
+          )}
+
+          {/* Title */}
+          <Typography
+            variant="h6"
+            component="div"
+            sx={{
+              flexGrow: 1,
+              fontSize: { xs: '0.95rem', sm: '1.25rem' },
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis'
+            }}
+          >
             {getViewTitle(state.currentView)}
-            {state.selectedEntity && (
-              <Typography 
-                component="span" 
-                variant="body2" 
-                sx={{ 
-                  ml: 2, 
+            {/* Hide entity info on mobile to save space */}
+            {!isMobile && state.selectedEntity && (
+              <Typography
+                component="span"
+                variant="body2"
+                sx={{
+                  ml: 2,
                   color: 'text.secondary',
                   fontFamily: 'monospace',
                   fontSize: '0.9rem'
@@ -59,10 +90,15 @@ export default function Header() {
             )}
           </Typography>
 
-          {/* Status Chips */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mr: 2 }}>
-            {/* Graph Status */}
-            {state.graphData.nodes.length > 0 && (
+          {/* Status Chips - hide some on mobile */}
+          <Box sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: { xs: 0.5, sm: 1 },
+            mr: { xs: 0.5, sm: 2 }
+          }}>
+            {/* Graph Status - hide on mobile */}
+            {!isMobile && state.graphData.nodes.length > 0 && (
               <Chip
                 icon={<CheckIcon />}
                 label={`${state.graphData.nodes.length} entities`}
@@ -75,47 +111,52 @@ export default function Header() {
             {/* Loading Status */}
             {isLoading && (
               <Chip
-                label={loadingText}
+                label={isMobile ? '...' : loadingText}
                 size="small"
                 color="primary"
                 sx={{ animation: 'pulse 1.5s ease-in-out infinite' }}
               />
             )}
 
-            {/* Current View Chip */}
-            <Chip
-              label={state.currentView}
-              size="small"
-              color="primary"
-              sx={{ textTransform: 'capitalize', fontWeight: 600 }}
-            />
+            {/* Current View Chip - smaller on mobile */}
+            {!isMobile && (
+              <Chip
+                label={state.currentView}
+                size="small"
+                color="primary"
+                sx={{ textTransform: 'capitalize', fontWeight: 600 }}
+              />
+            )}
           </Box>
 
           {/* Action Buttons */}
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <Tooltip title="Refresh">
-              <IconButton 
-                color="inherit" 
+              <IconButton
+                color="inherit"
                 onClick={handleRefresh}
                 disabled={isLoading}
               >
                 <RefreshIcon />
               </IconButton>
             </Tooltip>
-            
+
             <Tooltip title="Settings">
-              <IconButton color="inherit">
+              <IconButton color="inherit" onClick={() => setSettingsOpen(true)}>
                 <SettingsIcon />
               </IconButton>
             </Tooltip>
           </Box>
         </Toolbar>
 
+        {/* Settings Dialog */}
+        <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+
         {/* Loading Progress Bar */}
         {isLoading && (
-          <LinearProgress 
+          <LinearProgress
             color="primary"
-            sx={{ 
+            sx={{
               position: 'absolute',
               bottom: 0,
               left: 0,
@@ -142,7 +183,7 @@ export default function Header() {
               <CloseIcon fontSize="inherit" />
             </IconButton>
           }
-          sx={{ 
+          sx={{
             borderRadius: 0,
             borderBottom: '1px solid rgba(0, 229, 255, 0.3)'
           }}
@@ -155,13 +196,17 @@ export default function Header() {
 }
 
 function getViewTitle(view: string): string {
-  const titles = {
-    classification: 'Entity Classification',
-    graph: '3D Knowledge Graph',
-    comparison: 'UHT vs Embeddings Analysis',
-    gallery: 'Entity Gallery'
+  const titles: Record<string, string> = {
+    classification: 'Classification',
+    graph: '3D Graph',
+    comparison: 'Compare',
+    gallery: 'Gallery',
+    traits: 'Traits',
+    list: 'List',
+    analytics: 'Analytics',
+    'meta-classes': 'Meta-Classes'
   };
-  return titles[view as keyof typeof titles] || 'UHT Factory';
+  return titles[view] || 'UHT Factory';
 }
 
 function getLoadingText(loading: Record<string, boolean>): string {

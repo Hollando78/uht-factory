@@ -24,11 +24,15 @@ import {
   CheckCircle as CheckIcon
 } from '@mui/icons-material';
 import { useApp } from '../../context/AppContext';
+import { useMobile } from '../../context/MobileContext';
 import API from '../../services/api';
 import type { UHTEntity, EntityPreProcessing, DuplicateCheck } from '../../types/index';
 
 export default function ClassificationView() {
   const { state, actions } = useApp();
+  const { isMobile, isTablet } = useMobile();
+  const isCompact = isMobile || isTablet;
+
   const [entityInput, setEntityInput] = useState('');
   const [description, setDescription] = useState('');
   const [context, setContext] = useState('');
@@ -111,15 +115,19 @@ export default function ClassificationView() {
   };
 
   return (
-    <Box sx={{ height: '100%', overflow: 'auto', p: 3 }}>
-      <Grid container spacing={3}>
+    <Box sx={{ height: '100%', overflow: 'auto', p: isCompact ? 1.5 : 3 }}>
+      <Grid container spacing={isCompact ? 2 : 3}>
         {/* Input Panel */}
         <Grid size={{ xs: 12, md: 6 }}>
           <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
-                <BrainIcon sx={{ mr: 1, color: 'primary.main' }} />
-                Entity Classification
+            <CardContent sx={{ p: isCompact ? 2 : 3 }}>
+              <Typography
+                variant={isCompact ? 'subtitle1' : 'h6'}
+                gutterBottom
+                sx={{ display: 'flex', alignItems: 'center', fontWeight: 600 }}
+              >
+                <BrainIcon sx={{ mr: 1, color: 'primary.main', fontSize: isCompact ? 20 : 24 }} />
+                {isCompact ? 'Classification' : 'Entity Classification'}
               </Typography>
 
               {/* Entity Input */}
@@ -128,8 +136,13 @@ export default function ClassificationView() {
                 label="Entity Name"
                 value={entityInput}
                 onChange={(e) => setEntityInput(e.target.value)}
-                placeholder="e.g., smartphone, democracy, oak tree..."
-                sx={{ mb: 2 }}
+                placeholder="e.g., smartphone, democracy..."
+                sx={{
+                  mb: 2,
+                  '& .MuiOutlinedInput-root': {
+                    minHeight: isCompact ? 48 : 'auto'
+                  }
+                }}
               />
 
               {/* Pre-process Button */}
@@ -138,51 +151,52 @@ export default function ClassificationView() {
                 variant="outlined"
                 onClick={handlePreProcess}
                 disabled={entityInput.length < 3 || state.loading.preprocess}
-                sx={{ mb: 2 }}
+                sx={{ mb: 2, minHeight: isCompact ? 48 : 42 }}
                 startIcon={state.loading.preprocess ? <CircularProgress size={20} /> : <AutoIcon />}
               >
-                {state.loading.preprocess ? 'Analyzing...' : 'AI Enhancement & Duplicate Check'}
+                {state.loading.preprocess ? 'Analyzing...' : (isCompact ? 'AI Enhance' : 'AI Enhancement & Duplicate Check')}
               </Button>
 
               {/* Pre-processing Results */}
               {preProcessing && (
-                <Paper sx={{ p: 2, mb: 2, bgcolor: 'rgba(0, 229, 255, 0.05)' }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                    <AutoIcon sx={{ mr: 1, color: 'primary.main', fontSize: 20 }} />
-                    <Typography variant="subtitle2" color="primary">
-                      AI Enhancement Suggestions
+                <Paper sx={{ p: isCompact ? 1.5 : 2, mb: 2, bgcolor: 'rgba(0, 229, 255, 0.05)' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, flexWrap: 'wrap', gap: 1 }}>
+                    <AutoIcon sx={{ color: 'primary.main', fontSize: 20 }} />
+                    <Typography variant="subtitle2" color="primary" sx={{ flex: 1 }}>
+                      {isCompact ? 'Suggestions' : 'AI Enhancement Suggestions'}
                     </Typography>
-                    <Chip 
-                      label={`${Math.round(preProcessing.confidence * 100)}% confidence`}
+                    <Chip
+                      label={`${Math.round(preProcessing.confidence * 100)}%`}
                       size="small"
                       color="primary"
-                      sx={{ ml: 'auto' }}
                     />
                   </Box>
-                  
+
                   {preProcessing.suggested_name !== entityInput && (
-                    <Alert severity="info" sx={{ mb: 1, py: 0 }}>
-                      <strong>Suggested name:</strong> {preProcessing.suggested_name}
+                    <Alert severity="info" sx={{ mb: 1, py: 0, fontSize: isCompact ? '0.8rem' : '0.875rem' }}>
+                      <strong>Suggested:</strong> {preProcessing.suggested_name}
                     </Alert>
                   )}
-                  
+
                   <Button
                     size="small"
                     variant="outlined"
                     onClick={applySuggestions}
-                    sx={{ mt: 1 }}
+                    sx={{ mt: 1, minHeight: isCompact ? 40 : 32 }}
                   >
-                    Apply All Suggestions
+                    Apply Suggestions
                   </Button>
                 </Paper>
               )}
 
               {/* Duplicate Check */}
               {duplicateCheck && duplicateCheck.exists && (
-                <Alert severity="warning" sx={{ mb: 2 }}>
-                  <strong>Similar entity found:</strong> {duplicateCheck.existing_entity?.name}
+                <Alert severity="warning" sx={{ mb: 2, fontSize: isCompact ? '0.8rem' : '0.875rem' }}>
+                  <strong>Similar found:</strong> {duplicateCheck.existing_entity?.name}
                   <br />
-                  UHT Code: {duplicateCheck.existing_entity?.uht_code}
+                  <Typography variant="caption" sx={{ fontFamily: 'monospace' }}>
+                    {duplicateCheck.existing_entity?.uht_code}
+                  </Typography>
                 </Alert>
               )}
 
@@ -193,9 +207,14 @@ export default function ClassificationView() {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 multiline
-                rows={3}
-                placeholder="Detailed description of the entity..."
-                sx={{ mb: 2 }}
+                rows={isCompact ? 2 : 3}
+                placeholder="Detailed description..."
+                sx={{
+                  mb: 2,
+                  '& .MuiOutlinedInput-root': {
+                    minHeight: isCompact ? 80 : 'auto'
+                  }
+                }}
               />
 
               <TextField
@@ -203,12 +222,17 @@ export default function ClassificationView() {
                 label="Context (Optional)"
                 value={context}
                 onChange={(e) => setContext(e.target.value)}
-                placeholder="Additional context or domain..."
-                sx={{ mb: 2 }}
+                placeholder="Additional context..."
+                sx={{
+                  mb: 2,
+                  '& .MuiOutlinedInput-root': {
+                    minHeight: isCompact ? 48 : 'auto'
+                  }
+                }}
               />
 
               {/* Options */}
-              <Box sx={{ mb: 3 }}>
+              <Box sx={{ mb: 2, display: 'flex', flexDirection: isCompact ? 'column' : 'row', gap: 1 }}>
                 <FormControlLabel
                   control={
                     <Switch
@@ -217,7 +241,8 @@ export default function ClassificationView() {
                       color="primary"
                     />
                   }
-                  label="Generate AI Image"
+                  label={<Typography variant="body2">Generate Image</Typography>}
+                  sx={{ minHeight: isCompact ? 44 : 'auto' }}
                 />
                 <FormControlLabel
                   control={
@@ -227,7 +252,8 @@ export default function ClassificationView() {
                       color="primary"
                     />
                   }
-                  label="Compute Embeddings"
+                  label={<Typography variant="body2">Embeddings</Typography>}
+                  sx={{ minHeight: isCompact ? 44 : 'auto' }}
                 />
               </Box>
 
@@ -237,7 +263,7 @@ export default function ClassificationView() {
                 variant="contained"
                 onClick={handleClassify}
                 disabled={!entityInput.trim() || state.loading.classification}
-                sx={{ height: 48 }}
+                sx={{ minHeight: isCompact ? 52 : 48, fontSize: isCompact ? '1rem' : '0.875rem' }}
               >
                 {state.loading.classification ? (
                   <CircularProgress size={24} color="inherit" />
@@ -252,16 +278,16 @@ export default function ClassificationView() {
         {/* Results Panel */}
         <Grid size={{ xs: 12, md: 6 }}>
           {classificationResult ? (
-            <ClassificationResults entity={classificationResult} />
+            <ClassificationResults entity={classificationResult} isCompact={isCompact} />
           ) : (
             <Card>
-              <CardContent sx={{ textAlign: 'center', py: 8 }}>
-                <BrainIcon sx={{ fontSize: 64, color: 'text.disabled', mb: 2 }} />
-                <Typography variant="h6" color="text.secondary" gutterBottom>
+              <CardContent sx={{ textAlign: 'center', py: isCompact ? 4 : 8 }}>
+                <BrainIcon sx={{ fontSize: isCompact ? 48 : 64, color: 'text.disabled', mb: 2 }} />
+                <Typography variant={isCompact ? 'subtitle1' : 'h6'} color="text.secondary" gutterBottom>
                   Ready for Classification
                 </Typography>
                 <Typography variant="body2" color="text.disabled">
-                  Enter an entity name and click "Classify Entity" to see the results
+                  {isCompact ? 'Enter an entity to classify' : 'Enter an entity name and click "Classify Entity" to see the results'}
                 </Typography>
               </CardContent>
             </Card>
@@ -275,9 +301,10 @@ export default function ClassificationView() {
 // Classification Results Component
 interface ClassificationResultsProps {
   entity: UHTEntity;
+  isCompact?: boolean;
 }
 
-function ClassificationResults({ entity }: ClassificationResultsProps) {
+function ClassificationResults({ entity, isCompact = false }: ClassificationResultsProps) {
   const activeTraits = entity.trait_evaluations?.filter(t => t.applicable) || [];
 
   const layerColors = {
@@ -289,45 +316,77 @@ function ClassificationResults({ entity }: ClassificationResultsProps) {
 
   return (
     <Card>
-      <CardContent>
-        <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
-          <CheckIcon sx={{ mr: 1, color: 'success.main' }} />
-          Classification Results
+      <CardContent sx={{ p: isCompact ? 2 : 3 }}>
+        <Typography
+          variant={isCompact ? 'subtitle1' : 'h6'}
+          gutterBottom
+          sx={{ display: 'flex', alignItems: 'center', fontWeight: 600 }}
+        >
+          <CheckIcon sx={{ mr: 1, color: 'success.main', fontSize: isCompact ? 20 : 24 }} />
+          {isCompact ? 'Results' : 'Classification Results'}
         </Typography>
 
-        {/* Entity Header */}
-        <Box sx={{ mb: 3, p: 2, bgcolor: 'background.default', borderRadius: 2 }}>
-          <Typography variant="h5" gutterBottom>
-            {entity.name}
-          </Typography>
-          <Typography variant="h4" color="primary.main" sx={{ fontFamily: 'monospace', mb: 1 }}>
-            {entity.uht_code}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {entity.description}
-          </Typography>
+        {/* Entity Header with optional image */}
+        <Box sx={{ mb: isCompact ? 2 : 3, p: isCompact ? 1.5 : 2, bgcolor: 'background.default', borderRadius: 2 }}>
+          <Box sx={{ display: 'flex', flexDirection: isCompact ? 'column' : 'row', gap: 2 }}>
+            {/* Generated Image */}
+            {entity.image_url && (
+              <Box
+                component="img"
+                src={entity.image_url}
+                alt={entity.name}
+                sx={{
+                  width: isCompact ? '100%' : 120,
+                  height: isCompact ? 160 : 120,
+                  objectFit: 'cover',
+                  borderRadius: 2,
+                  border: '2px solid',
+                  borderColor: 'primary.main',
+                  flexShrink: 0
+                }}
+              />
+            )}
+            <Box sx={{ flex: 1 }}>
+              <Typography variant={isCompact ? 'h6' : 'h5'} gutterBottom>
+                {entity.name}
+              </Typography>
+              <Typography
+                variant={isCompact ? 'h5' : 'h4'}
+                color="primary.main"
+                sx={{ fontFamily: 'monospace', mb: 1, fontSize: isCompact ? '1.5rem' : '2rem' }}
+              >
+                {entity.uht_code}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ fontSize: isCompact ? '0.8rem' : '0.875rem' }}>
+                {entity.description}
+              </Typography>
+            </Box>
+          </Box>
         </Box>
 
         {/* Layer Analysis */}
-        <Typography variant="subtitle1" gutterBottom>
+        <Typography variant={isCompact ? 'body1' : 'subtitle1'} gutterBottom sx={{ fontWeight: 600 }}>
           Layer Analysis
         </Typography>
-        <Grid container spacing={2} sx={{ mb: 3 }}>
+        <Grid container spacing={isCompact ? 1 : 2} sx={{ mb: isCompact ? 2 : 3 }}>
           {Object.entries(entity.layers || {}).map(([layer, hex]) => {
             const binary = parseInt(hex, 16).toString(2).padStart(8, '0');
             const activeCount = binary.split('1').length - 1;
-            
+
             return (
               <Grid size={{ xs: 6, sm: 3 }} key={layer}>
-                <Paper sx={{ p: 1.5, textAlign: 'center', bgcolor: 'background.default' }}>
-                  <Typography variant="subtitle2" sx={{ color: layerColors[layer as keyof typeof layerColors] }}>
-                    {layer}
+                <Paper sx={{ p: isCompact ? 1 : 1.5, textAlign: 'center', bgcolor: 'background.default' }}>
+                  <Typography
+                    variant={isCompact ? 'caption' : 'subtitle2'}
+                    sx={{ color: layerColors[layer as keyof typeof layerColors], fontWeight: 600 }}
+                  >
+                    {isCompact ? layer.slice(0, 4) : layer}
                   </Typography>
-                  <Typography variant="h6" sx={{ fontFamily: 'monospace' }}>
+                  <Typography variant={isCompact ? 'body1' : 'h6'} sx={{ fontFamily: 'monospace' }}>
                     {hex}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    {activeCount}/8 traits
+                    {activeCount}/8
                   </Typography>
                 </Paper>
               </Grid>
@@ -336,22 +395,23 @@ function ClassificationResults({ entity }: ClassificationResultsProps) {
         </Grid>
 
         {/* Active Traits */}
-        <Accordion defaultExpanded>
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Typography variant="subtitle1">
+        <Accordion defaultExpanded={!isCompact}>
+          <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ minHeight: isCompact ? 44 : 48 }}>
+            <Typography variant={isCompact ? 'body2' : 'subtitle1'} sx={{ fontWeight: 600 }}>
               Active Traits ({activeTraits.length})
             </Typography>
           </AccordionSummary>
-          <AccordionDetails>
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+          <AccordionDetails sx={{ pt: 0 }}>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
               {activeTraits.map((trait) => (
                 <Chip
                   key={trait.trait_bit}
-                  label={`${trait.trait_bit}. ${trait.trait_name}`}
+                  label={isCompact ? `${trait.trait_bit}` : `${trait.trait_bit}. ${trait.trait_name}`}
                   color="primary"
                   variant="outlined"
                   size="small"
-                  sx={{ mb: 1 }}
+                  sx={{ fontSize: isCompact ? '0.7rem' : '0.75rem' }}
+                  title={trait.trait_name}
                 />
               ))}
             </Box>
@@ -359,15 +419,17 @@ function ClassificationResults({ entity }: ClassificationResultsProps) {
         </Accordion>
 
         {/* Processing Info */}
-        <Box sx={{ mt: 2, p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
+        <Box sx={{ mt: 2, p: isCompact ? 1.5 : 2, bgcolor: 'background.default', borderRadius: 1 }}>
           <Typography variant="caption" display="block" color="text.secondary">
-            Processing time: {entity.processing_time_ms?.toFixed(1)}ms
+            {isCompact ? `${entity.processing_time_ms?.toFixed(0)}ms` : `Processing time: ${entity.processing_time_ms?.toFixed(1)}ms`}
           </Typography>
+          {!isCompact && (
+            <Typography variant="caption" display="block" color="text.secondary">
+              UUID: {entity.uuid}
+            </Typography>
+          )}
           <Typography variant="caption" display="block" color="text.secondary">
-            UUID: {entity.uuid}
-          </Typography>
-          <Typography variant="caption" display="block" color="text.secondary">
-            Created: {new Date(entity.created_at).toLocaleString()}
+            {new Date(entity.created_at).toLocaleString()}
           </Typography>
         </Box>
       </CardContent>

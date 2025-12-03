@@ -24,7 +24,8 @@ import {
   ToggleButton,
   ToggleButtonGroup,
   Badge,
-  Divider
+  Divider,
+  Collapse
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -33,11 +34,14 @@ import {
   TableChart as ListIcon,
   Refresh as RefreshIcon,
   OpenInNew as OpenIcon,
-  Tune as TuneIcon
+  Tune as TuneIcon,
+  ExpandMore as ExpandMoreIcon,
+  ExpandLess as ExpandLessIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { entityAPI, traitsAPI } from '../../services/api';
+import { useMobile } from '../../context/MobileContext';
 import type { UHTEntity, Trait } from '../../types';
 
 // Layer configuration
@@ -91,8 +95,16 @@ type HexFilters = {
 
 const DEFAULT_HEX_FILTERS: HexFilters = { Physical: '', Functional: '', Abstract: '', Social: '' };
 
+interface PersistedFilters {
+  searchQuery: string;
+  selectedLayers: string[];
+  minTraitCount: number | '';
+  traitFilter: TraitFilterState | null;
+  hexFilters: HexFilters;
+}
+
 // Load persisted filters from localStorage
-const loadPersistedFilters = () => {
+const loadPersistedFilters = (): PersistedFilters => {
   try {
     const searchQuery = localStorage.getItem(STORAGE_KEYS.searchQuery) || '';
     const selectedLayers = JSON.parse(localStorage.getItem(STORAGE_KEYS.selectedLayers) || '[]');
@@ -325,11 +337,14 @@ export default function ListView() {
   const navigate = useNavigate();
   const parentRef = useRef<HTMLDivElement>(null);
   const [isPending, startTransition] = useTransition();
+  const { isMobile, isTablet } = useMobile();
+  const isCompact = isMobile || isTablet;
 
   const [entities, setEntities] = useState<UHTEntity[]>([]);
   const [traits, setTraits] = useState<Trait[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [filtersExpanded, setFiltersExpanded] = useState(!isMobile);
 
   // Load persisted filters on initial render
   const persistedFilters = useMemo(() => loadPersistedFilters(), []);
@@ -521,204 +536,258 @@ export default function ListView() {
   return (
     <Box sx={{ height: '100%', width: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', flexGrow: 1, minWidth: 0, minHeight: 0 }}>
       {/* Header */}
-      <Paper sx={{ p: 2, borderRadius: 0, borderBottom: '1px solid rgba(0, 229, 255, 0.3)', flexShrink: 0 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-          <ListIcon color="primary" />
-          <Typography variant="h6" color="primary">Entity List View</Typography>
+      <Paper sx={{ p: isCompact ? 1.5 : 2, borderRadius: 0, borderBottom: '1px solid rgba(0, 229, 255, 0.3)', flexShrink: 0 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: isCompact ? 1 : 2, mb: isCompact ? 1 : 2, flexWrap: 'wrap' }}>
+          <ListIcon color="primary" sx={{ fontSize: isCompact ? 20 : 24 }} />
+          <Typography variant={isCompact ? 'subtitle1' : 'h6'} color="primary" sx={{ fontWeight: 600 }}>
+            {isCompact ? 'Entities' : 'Entity List View'}
+          </Typography>
           <Chip
-            label={`${flatList.length} of ${entities.length} entities`}
+            label={isCompact ? `${flatList.length}/${entities.length}` : `${flatList.length} of ${entities.length} entities`}
             size="small"
             color="primary"
             variant="outlined"
+            sx={{ fontSize: isCompact ? '0.7rem' : '0.8rem' }}
           />
           {isPending && <CircularProgress size={16} />}
+
+          {/* Mobile: Filter toggle button */}
+          {isCompact && (
+            <Box sx={{ ml: 'auto', display: 'flex', gap: 0.5 }}>
+              <Badge badgeContent={hasAnyFilter ? (selectedLayers.length + (searchQuery ? 1 : 0) + (minTraitCount !== '' ? 1 : 0) + activeTraitFilterCount + activeHexFilterCount) : 0} color="primary">
+                <IconButton
+                  size="small"
+                  onClick={() => setFiltersExpanded(!filtersExpanded)}
+                  sx={{
+                    minWidth: 44,
+                    minHeight: 44,
+                    backgroundColor: filtersExpanded ? 'rgba(0, 229, 255, 0.15)' : 'rgba(255,255,255,0.03)',
+                    border: '1px solid rgba(255,255,255,0.1)'
+                  }}
+                >
+                  <FilterIcon sx={{ fontSize: 18 }} />
+                  {filtersExpanded ? <ExpandLessIcon sx={{ fontSize: 14, ml: -0.5 }} /> : <ExpandMoreIcon sx={{ fontSize: 14, ml: -0.5 }} />}
+                </IconButton>
+              </Badge>
+              <IconButton
+                size="small"
+                onClick={() => fetchData(true)}
+                disabled={loading}
+                sx={{
+                  minWidth: 44,
+                  minHeight: 44,
+                  backgroundColor: 'rgba(255,255,255,0.03)',
+                  border: '1px solid rgba(255,255,255,0.1)'
+                }}
+              >
+                <RefreshIcon sx={{ fontSize: 18 }} />
+              </IconButton>
+            </Box>
+          )}
         </Box>
 
-        {/* Filters - standardized UI */}
-        <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center' }}>
-          {/* Search */}
-          <TextField
-            size="small"
-            placeholder="Search entities..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            sx={{
-              width: 220,
-              '& .MuiOutlinedInput-root': {
-                height: 36,
-                backgroundColor: 'rgba(255,255,255,0.03)'
-              }
-            }}
-            InputProps={{
-              startAdornment: <InputAdornment position="start"><SearchIcon sx={{ fontSize: 18, color: 'text.secondary' }} /></InputAdornment>,
-              endAdornment: searchQuery && (
-                <InputAdornment position="end">
-                  <IconButton size="small" onClick={() => setSearchQuery('')} sx={{ p: 0.5 }}>
-                    <ClearIcon sx={{ fontSize: 16 }} />
-                  </IconButton>
-                </InputAdornment>
-              )
-            }}
-          />
-
-          <Divider orientation="vertical" flexItem sx={{ mx: 0.5, borderColor: 'rgba(255,255,255,0.1)' }} />
-
-          {/* Layer Filter */}
-          <FormControl size="small" sx={{ minWidth: 140 }}>
-            <InputLabel sx={{ fontSize: '0.85rem' }}>Layer</InputLabel>
-            <Select
-              multiple
-              value={selectedLayers}
-              onChange={(e) => setSelectedLayers(e.target.value as string[])}
-              input={<OutlinedInput label="Layer" />}
+        {/* Filters - collapsible on mobile */}
+        <Collapse in={!isCompact || filtersExpanded}>
+          <Box sx={{ display: 'flex', gap: isCompact ? 1 : 1.5, flexWrap: 'wrap', alignItems: 'center' }}>
+            {/* Search */}
+            <TextField
+              size="small"
+              placeholder="Search..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               sx={{
-                height: 36,
-                backgroundColor: selectedLayers.length > 0 ? 'rgba(0, 229, 255, 0.08)' : 'rgba(255,255,255,0.03)',
-                '& .MuiSelect-select': { py: 0.75 }
+                width: isCompact ? '100%' : 220,
+                '& .MuiOutlinedInput-root': {
+                  height: isCompact ? 44 : 36,
+                  backgroundColor: 'rgba(255,255,255,0.03)'
+                }
               }}
-              renderValue={(selected) => (
-                <Box sx={{ display: 'flex', gap: 0.5 }}>
-                  {selected.map((layer) => (
-                    <Chip key={layer} label={layer.slice(0, 1)} size="small"
-                      sx={{ height: 18, fontSize: '0.65rem', backgroundColor: LAYER_COLORS[layer], color: 'white' }} />
-                  ))}
-                </Box>
-              )}
-            >
+              InputProps={{
+                startAdornment: <InputAdornment position="start"><SearchIcon sx={{ fontSize: 18, color: 'text.secondary' }} /></InputAdornment>,
+                endAdornment: searchQuery && (
+                  <InputAdornment position="end">
+                    <IconButton size="small" onClick={() => setSearchQuery('')} sx={{ p: 0.5 }}>
+                      <ClearIcon sx={{ fontSize: 16 }} />
+                    </IconButton>
+                  </InputAdornment>
+                )
+              }}
+            />
+
+            {!isCompact && <Divider orientation="vertical" flexItem sx={{ mx: 0.5, borderColor: 'rgba(255,255,255,0.1)' }} />}
+
+            {/* Layer Filter */}
+            <FormControl size="small" sx={{ minWidth: isCompact ? 'calc(50% - 4px)' : 140, flex: isCompact ? 1 : 'none' }}>
+              <InputLabel sx={{ fontSize: '0.85rem' }}>Layer</InputLabel>
+              <Select
+                multiple
+                value={selectedLayers}
+                onChange={(e) => setSelectedLayers(e.target.value as string[])}
+                input={<OutlinedInput label="Layer" />}
+                sx={{
+                  height: isCompact ? 44 : 36,
+                  backgroundColor: selectedLayers.length > 0 ? 'rgba(0, 229, 255, 0.08)' : 'rgba(255,255,255,0.03)',
+                  '& .MuiSelect-select': { py: 0.75 }
+                }}
+                renderValue={(selected) => (
+                  <Box sx={{ display: 'flex', gap: 0.5 }}>
+                    {selected.map((layer) => (
+                      <Chip key={layer} label={layer.slice(0, 1)} size="small"
+                        sx={{ height: 18, fontSize: '0.65rem', backgroundColor: LAYER_COLORS[layer], color: 'white' }} />
+                    ))}
+                  </Box>
+                )}
+              >
+                {LAYERS.map((layer) => (
+                  <MenuItem key={layer.name} value={layer.name}>
+                    <Checkbox checked={selectedLayers.includes(layer.name)} size="small" />
+                    <Box sx={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: layer.color, mr: 1 }} />
+                    <ListItemText primary={layer.name} primaryTypographyProps={{ fontSize: '0.85rem' }} />
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            {/* Min Traits */}
+            <TextField
+              size="small"
+              type="number"
+              label={isCompact ? 'Min' : 'Min Traits'}
+              value={minTraitCount}
+              onChange={(e) => setMinTraitCount(e.target.value === '' ? '' : parseInt(e.target.value))}
+              sx={{
+                width: isCompact ? 80 : 100,
+                '& .MuiOutlinedInput-root': {
+                  height: isCompact ? 44 : 36,
+                  backgroundColor: minTraitCount !== '' ? 'rgba(0, 229, 255, 0.08)' : 'rgba(255,255,255,0.03)'
+                },
+                '& .MuiInputLabel-root': { fontSize: '0.85rem' }
+              }}
+              inputProps={{ min: 0, max: 32 }}
+            />
+
+            {/* Traits Filter */}
+            <Badge badgeContent={activeTraitFilterCount} color="primary" sx={{ '& .MuiBadge-badge': { fontSize: '0.65rem', minWidth: 16, height: 16 } }}>
+              <Button
+                size="small"
+                variant={activeTraitFilterCount > 0 ? 'contained' : 'outlined'}
+                startIcon={!isCompact && <TuneIcon sx={{ fontSize: 16 }} />}
+                onClick={() => setTraitFilterDialogOpen(true)}
+                sx={{
+                  height: isCompact ? 44 : 36,
+                  minWidth: isCompact ? 44 : 'auto',
+                  textTransform: 'none',
+                  fontSize: '0.85rem',
+                  px: isCompact ? 1.5 : 2
+                }}
+              >
+                {isCompact ? <TuneIcon sx={{ fontSize: 18 }} /> : 'Traits'}
+              </Button>
+            </Badge>
+
+            {!isCompact && <Divider orientation="vertical" flexItem sx={{ mx: 0.5, borderColor: 'rgba(255,255,255,0.1)' }} />}
+
+            {/* Hex Filters per Layer - simplified on mobile */}
+            <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center', flexWrap: isCompact ? 'wrap' : 'nowrap', width: isCompact ? '100%' : 'auto' }}>
+              <Typography variant="caption" sx={{ color: 'text.secondary', mr: 0.5, width: isCompact ? '100%' : 'auto', mb: isCompact ? 0.5 : 0 }}>
+                {isCompact ? 'Hex Filters (P/F/A/S):' : 'Hex:'}
+              </Typography>
               {LAYERS.map((layer) => (
-                <MenuItem key={layer.name} value={layer.name}>
-                  <Checkbox checked={selectedLayers.includes(layer.name)} size="small" />
-                  <Box sx={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: layer.color, mr: 1 }} />
-                  <ListItemText primary={layer.name} primaryTypographyProps={{ fontSize: '0.85rem' }} />
-                </MenuItem>
+                <TextField
+                  key={layer.name}
+                  size="small"
+                  placeholder={layer.name.slice(0, 1)}
+                  value={hexFilters[layer.name as keyof HexFilters]}
+                  onChange={(e) => updateHexFilter(layer.name as keyof HexFilters, e.target.value)}
+                  sx={{
+                    width: isCompact ? 'calc(25% - 3px)' : 48,
+                    flex: isCompact ? 1 : 'none',
+                    '& .MuiOutlinedInput-root': {
+                      height: isCompact ? 44 : 36,
+                      backgroundColor: hexFilters[layer.name as keyof HexFilters]
+                        ? `${layer.color}20`
+                        : 'rgba(255,255,255,0.03)',
+                      borderColor: hexFilters[layer.name as keyof HexFilters] ? layer.color : undefined
+                    },
+                    '& .MuiOutlinedInput-input': {
+                      textAlign: 'center',
+                      fontFamily: 'monospace',
+                      fontSize: '0.85rem',
+                      textTransform: 'uppercase',
+                      p: isCompact ? '10px 4px' : '8px 4px'
+                    }
+                  }}
+                  inputProps={{ maxLength: 2 }}
+                  title={`${layer.name} layer hex filter (e.g. A7)`}
+                />
               ))}
-            </Select>
-          </FormControl>
+            </Box>
 
-          {/* Min Traits */}
-          <TextField
-            size="small"
-            type="number"
-            label="Min Traits"
-            value={minTraitCount}
-            onChange={(e) => setMinTraitCount(e.target.value === '' ? '' : parseInt(e.target.value))}
-            sx={{
-              width: 100,
-              '& .MuiOutlinedInput-root': {
-                height: 36,
-                backgroundColor: minTraitCount !== '' ? 'rgba(0, 229, 255, 0.08)' : 'rgba(255,255,255,0.03)'
-              },
-              '& .MuiInputLabel-root': { fontSize: '0.85rem' }
-            }}
-            inputProps={{ min: 0, max: 32 }}
-          />
+            {!isCompact && <Divider orientation="vertical" flexItem sx={{ mx: 0.5, borderColor: 'rgba(255,255,255,0.1)' }} />}
 
-          {/* Traits Filter */}
-          <Badge badgeContent={activeTraitFilterCount} color="primary" sx={{ '& .MuiBadge-badge': { fontSize: '0.65rem', minWidth: 16, height: 16 } }}>
+            {/* Clear All Filters */}
             <Button
               size="small"
-              variant={activeTraitFilterCount > 0 ? 'contained' : 'outlined'}
-              startIcon={<TuneIcon sx={{ fontSize: 16 }} />}
-              onClick={() => setTraitFilterDialogOpen(true)}
+              startIcon={<ClearIcon sx={{ fontSize: 16 }} />}
+              onClick={clearFilters}
+              variant="outlined"
+              color={hasAnyFilter ? 'error' : 'inherit'}
+              disabled={!hasAnyFilter}
               sx={{
-                height: 36,
+                height: isCompact ? 44 : 36,
                 textTransform: 'none',
                 fontSize: '0.85rem',
-                px: 2
+                px: 2,
+                flex: isCompact ? 1 : 'none',
+                borderColor: hasAnyFilter ? undefined : 'rgba(255,255,255,0.2)',
+                color: hasAnyFilter ? undefined : 'text.secondary'
               }}
             >
-              Traits
+              Clear
             </Button>
-          </Badge>
 
-          <Divider orientation="vertical" flexItem sx={{ mx: 0.5, borderColor: 'rgba(255,255,255,0.1)' }} />
-
-          {/* Hex Filters per Layer */}
-          <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
-            <Typography variant="caption" sx={{ color: 'text.secondary', mr: 0.5 }}>Hex:</Typography>
-            {LAYERS.map((layer) => (
-              <TextField
-                key={layer.name}
-                size="small"
-                placeholder={layer.name.slice(0, 1)}
-                value={hexFilters[layer.name as keyof HexFilters]}
-                onChange={(e) => updateHexFilter(layer.name as keyof HexFilters, e.target.value)}
-                sx={{
-                  width: 48,
-                  '& .MuiOutlinedInput-root': {
+            {/* Refresh - desktop only (mobile has it in header) */}
+            {!isCompact && (
+              <Box sx={{ ml: 'auto' }}>
+                <IconButton
+                  size="small"
+                  onClick={() => fetchData(true)}
+                  disabled={loading}
+                  sx={{
+                    width: 36,
                     height: 36,
-                    backgroundColor: hexFilters[layer.name as keyof HexFilters]
-                      ? `${layer.color}20`
-                      : 'rgba(255,255,255,0.03)',
-                    borderColor: hexFilters[layer.name as keyof HexFilters] ? layer.color : undefined
-                  },
-                  '& .MuiOutlinedInput-input': {
-                    textAlign: 'center',
-                    fontFamily: 'monospace',
-                    fontSize: '0.85rem',
-                    textTransform: 'uppercase',
-                    p: '8px 4px'
-                  }
-                }}
-                inputProps={{ maxLength: 2 }}
-                title={`${layer.name} layer hex filter (e.g. A7)`}
-              />
-            ))}
+                    backgroundColor: 'rgba(255,255,255,0.03)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    '&:hover': { backgroundColor: 'rgba(255,255,255,0.08)' }
+                  }}
+                >
+                  <RefreshIcon sx={{ fontSize: 18 }} />
+                </IconButton>
+              </Box>
+            )}
           </Box>
-
-          <Divider orientation="vertical" flexItem sx={{ mx: 0.5, borderColor: 'rgba(255,255,255,0.1)' }} />
-
-          {/* Clear All Filters - always visible */}
-          <Button
-            size="small"
-            startIcon={<ClearIcon sx={{ fontSize: 16 }} />}
-            onClick={clearFilters}
-            variant="outlined"
-            color={hasAnyFilter ? 'error' : 'inherit'}
-            disabled={!hasAnyFilter}
-            sx={{
-              height: 36,
-              textTransform: 'none',
-              fontSize: '0.85rem',
-              px: 2,
-              borderColor: hasAnyFilter ? undefined : 'rgba(255,255,255,0.2)',
-              color: hasAnyFilter ? undefined : 'text.secondary'
-            }}
-          >
-            Clear Filters
-          </Button>
-
-          {/* Refresh */}
-          <Box sx={{ ml: 'auto' }}>
-            <IconButton
-              size="small"
-              onClick={() => fetchData(true)}
-              disabled={loading}
-              sx={{
-                width: 36,
-                height: 36,
-                backgroundColor: 'rgba(255,255,255,0.03)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                '&:hover': { backgroundColor: 'rgba(255,255,255,0.08)' }
-              }}
-            >
-              <RefreshIcon sx={{ fontSize: 18 }} />
-            </IconButton>
-          </Box>
-        </Box>
+        </Collapse>
       </Paper>
 
       {/* Table Header */}
       <Box sx={{
-        display: 'flex', alignItems: 'center', px: 2, py: 1,
+        display: 'flex', alignItems: 'center', px: isCompact ? 1.5 : 2, py: 1,
         backgroundColor: 'rgba(0,0,0,0.3)', borderBottom: '1px solid rgba(255,255,255,0.1)', flexShrink: 0
       }}>
-        <Typography variant="caption" sx={{ width: '5%', fontWeight: 600 }}>#</Typography>
-        <Typography variant="caption" sx={{ width: '25%', fontWeight: 600 }}>Entity Name</Typography>
-        <Typography variant="caption" sx={{ width: '12%', fontWeight: 600 }}>UHT Code</Typography>
-        <Typography variant="caption" sx={{ width: '8%', fontWeight: 600 }}>Layer</Typography>
-        <Typography variant="caption" sx={{ width: '30%', fontWeight: 600 }}>Description</Typography>
-        <Typography variant="caption" sx={{ width: '15%', fontWeight: 600, textAlign: 'center' }}>Traits (P/F/A/S)</Typography>
+        {!isCompact && <Typography variant="caption" sx={{ width: '5%', fontWeight: 600 }}>#</Typography>}
+        <Typography variant="caption" sx={{ width: isCompact ? '45%' : '25%', fontWeight: 600 }}>
+          {isCompact ? 'Entity' : 'Entity Name'}
+        </Typography>
+        <Typography variant="caption" sx={{ width: isCompact ? '30%' : '12%', fontWeight: 600 }}>
+          {isCompact ? 'Code' : 'UHT Code'}
+        </Typography>
+        <Typography variant="caption" sx={{ width: isCompact ? '20%' : '8%', fontWeight: 600 }}>Layer</Typography>
+        {!isCompact && (
+          <>
+            <Typography variant="caption" sx={{ width: '30%', fontWeight: 600 }}>Description</Typography>
+            <Typography variant="caption" sx={{ width: '15%', fontWeight: 600, textAlign: 'center' }}>Traits (P/F/A/S)</Typography>
+          </>
+        )}
         <Typography variant="caption" sx={{ width: '5%', fontWeight: 600 }}></Typography>
       </Box>
 
@@ -757,47 +826,77 @@ export default function ListView() {
                     sx={{
                       display: 'flex',
                       alignItems: 'center',
-                      px: 2,
+                      px: isCompact ? 1.5 : 2,
                       height: '100%',
                       borderBottom: '1px solid rgba(255,255,255,0.05)',
                       cursor: 'pointer',
-                      '&:hover': { backgroundColor: `${layerColor}15` }
+                      minHeight: isCompact ? 48 : 40,
+                      '&:hover': { backgroundColor: `${layerColor}15` },
+                      '&:active': { backgroundColor: `${layerColor}25` }
                     }}
                   >
-                    <Typography variant="body2" sx={{ width: '5%', color: 'text.secondary', fontSize: '0.75rem' }}>
-                      {virtualRow.index + 1}
-                    </Typography>
-                    <Typography variant="body2" sx={{ width: '25%', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', pr: 1 }}>
+                    {!isCompact && (
+                      <Typography variant="body2" sx={{ width: '5%', color: 'text.secondary', fontSize: '0.75rem' }}>
+                        {virtualRow.index + 1}
+                      </Typography>
+                    )}
+                    <Typography variant="body2" sx={{
+                      width: isCompact ? '45%' : '25%',
+                      fontWeight: 500,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      pr: 1,
+                      fontSize: isCompact ? '0.85rem' : '0.875rem'
+                    }}>
                       {entity.name}
                     </Typography>
-                    <Typography variant="body2" sx={{ width: '12%', fontFamily: 'monospace', fontSize: '0.75rem', color: 'text.secondary' }}>
+                    <Typography variant="body2" sx={{
+                      width: isCompact ? '30%' : '12%',
+                      fontFamily: 'monospace',
+                      fontSize: isCompact ? '0.7rem' : '0.75rem',
+                      color: 'text.secondary'
+                    }}>
                       {entity.uht_code}
                     </Typography>
-                    <Box sx={{ width: '8%' }}>
+                    <Box sx={{ width: isCompact ? '20%' : '8%' }}>
                       <Box sx={{
-                        display: 'inline-block', px: 1, py: 0.25, borderRadius: 1, fontSize: '0.7rem',
-                        backgroundColor: `${layerColor}30`, color: layerColor
+                        display: 'inline-block',
+                        px: isCompact ? 0.5 : 1,
+                        py: 0.25,
+                        borderRadius: 1,
+                        fontSize: isCompact ? '0.6rem' : '0.7rem',
+                        backgroundColor: `${layerColor}30`,
+                        color: layerColor
                       }}>
-                        {metrics.dominantLayer.slice(0, 4)}
+                        {isCompact ? metrics.dominantLayer.slice(0, 1) : metrics.dominantLayer.slice(0, 4)}
                       </Box>
                     </Box>
-                    <Typography variant="body2" color="text.secondary" sx={{ width: '30%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', pr: 1 }}>
-                      {entity.description || '-'}
-                    </Typography>
-                    <Box sx={{ width: '15%', display: 'flex', gap: 0.5, justifyContent: 'center' }}>
-                      {metrics.layerCounts.map((count, i) => (
-                        <Box key={i} sx={{
-                          minWidth: 20, height: 18, fontSize: '0.65rem',
-                          backgroundColor: `${LAYERS[i].color}30`, color: LAYERS[i].color,
-                          borderRadius: 0.5, display: 'flex', alignItems: 'center', justifyContent: 'center'
-                        }}>
-                          {count}
+                    {!isCompact && (
+                      <>
+                        <Typography variant="body2" color="text.secondary" sx={{ width: '30%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', pr: 1 }}>
+                          {entity.description || '-'}
+                        </Typography>
+                        <Box sx={{ width: '15%', display: 'flex', gap: 0.5, justifyContent: 'center' }}>
+                          {metrics.layerCounts.map((count, i) => (
+                            <Box key={i} sx={{
+                              minWidth: 20, height: 18, fontSize: '0.65rem',
+                              backgroundColor: `${LAYERS[i].color}30`, color: LAYERS[i].color,
+                              borderRadius: 0.5, display: 'flex', alignItems: 'center', justifyContent: 'center'
+                            }}>
+                              {count}
+                            </Box>
+                          ))}
                         </Box>
-                      ))}
-                    </Box>
+                      </>
+                    )}
                     <Box sx={{ width: '5%', display: 'flex', justifyContent: 'center' }}>
-                      <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleEntityClick(entity.uuid); }}>
-                        <OpenIcon sx={{ fontSize: 16 }} />
+                      <IconButton
+                        size="small"
+                        onClick={(e) => { e.stopPropagation(); handleEntityClick(entity.uuid); }}
+                        sx={{ minWidth: isCompact ? 40 : 32, minHeight: isCompact ? 40 : 32 }}
+                      >
+                        <OpenIcon sx={{ fontSize: isCompact ? 18 : 16 }} />
                       </IconButton>
                     </Box>
                   </Box>

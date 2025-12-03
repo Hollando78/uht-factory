@@ -29,6 +29,7 @@ import {
   CheckCircle as CheckCircleIcon,
   CloudUpload as CloudUploadIcon
 } from '@mui/icons-material';
+import { useMobile } from '../../context/MobileContext';
 
 interface Trait {
   bit: number;
@@ -61,7 +62,7 @@ const layerDescriptions: Record<string, string> = {
   Social: 'Cultural and collective aspects (Bits 25-32)'
 };
 
-const API_BASE_URL = 'http://localhost:8100';
+const API_BASE_URL = '';
 
 // Trait Card Component
 const TraitCard: React.FC<{
@@ -297,6 +298,9 @@ const ImageUploadDialog: React.FC<{
 
 // Main Traits View Component
 export default function TraitsView() {
+  const { isMobile, isTablet } = useMobile();
+  const isCompact = isMobile || isTablet;
+
   const [traits, setTraits] = useState<Trait[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -376,29 +380,44 @@ export default function TraitsView() {
   }
 
   return (
-    <Box sx={{ p: 3, height: '100%', overflow: 'auto' }}>
+    <Box sx={{ p: isCompact ? 1.5 : 3, height: '100%', overflow: 'auto' }}>
       {/* Header */}
-      <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <TraitsIcon sx={{ fontSize: 32, color: 'primary.main' }} />
+      <Box sx={{
+        mb: isCompact ? 2 : 3,
+        display: 'flex',
+        alignItems: isCompact ? 'flex-start' : 'center',
+        justifyContent: 'space-between',
+        flexDirection: isCompact ? 'column' : 'row',
+        gap: isCompact ? 2 : 0
+      }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: isCompact ? 1 : 2 }}>
+          <TraitsIcon sx={{ fontSize: isCompact ? 24 : 32, color: 'primary.main' }} />
           <Box>
-            <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+            <Typography
+              variant={isCompact ? 'h6' : 'h4'}
+              sx={{ fontWeight: 'bold', color: 'primary.main' }}
+            >
               Canonical Traits
             </Typography>
-            <Typography variant="body2" color="text.secondary">
-              The 32 fundamental traits that define the Universal Hex Taxonomy
-            </Typography>
+            {!isCompact && (
+              <Typography variant="body2" color="text.secondary">
+                The 32 fundamental traits that define the Universal Hex Taxonomy
+              </Typography>
+            )}
           </Box>
         </Box>
 
-        <FormControl size="small" sx={{ minWidth: 200 }}>
-          <InputLabel>Filter by Layer</InputLabel>
+        <FormControl size="small" sx={{ minWidth: isCompact ? 140 : 200 }}>
+          <InputLabel sx={{ fontSize: isCompact ? '0.8rem' : '1rem' }}>
+            {isCompact ? 'Layer' : 'Filter by Layer'}
+          </InputLabel>
           <Select
             value={layerFilter}
-            label="Filter by Layer"
+            label={isCompact ? 'Layer' : 'Filter by Layer'}
             onChange={(e) => setLayerFilter(e.target.value)}
+            sx={{ fontSize: isCompact ? '0.85rem' : '1rem' }}
           >
-            <MenuItem value="">All Layers ({traits.length} traits)</MenuItem>
+            <MenuItem value="">All ({traits.length})</MenuItem>
             {Object.keys(layerColors).map(layer => (
               <MenuItem key={layer} value={layer}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -410,7 +429,7 @@ export default function TraitsView() {
                       backgroundColor: layerColors[layer]
                     }}
                   />
-                  {layer} ({traits.filter(t => t.layer === layer).length})
+                  {isCompact ? layer : `${layer} (${traits.filter(t => t.layer === layer).length})`}
                 </Box>
               </MenuItem>
             ))}
@@ -418,30 +437,37 @@ export default function TraitsView() {
         </FormControl>
       </Box>
 
-      {/* Layer Legend */}
+      {/* Layer Legend - simplified on mobile */}
       {!layerFilter && (
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="h6" sx={{ mb: 2, color: 'text.primary' }}>
-            Layers Overview
-          </Typography>
-          <Grid container spacing={2}>
+        <Box sx={{ mb: isCompact ? 2 : 3 }}>
+          {!isCompact && (
+            <Typography variant="h6" sx={{ mb: 2, color: 'text.primary' }}>
+              Layers Overview
+            </Typography>
+          )}
+          <Grid container spacing={isCompact ? 1 : 2}>
             {Object.entries(layerDescriptions).map(([layer, description]) => (
-              <Grid size={{ xs: 12, sm: 6, md: 3 }} key={layer}>
-                <Card sx={{ 
+              <Grid size={{ xs: 6, sm: 6, md: 3 }} key={layer}>
+                <Card sx={{
                   border: `2px solid ${layerColors[layer]}`,
                   backgroundColor: `${layerColors[layer]}10`
                 }}>
-                  <CardContent sx={{ p: 2 }}>
-                    <Typography variant="subtitle1" sx={{ 
-                      fontWeight: 'bold',
-                      color: layerColors[layer],
-                      mb: 1
-                    }}>
+                  <CardContent sx={{ p: isCompact ? 1 : 2 }}>
+                    <Typography
+                      variant={isCompact ? 'body2' : 'subtitle1'}
+                      sx={{
+                        fontWeight: 'bold',
+                        color: layerColors[layer],
+                        mb: isCompact ? 0 : 1
+                      }}
+                    >
                       {layer}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {description}
-                    </Typography>
+                    {!isCompact && (
+                      <Typography variant="body2" color="text.secondary">
+                        {description}
+                      </Typography>
+                    )}
                   </CardContent>
                 </Card>
               </Grid>
@@ -456,7 +482,7 @@ export default function TraitsView() {
           <Typography>Loading traits...</Typography>
         </Box>
       ) : (
-        <Grid container spacing={3}>
+        <Grid container spacing={isCompact ? 1.5 : 3}>
           {filteredTraits.map((trait) => (
             <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={trait.bit}>
               <TraitCard

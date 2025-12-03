@@ -11,6 +11,7 @@ from workers.image_client import ImageGenerationOrchestrator
 from db.neo4j_client import Neo4jClient
 from models.entity import Entity
 from pydantic import BaseModel
+from api.middleware.api_key_auth import require_images, require_admin
 
 router = APIRouter()
 
@@ -51,11 +52,14 @@ async def get_neo4j_client():
 async def generate_entity_image(
     request: ImageGenerationRequest,
     orchestrator: ImageGenerationOrchestrator = Depends(get_orchestrator),
-    neo4j_client: Neo4jClient = Depends(get_neo4j_client)
+    neo4j_client: Neo4jClient = Depends(get_neo4j_client),
+    key_data: dict = Depends(require_images)  # Require API key with images scope
 ):
     """
     Generate an AI image for a classified UHT entity using Gemini Flash.
-    
+
+    **Requires API key with 'images' scope.**
+
     Cost: $0.039 per image
     Model: gemini-2.5-flash-image (Nano Banana)
     """
@@ -95,11 +99,14 @@ async def generate_batch_images(
     request: BatchImageRequest,
     background_tasks: BackgroundTasks,
     orchestrator: ImageGenerationOrchestrator = Depends(get_orchestrator),
-    neo4j_client: Neo4jClient = Depends(get_neo4j_client)
+    neo4j_client: Neo4jClient = Depends(get_neo4j_client),
+    key_data: dict = Depends(require_images)  # Require API key with images scope
 ):
     """
     Generate images for multiple entities in the background.
-    
+
+    **Requires API key with 'images' scope.**
+
     This endpoint starts the generation process and returns immediately.
     Use /status/{batch_id} to check progress.
     """
@@ -262,9 +269,14 @@ async def get_image_gallery(
 @router.delete("/entity/{entity_uuid}")
 async def delete_entity_image(
     entity_uuid: str,
-    neo4j_client: Neo4jClient = Depends(get_neo4j_client)
+    neo4j_client: Neo4jClient = Depends(get_neo4j_client),
+    key_data: dict = Depends(require_admin)  # Require API key with admin scope
 ):
-    """Delete an entity's generated image"""
+    """
+    Delete an entity's generated image.
+
+    **Requires API key with 'admin' scope.**
+    """
     try:
         # Get entity to find image file
         entity = await get_entity_by_uuid(neo4j_client, entity_uuid)
@@ -299,9 +311,14 @@ async def delete_entity_image(
 async def upload_trait_example(
     image: UploadFile = File(...),
     trait_bit: int = Form(...),
-    description: str = Form(...)
+    description: str = Form(...),
+    key_data: dict = Depends(require_admin)  # Require API key with admin scope
 ):
-    """Upload an example image for a canonical trait"""
+    """
+    Upload an example image for a canonical trait.
+
+    **Requires API key with 'admin' scope.**
+    """
     try:
         # Validate file type
         if not image.content_type or not image.content_type.startswith("image/"):

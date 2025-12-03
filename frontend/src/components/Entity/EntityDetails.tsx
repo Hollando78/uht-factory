@@ -30,7 +30,8 @@ import {
   CompareArrows as SimilarIcon,
   Refresh as RefreshIcon
 } from '@mui/icons-material';
-import { entityAPI, traitsAPI } from '../../services/api';
+import { entityAPI, traitsAPI, imageAPI, getApiKey } from '../../services/api';
+import { useMobile } from '../../context/MobileContext';
 import type { Trait } from '../../types';
 
 // Layer configuration
@@ -68,10 +69,11 @@ interface TraitEvaluation {
   };
 }
 
-const API_BASE_URL = 'http://localhost:8100';
+// Use relative URL for API calls (works with nginx proxy in production)
+const API_BASE_URL = '';
 
 // Binary visualization component
-const BinaryVisualization: React.FC<{ binary: string; uhtCode: string }> = ({ binary, uhtCode }) => {
+const BinaryVisualization: React.FC<{ binary: string; uhtCode: string; isMobile?: boolean }> = ({ binary, uhtCode, isMobile = false }) => {
   const paddedBinary = binary.padStart(32, '0');
 
   return (
@@ -79,13 +81,24 @@ const BinaryVisualization: React.FC<{ binary: string; uhtCode: string }> = ({ bi
       <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
         Binary Representation (32 bits)
       </Typography>
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+      <Box sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 1,
+        overflowX: 'auto',
+        pb: 1
+      }}>
         {LAYERS.map((layer, layerIndex) => {
           const layerBits = paddedBinary.slice(layerIndex * 8, (layerIndex + 1) * 8);
           const hexPart = uhtCode.slice(layer.hexSlice[0], layer.hexSlice[1]);
 
           return (
-            <Box key={layer.name} sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Box key={layer.name} sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: isMobile ? 1 : 2,
+              minWidth: isMobile ? 'fit-content' : 'auto'
+            }}>
               <Tooltip title={layer.name}>
                 <Box
                   sx={{
@@ -100,14 +113,16 @@ const BinaryVisualization: React.FC<{ binary: string; uhtCode: string }> = ({ bi
               <Typography
                 variant="caption"
                 sx={{
-                  width: 80,
+                  width: isMobile ? 60 : 80,
                   color: layer.color,
-                  fontWeight: 500
+                  fontWeight: 500,
+                  fontSize: isMobile ? '0.7rem' : '0.75rem',
+                  flexShrink: 0
                 }}
               >
-                {layer.name}
+                {isMobile ? layer.name.slice(0, 4) : layer.name}
               </Typography>
-              <Box sx={{ display: 'flex', gap: 0.25 }}>
+              <Box sx={{ display: 'flex', gap: 0.25, flexShrink: 0 }}>
                 {layerBits.split('').map((bit, bitIndex) => (
                   <Tooltip
                     key={bitIndex}
@@ -115,14 +130,14 @@ const BinaryVisualization: React.FC<{ binary: string; uhtCode: string }> = ({ bi
                   >
                     <Box
                       sx={{
-                        width: 24,
-                        height: 24,
+                        width: isMobile ? 20 : 24,
+                        height: isMobile ? 20 : 24,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         borderRadius: 0.5,
                         fontFamily: 'monospace',
-                        fontSize: '0.75rem',
+                        fontSize: isMobile ? '0.65rem' : '0.75rem',
                         fontWeight: 600,
                         backgroundColor: bit === '1' ? `${layer.color}` : 'rgba(255,255,255,0.05)',
                         color: bit === '1' ? 'white' : 'text.disabled',
@@ -141,7 +156,9 @@ const BinaryVisualization: React.FC<{ binary: string; uhtCode: string }> = ({ bi
                   fontFamily: 'monospace',
                   backgroundColor: `${layer.color}30`,
                   color: layer.color,
-                  fontWeight: 600
+                  fontWeight: 600,
+                  fontSize: isMobile ? '0.65rem' : '0.75rem',
+                  flexShrink: 0
                 }}
               />
             </Box>
@@ -158,7 +175,8 @@ const TraitCard: React.FC<{
   layerColor: string;
   expanded: boolean;
   onToggle: () => void;
-}> = ({ trait, layerColor, expanded, onToggle }) => {
+  isMobile?: boolean;
+}> = ({ trait, layerColor, expanded, onToggle, isMobile = false }) => {
   const { evaluation } = trait;
 
   return (
@@ -174,9 +192,10 @@ const TraitCard: React.FC<{
         onClick={onToggle}
         sx={{
           display: 'flex',
-          alignItems: 'center',
-          gap: 1.5,
-          p: 1.5,
+          alignItems: isMobile ? 'flex-start' : 'center',
+          flexWrap: isMobile ? 'wrap' : 'nowrap',
+          gap: isMobile ? 1 : 1.5,
+          p: isMobile ? 1 : 1.5,
           cursor: 'pointer',
           backgroundColor: evaluation.applicable ? `${layerColor}10` : 'transparent',
           '&:hover': {
@@ -189,9 +208,10 @@ const TraitCard: React.FC<{
           label={trait.bit}
           size="small"
           sx={{
-            minWidth: 36,
+            minWidth: 32,
             fontFamily: 'monospace',
             fontWeight: 600,
+            fontSize: isMobile ? '0.7rem' : '0.8rem',
             backgroundColor: evaluation.applicable ? layerColor : 'rgba(255,255,255,0.1)',
             color: evaluation.applicable ? 'white' : 'text.secondary'
           }}
@@ -200,62 +220,94 @@ const TraitCard: React.FC<{
         {/* Applicable indicator */}
         <Box
           sx={{
-            width: 24,
-            height: 24,
+            width: isMobile ? 20 : 24,
+            height: isMobile ? 20 : 24,
             borderRadius: '50%',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: evaluation.applicable ? '#4CAF50' : '#f44336'
+            backgroundColor: evaluation.applicable ? '#4CAF50' : '#f44336',
+            flexShrink: 0
           }}
         >
           {evaluation.applicable ? (
-            <CheckIcon sx={{ fontSize: 16, color: 'white' }} />
+            <CheckIcon sx={{ fontSize: isMobile ? 12 : 16, color: 'white' }} />
           ) : (
-            <CloseIcon sx={{ fontSize: 16, color: 'white' }} />
+            <CloseIcon sx={{ fontSize: isMobile ? 12 : 16, color: 'white' }} />
           )}
         </Box>
 
         {/* Trait name */}
-        <Typography variant="body2" sx={{ flex: 1, fontWeight: 500 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            flex: 1,
+            fontWeight: 500,
+            fontSize: isMobile ? '0.8rem' : '0.875rem',
+            minWidth: isMobile ? '100px' : 'auto'
+          }}
+        >
           {trait.name}
         </Typography>
 
-        {/* Confidence */}
-        <Tooltip title={`Confidence: ${(evaluation.confidence * 100).toFixed(0)}%`}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 100 }}>
-            <LinearProgress
-              variant="determinate"
-              value={evaluation.confidence * 100}
-              sx={{
-                flex: 1,
-                height: 6,
-                borderRadius: 3,
-                backgroundColor: 'rgba(255,255,255,0.1)',
-                '& .MuiLinearProgress-bar': {
-                  backgroundColor: evaluation.confidence > 0.8 ? '#4CAF50' :
-                    evaluation.confidence > 0.6 ? '#FF9800' : '#f44336',
-                  borderRadius: 3
-                }
-              }}
-            />
-            <Typography variant="caption" sx={{ minWidth: 35, textAlign: 'right' }}>
-              {(evaluation.confidence * 100).toFixed(0)}%
-            </Typography>
-          </Box>
-        </Tooltip>
+        {/* Confidence - simplified on mobile */}
+        {isMobile ? (
+          <Chip
+            label={`${(evaluation.confidence * 100).toFixed(0)}%`}
+            size="small"
+            sx={{
+              fontSize: '0.65rem',
+              height: 20,
+              backgroundColor: evaluation.confidence > 0.8 ? '#4CAF5030' :
+                evaluation.confidence > 0.6 ? '#FF980030' : '#f4433630',
+              color: evaluation.confidence > 0.8 ? '#4CAF50' :
+                evaluation.confidence > 0.6 ? '#FF9800' : '#f44336'
+            }}
+          />
+        ) : (
+          <Tooltip title={`Confidence: ${(evaluation.confidence * 100).toFixed(0)}%`}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 100 }}>
+              <LinearProgress
+                variant="determinate"
+                value={evaluation.confidence * 100}
+                sx={{
+                  flex: 1,
+                  height: 6,
+                  borderRadius: 3,
+                  backgroundColor: 'rgba(255,255,255,0.1)',
+                  '& .MuiLinearProgress-bar': {
+                    backgroundColor: evaluation.confidence > 0.8 ? '#4CAF50' :
+                      evaluation.confidence > 0.6 ? '#FF9800' : '#f44336',
+                    borderRadius: 3
+                  }
+                }}
+              />
+              <Typography variant="caption" sx={{ minWidth: 35, textAlign: 'right' }}>
+                {(evaluation.confidence * 100).toFixed(0)}%
+              </Typography>
+            </Box>
+          </Tooltip>
+        )}
 
-        <IconButton size="small">
+        <IconButton size="small" sx={{ p: isMobile ? 0.5 : 1 }}>
           {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
         </IconButton>
       </Box>
 
       <Collapse in={expanded}>
-        <Box sx={{ p: 2, pt: 0, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+        <Box sx={{ p: isMobile ? 1.5 : 2, pt: 0, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ mb: 1.5, fontSize: isMobile ? '0.8rem' : '0.875rem' }}
+          >
             <strong>Definition:</strong> {trait.expanded_definition || trait.short_description}
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ fontSize: isMobile ? '0.8rem' : '0.875rem' }}
+          >
             <strong>Justification:</strong> {evaluation.justification}
           </Typography>
           {trait.url && (
@@ -263,7 +315,7 @@ const TraitCard: React.FC<{
               size="small"
               href={trait.url}
               target="_blank"
-              sx={{ mt: 1 }}
+              sx={{ mt: 1, minHeight: 36 }}
             >
               Learn More
             </Button>
@@ -280,7 +332,8 @@ const LayerSection: React.FC<{
   traits: TraitEvaluation[];
   expandedTraits: Set<number>;
   onToggleTrait: (bit: number) => void;
-}> = ({ layer, traits, expandedTraits, onToggleTrait }) => {
+  isMobile?: boolean;
+}> = ({ layer, traits, expandedTraits, onToggleTrait, isMobile = false }) => {
   const [expanded, setExpanded] = useState(true);
   const applicableCount = traits.filter(t => t.evaluation.applicable).length;
 
@@ -291,8 +344,8 @@ const LayerSection: React.FC<{
         sx={{
           display: 'flex',
           alignItems: 'center',
-          gap: 2,
-          p: 2,
+          gap: isMobile ? 1 : 2,
+          p: isMobile ? 1.5 : 2,
           cursor: 'pointer',
           backgroundColor: `${layer.color}15`,
           '&:hover': { backgroundColor: `${layer.color}20` }
@@ -300,30 +353,40 @@ const LayerSection: React.FC<{
       >
         <Box
           sx={{
-            width: 16,
-            height: 16,
+            width: isMobile ? 12 : 16,
+            height: isMobile ? 12 : 16,
             borderRadius: '50%',
-            backgroundColor: layer.color
+            backgroundColor: layer.color,
+            flexShrink: 0
           }}
         />
-        <Typography variant="h6" sx={{ color: layer.color, fontWeight: 600, flex: 1 }}>
+        <Typography
+          variant={isMobile ? 'subtitle1' : 'h6'}
+          sx={{
+            color: layer.color,
+            fontWeight: 600,
+            flex: 1,
+            fontSize: isMobile ? '0.95rem' : '1.25rem'
+          }}
+        >
           {layer.name} Layer
         </Typography>
         <Chip
-          label={`${applicableCount}/${traits.length} active`}
+          label={`${applicableCount}/${traits.length}`}
           size="small"
           sx={{
             backgroundColor: `${layer.color}30`,
-            color: layer.color
+            color: layer.color,
+            fontSize: isMobile ? '0.7rem' : '0.8rem'
           }}
         />
-        <IconButton size="small" sx={{ color: layer.color }}>
+        <IconButton size="small" sx={{ color: layer.color, p: isMobile ? 0.5 : 1 }}>
           {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
         </IconButton>
       </Box>
 
       <Collapse in={expanded}>
-        <Box sx={{ p: 2 }}>
+        <Box sx={{ p: isMobile ? 1 : 2 }}>
           {traits.length === 0 ? (
             <Typography color="text.secondary">No traits evaluated for this layer</Typography>
           ) : (
@@ -334,6 +397,7 @@ const LayerSection: React.FC<{
                 layerColor={layer.color}
                 expanded={expandedTraits.has(trait.bit)}
                 onToggle={() => onToggleTrait(trait.bit)}
+                isMobile={isMobile}
               />
             ))
           )}
@@ -394,7 +458,7 @@ const SimilarEntitiesCard: React.FC<{
           </Box>
         ) : entities.length === 0 ? (
           <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
-            No similar entities found (threshold: 28+ matching bits)
+            No similar entities found (threshold: d≤4 Hamming distance)
           </Typography>
         ) : (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
@@ -452,17 +516,19 @@ const SimilarEntitiesCard: React.FC<{
                       fontWeight: 600
                     }}
                   />
-                  <Tooltip title={`${entity.similarity_score}/32 bits match`}>
+                  <Tooltip title={`Hamming distance: ${32 - entity.similarity_score} bits differ (${entity.similarity_score}/32 match)`}>
                     <Chip
-                      label={`${Math.round((entity.similarity_score / 32) * 100)}%`}
+                      label={`d=${32 - entity.similarity_score}`}
                       size="small"
                       sx={{
-                        minWidth: 50,
+                        minWidth: 40,
                         backgroundColor: entity.similarity_score >= 30 ? '#4CAF5030' :
                                         entity.similarity_score >= 28 ? '#FF980030' : '#75757530',
                         color: entity.similarity_score >= 30 ? '#4CAF50' :
                                entity.similarity_score >= 28 ? '#FF9800' : '#757575',
-                        fontWeight: 600
+                        fontWeight: 600,
+                        fontFamily: 'monospace',
+                        fontSize: '0.75rem'
                       }}
                     />
                   </Tooltip>
@@ -479,6 +545,8 @@ const SimilarEntitiesCard: React.FC<{
 export default function EntityDetails() {
   const { uuid } = useParams<{ uuid: string }>();
   const navigate = useNavigate();
+  const { isMobile, isTablet } = useMobile();
+  const isCompact = isMobile || isTablet;
 
   const [entity, setEntity] = useState<EntityData | null>(null);
   const [allTraits, setAllTraits] = useState<Trait[]>([]);
@@ -539,24 +607,24 @@ export default function EntityDetails() {
   const handleGenerateImage = async () => {
     if (!entity?.uuid) return;
 
+    // Check if API key is configured
+    const apiKey = getApiKey();
+    if (!apiKey) {
+      setImageGenError('API key required. Please configure your API key in Settings.');
+      return;
+    }
+
     setGeneratingImage(true);
     setImageGenError(null);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/images/generate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          entity_uuid: entity.uuid,
-          style: 'photorealistic'
-        }),
+      const result = await imageAPI.generateImage({
+        entity_uuid: entity.uuid,
+        style: 'realistic'
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to generate image');
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to generate image');
       }
 
       // Refresh entity data to get the new image
@@ -564,7 +632,10 @@ export default function EntityDetails() {
       setImageError(false);
     } catch (err) {
       console.error('Image generation failed:', err);
-      setImageGenError(err instanceof Error ? err.message : 'Failed to generate image');
+      // Handle axios error format
+      const errorMessage = (err as any)?.response?.data?.detail ||
+                          (err instanceof Error ? err.message : 'Failed to generate image');
+      setImageGenError(errorMessage);
     } finally {
       setGeneratingImage(false);
     }
@@ -645,12 +716,12 @@ export default function EntityDetails() {
   return (
     <Box sx={{ height: '100%', overflow: 'auto' }}>
       {/* Header */}
-      <Paper sx={{ p: 2, borderRadius: 0, borderBottom: '1px solid rgba(0, 229, 255, 0.3)' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+      <Paper sx={{ p: isCompact ? 1.5 : 2, borderRadius: 0, borderBottom: '1px solid rgba(0, 229, 255, 0.3)' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: isCompact ? 1 : 2 }}>
           <IconButton onClick={() => navigate(-1)}>
             <BackIcon />
           </IconButton>
-          <Typography variant="h5" sx={{ flex: 1 }}>
+          <Typography variant={isCompact ? 'h6' : 'h5'} sx={{ flex: 1 }}>
             Entity Details
           </Typography>
           <IconButton onClick={fetchEntity}>
@@ -660,15 +731,15 @@ export default function EntityDetails() {
       </Paper>
 
       {/* Content */}
-      <Box sx={{ p: 3, maxWidth: 1400, mx: 'auto' }}>
-        <Grid container spacing={3}>
+      <Box sx={{ p: isCompact ? 1.5 : 3, maxWidth: 1400, mx: 'auto' }}>
+        <Grid container spacing={isCompact ? 2 : 3}>
           {/* Left Column - Entity Info */}
           <Grid size={{ xs: 12, md: 4 }}>
             {/* Image Card */}
-            <Card sx={{ mb: 3 }}>
+            <Card sx={{ mb: isCompact ? 2 : 3 }}>
               <Box
                 sx={{
-                  height: 250,
+                  height: isCompact ? 200 : 250,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -775,6 +846,7 @@ export default function EntityDetails() {
                 <BinaryVisualization
                   binary={entity.binary_representation}
                   uhtCode={entity.uht_code}
+                  isMobile={isCompact}
                 />
 
                 {/* Actions */}
@@ -814,13 +886,19 @@ export default function EntityDetails() {
 
           {/* Right Column - Traits */}
           <Grid size={{ xs: 12, md: 8 }}>
-            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography
+              variant={isCompact ? 'subtitle1' : 'h6'}
+              gutterBottom
+              sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+            >
               <TraitIcon color="primary" />
               Trait Evaluations
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Click on any trait to see the detailed evaluation and justification.
-            </Typography>
+            {!isCompact && (
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Click on any trait to see the detailed evaluation and justification.
+              </Typography>
+            )}
 
             {LAYERS.map(layer => (
               <LayerSection
@@ -829,6 +907,7 @@ export default function EntityDetails() {
                 traits={getTraitsByLayer(layer.name)}
                 expandedTraits={expandedTraits}
                 onToggleTrait={toggleTrait}
+                isMobile={isCompact}
               />
             ))}
           </Grid>

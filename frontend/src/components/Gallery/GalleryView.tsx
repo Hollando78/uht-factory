@@ -26,6 +26,7 @@ import {
   OpenInNew as OpenInNewIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import { useMobile } from '../../context/MobileContext';
 
 interface GalleryItem {
   uuid: string;
@@ -59,7 +60,7 @@ const layerColors: Record<string, string> = {
   Unknown: '#757575'
 };
 
-const API_BASE_URL = 'http://localhost:8100';
+const API_BASE_URL = '';
 
 // Helper to get correct image URL (handles both local and external URLs)
 const getImageUrl = (url: string) => {
@@ -76,12 +77,15 @@ const DraggableCard: FC<{
   onDoubleClick: (item: GalleryItem) => void;
   onSelect: (uuid: string) => void;
   onOpenEntity: (item: GalleryItem) => void;
-}> = ({ item, position, onPositionChange, onDoubleClick, onSelect, onOpenEntity }) => {
+  isMobile?: boolean;
+}> = ({ item, position, onPositionChange, onDoubleClick, onSelect, onOpenEntity, isMobile = false }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
+  // Mouse event handlers
   const handleMouseDown = (e: React.MouseEvent) => {
+    if (isMobile) return; // Disable mouse drag on mobile (use touch)
     if (e.detail === 2) return; // Ignore double clicks
     setIsDragging(true);
     setDragStart({
@@ -94,10 +98,10 @@ const DraggableCard: FC<{
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!isDragging) return;
-    
+
     const newX = e.clientX - dragStart.x;
     const newY = e.clientY - dragStart.y;
-    
+
     onPositionChange(item.uuid, { x: newX, y: newY });
   }, [isDragging, dragStart, item.uuid, onPositionChange]);
 
@@ -105,20 +109,57 @@ const DraggableCard: FC<{
     setIsDragging(false);
   }, []);
 
+  // Touch event handlers
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length !== 1) return;
+    const touch = e.touches[0];
+    setIsDragging(true);
+    setDragStart({
+      x: touch.clientX - position.x,
+      y: touch.clientY - position.y
+    });
+    onSelect(item.uuid);
+  };
+
+  const handleTouchMove = useCallback((e: TouchEvent) => {
+    if (!isDragging || e.touches.length !== 1) return;
+    const touch = e.touches[0];
+
+    const newX = touch.clientX - dragStart.x;
+    const newY = touch.clientY - dragStart.y;
+
+    onPositionChange(item.uuid, { x: newX, y: newY });
+  }, [isDragging, dragStart, item.uuid, onPositionChange]);
+
+  const handleTouchEnd = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
   useEffect(() => {
     if (isDragging) {
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
-      
+      document.addEventListener('touchmove', handleTouchMove, { passive: true });
+      document.addEventListener('touchend', handleTouchEnd);
+
       return () => {
         document.removeEventListener('mousemove', handleMouseMove);
         document.removeEventListener('mouseup', handleMouseUp);
+        document.removeEventListener('touchmove', handleTouchMove);
+        document.removeEventListener('touchend', handleTouchEnd);
       };
     }
-  }, [isDragging, handleMouseMove, handleMouseUp]);
+  }, [isDragging, handleMouseMove, handleMouseUp, handleTouchMove, handleTouchEnd]);
 
   const handleImageLoad = (_e: SyntheticEvent<HTMLImageElement>) => {
     // Image loaded successfully
+  };
+
+  // Handle tap to open on mobile (instead of double-click)
+  const handleClick = () => {
+    if (isMobile && !isDragging) {
+      onDoubleClick(item);
+    }
   };
 
   return (
@@ -136,13 +177,16 @@ const DraggableCard: FC<{
         transition: isDragging ? 'none' : 'box-shadow 0.2s ease',
         transform: isDragging ? 'scale(1.02)' : 'scale(1)',
         border: '2px solid transparent',
+        touchAction: isMobile ? 'none' : 'auto', // Prevent scroll interference on mobile
         '&:hover': {
           border: `2px solid ${layerColors[item.dominant_layer] || layerColors.Unknown}`,
           boxShadow: '0 4px 16px rgba(0,0,0,0.2)'
         }
       }}
       onMouseDown={handleMouseDown}
-      onDoubleClick={() => onDoubleClick(item)}
+      onTouchStart={handleTouchStart}
+      onClick={handleClick}
+      onDoubleClick={() => !isMobile && onDoubleClick(item)}
     >
       <CardMedia
         component="img"
@@ -160,27 +204,53 @@ const DraggableCard: FC<{
       />
       <CardContent sx={{
         height: position.height * 0.3,
-        p: 1,
-        '&:last-child': { pb: 1 },
-        position: 'relative'
+        minHeight: 0,
+        p: 0.75,
+        '&:last-child': { pb: 0.75 },
+        position: 'relative',
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between'
       }}>
-        <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-          <Typography
-            variant="caption"
-            component="h3"
+        <Typography
+          variant="caption"
+          component="h3"
+          sx={{
+            fontWeight: 'bold',
+            fontSize: '0.65rem',
+            lineHeight: 1.2,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap'
+          }}
+        >
+          {item.name}
+        </Typography>
+
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25, overflow: 'hidden' }}>
+          <Chip
+            label={item.dominant_layer}
+            size="small"
             sx={{
-              fontWeight: 'bold',
-              fontSize: '0.7rem',
-              lineHeight: 1.2,
-              mb: 0.5,
-              flex: 1,
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap'
+              backgroundColor: layerColors[item.dominant_layer] || layerColors.Unknown,
+              color: 'white',
+              fontSize: '0.5rem',
+              height: '14px',
+              '& .MuiChip-label': { px: 0.5 }
             }}
-          >
-            {item.name}
-          </Typography>
+          />
+          <Chip
+            label={item.uht_code}
+            size="small"
+            variant="outlined"
+            sx={{
+              fontSize: '0.45rem',
+              height: '14px',
+              fontFamily: 'monospace',
+              '& .MuiChip-label': { px: 0.4 }
+            }}
+          />
           <IconButton
             size="small"
             onClick={(e) => {
@@ -189,8 +259,8 @@ const DraggableCard: FC<{
             }}
             onMouseDown={(e) => e.stopPropagation()}
             sx={{
-              p: 0.3,
-              ml: 0.5,
+              p: 0.25,
+              ml: 'auto',
               '&:hover': {
                 backgroundColor: layerColors[item.dominant_layer] || layerColors.Unknown,
                 color: 'white'
@@ -198,34 +268,8 @@ const DraggableCard: FC<{
             }}
             title="Open entity definition"
           >
-            <OpenInNewIcon sx={{ fontSize: '0.9rem' }} />
+            <OpenInNewIcon sx={{ fontSize: '0.75rem' }} />
           </IconButton>
-        </Box>
-
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.3, mb: 0.5 }}>
-          <Chip
-            label={item.dominant_layer}
-            size="small"
-            sx={{
-              backgroundColor: layerColors[item.dominant_layer] || layerColors.Unknown,
-              color: 'white',
-              fontSize: '0.6rem',
-              height: '16px',
-              alignSelf: 'flex-start'
-            }}
-          />
-          <Chip
-            label={item.uht_code}
-            size="small"
-            variant="outlined"
-            sx={{
-              fontSize: '0.55rem',
-              height: '16px',
-              fontFamily: 'monospace',
-              letterSpacing: '0.5px',
-              alignSelf: 'flex-start'
-            }}
-          />
         </Box>
       </CardContent>
     </Card>
@@ -325,6 +369,9 @@ const ImagePreviewDialog: React.FC<{
 // Main Gallery Component
 export default function GalleryView() {
   const navigate = useNavigate();
+  const { isMobile, isTablet } = useMobile();
+  const isCompact = isMobile || isTablet;
+
   const [gallery, setGallery] = useState<GalleryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -343,12 +390,14 @@ export default function GalleryView() {
   const fetchGallery = async (layer?: string) => {
     try {
       setLoading(true);
-      const url = new URL(`${API_BASE_URL}/api/v1/images/gallery`);
+      // Build URL with query params - use window.location.origin as base when API_BASE_URL is empty
+      const baseUrl = API_BASE_URL || window.location.origin;
+      const url = new URL(`${baseUrl}/api/v1/images/gallery`);
       url.searchParams.set('limit', '500');  // Fetch up to 500 items
       if (layer) {
         url.searchParams.set('layer_filter', layer);
       }
-      
+
       const response = await fetch(url.toString());
       if (!response.ok) {
         throw new Error(`Failed to fetch gallery: ${response.statusText}`);
@@ -373,16 +422,20 @@ export default function GalleryView() {
 
     const newPositions: Record<string, CardPosition> = {};
 
-    // Get the actual container width - fallback to a reasonable desktop width
-    const containerWidth = containerRef.current?.clientWidth || 1200;
+    // Get the actual container width - fallback to a reasonable width
+    const containerWidth = containerRef.current?.clientWidth || (isCompact ? 375 : 1200);
     const containerHeight = containerRef.current?.clientHeight || 800;
 
-    gallery.forEach((item, index) => {
-      if (viewMode === 'grid') {
-        const cardWidth = 200;
-        const cardHeight = 260;
-        const spacing = 20;
+    // Use smaller cards on mobile
+    const cardWidth = isCompact ? 140 : 200;
+    const cardHeight = isCompact ? 180 : 260;
+    const spacing = isCompact ? 12 : 20;
 
+    gallery.forEach((item, index) => {
+      // Force grid mode on mobile, or use selected viewMode
+      const effectiveViewMode = isCompact ? 'grid' : viewMode;
+
+      if (effectiveViewMode === 'grid') {
         // Calculate how many columns can fit in the available width (min 1)
         const cols = Math.max(1, Math.floor((containerWidth - spacing) / (cardWidth + spacing)));
         const row = Math.floor(index / cols);
@@ -413,7 +466,7 @@ export default function GalleryView() {
     });
 
     setCardPositions(newPositions);
-  }, [gallery, viewMode]);
+  }, [gallery, viewMode, isCompact]);
 
   // Initialize card positions when gallery loads
   useEffect(() => {
@@ -496,29 +549,33 @@ export default function GalleryView() {
     }}>
       {/* Controls Bar */}
       <Box sx={{
-        p: 2,
+        p: isCompact ? 1 : 2,
         display: 'flex',
         alignItems: 'center',
-        gap: 2,
+        gap: isCompact ? 1 : 2,
         borderBottom: '1px solid',
         borderColor: 'divider',
-        bgcolor: 'background.paper'
+        bgcolor: 'background.paper',
+        flexWrap: isCompact ? 'wrap' : 'nowrap'
       }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <GalleryIcon color="primary" />
-          <Typography variant="h6">
+          <GalleryIcon color="primary" sx={{ fontSize: isCompact ? 20 : 24 }} />
+          <Typography variant={isCompact ? 'subtitle1' : 'h6'}>
             Gallery
           </Typography>
         </Box>
 
-        <FormControl size="small" sx={{ minWidth: 150 }}>
-          <InputLabel>Filter by Layer</InputLabel>
+        <FormControl size="small" sx={{ minWidth: isCompact ? 120 : 150 }}>
+          <InputLabel sx={{ fontSize: isCompact ? '0.8rem' : '1rem' }}>
+            {isCompact ? 'Layer' : 'Filter by Layer'}
+          </InputLabel>
           <Select
             value={layerFilter}
-            label="Filter by Layer"
+            label={isCompact ? 'Layer' : 'Filter by Layer'}
             onChange={(e) => setLayerFilter(e.target.value)}
+            sx={{ fontSize: isCompact ? '0.85rem' : '1rem' }}
           >
-            <MenuItem value="">All Layers</MenuItem>
+            <MenuItem value="">All</MenuItem>
             <MenuItem value="Physical">Physical</MenuItem>
             <MenuItem value="Functional">Functional</MenuItem>
             <MenuItem value="Abstract">Abstract</MenuItem>
@@ -527,25 +584,27 @@ export default function GalleryView() {
         </FormControl>
 
         {!loading && (
-          <Typography variant="body2" color="text.secondary">
-            {gallery.length} image{gallery.length !== 1 ? 's' : ''}
+          <Typography variant="body2" color="text.secondary" sx={{ fontSize: isCompact ? '0.75rem' : '0.875rem' }}>
+            {gallery.length} {isCompact ? '' : 'image'}{!isCompact && gallery.length !== 1 ? 's' : ''}
           </Typography>
         )}
       </Box>
 
-      {/* View Mode Toggle */}
-      <Fab
-        onClick={handleViewModeChange}
-        sx={{
-          position: 'fixed',
-          bottom: 20,
-          right: 20,
-          zIndex: 2000
-        }}
-        color="primary"
-      >
-        {viewMode === 'grid' ? <FreeformIcon /> : <GridIcon />}
-      </Fab>
+      {/* View Mode Toggle - hidden on mobile (grid only) */}
+      {!isCompact && (
+        <Fab
+          onClick={handleViewModeChange}
+          sx={{
+            position: 'fixed',
+            bottom: 20,
+            right: 20,
+            zIndex: 2000
+          }}
+          color="primary"
+        >
+          {viewMode === 'grid' ? <FreeformIcon /> : <GridIcon />}
+        </Fab>
+      )}
 
       {/* Gallery Container */}
       <Box
@@ -589,6 +648,7 @@ export default function GalleryView() {
                 onDoubleClick={handleDoubleClick}
                 onSelect={handleCardSelect}
                 onOpenEntity={handleOpenEntity}
+                isMobile={isCompact}
               />
             )
           ))

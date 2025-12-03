@@ -71,6 +71,8 @@ class ClassificationRequest(BaseModel):
     use_cache: bool = Field(default=True, description="Use cached classification if available")
     detailed: bool = Field(default=True, description="Include detailed trait evaluations")
     async_mode: bool = Field(default=False, description="Process asynchronously")
+    generate_image: bool = Field(default=False, description="Generate AI image after classification")
+    generate_embedding: bool = Field(default=False, description="Generate embedding after classification")
     
 class ClassificationResponse(BaseModel):
     """Response from classification"""

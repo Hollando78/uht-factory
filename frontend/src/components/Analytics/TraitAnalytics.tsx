@@ -40,7 +40,7 @@ import {
   Legend
 } from 'recharts';
 
-const API_BASE_URL = 'http://localhost:8100';
+const API_BASE_URL = '';
 
 const LAYER_COLORS: Record<string, string> = {
   Physical: '#FF6B35',
@@ -534,7 +534,7 @@ export default function TraitAnalytics() {
                           outerRadius={100}
                           dataKey="value"
                           nameKey="name"
-                          label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                          label={({ name, percent }) => `${name}: ${((percent ?? 0) * 100).toFixed(0)}%`}
                         >
                           {layerPieData.map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={entry.color} />
@@ -707,7 +707,7 @@ export default function TraitAnalytics() {
               </Typography>
 
               <Grid container spacing={3}>
-                {hexPairsData && ['Physical', 'Functional', 'Abstract', 'Social'].map((layerName, layerIndex) => {
+                {hexPairsData && ['Physical', 'Functional', 'Abstract', 'Social'].map((layerName) => {
                   const layer = hexPairsData.layers?.[layerName];
                   if (!layer) return null;
 

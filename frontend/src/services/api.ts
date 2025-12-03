@@ -12,13 +12,47 @@ import type {
   ApiResponse
 } from '../types/index';
 
-const API_BASE = 'http://localhost:8100/api/v1';
+// Use relative path when accessed via production domain (nginx proxies to backend)
+// Use localhost only when accessed via localhost
+const isLocalhost = typeof window !== 'undefined' &&
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
+const API_BASE = isLocalhost
+  ? 'http://localhost:8100/api/v1'
+  : '/api/v1';
+
+// API Key management
+const API_KEY_STORAGE_KEY = 'uht_api_key';
+
+export const getApiKey = (): string | null => {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem(API_KEY_STORAGE_KEY);
+};
+
+export const setApiKey = (key: string): void => {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(API_KEY_STORAGE_KEY, key);
+};
+
+export const clearApiKey = (): void => {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(API_KEY_STORAGE_KEY);
+};
 
 const api = axios.create({
   baseURL: API_BASE,
   headers: {
     'Content-Type': 'application/json',
   },
+});
+
+// Add API key to requests if available
+api.interceptors.request.use((config) => {
+  const apiKey = getApiKey();
+  if (apiKey) {
+    config.headers['X-API-Key'] = apiKey;
+  }
+  return config;
 });
 
 // Classification API
