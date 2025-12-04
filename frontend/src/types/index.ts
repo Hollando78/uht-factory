@@ -1,4 +1,22 @@
 // Core UHT Types
+
+// Lightweight entity reference for pickers and selections
+export interface SelectedEntity {
+  uuid: string;
+  name: string;
+  uht_code: string;
+  image_url?: string;
+}
+
+// Collection for organizing entities
+export interface Collection {
+  id: string;
+  name: string;
+  entityUuids: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface UHTEntity {
   uuid: string;
   name: string;
@@ -40,12 +58,13 @@ export interface Trait {
 
 // Pre-processing types
 export interface EntityPreProcessing {
-  original_input: string;
+  original_input?: string;
   suggested_name: string;
   suggested_description: string;
   additional_context: string;
   confidence: number;
-  suggestions: string[];
+  reasoning?: string;
+  suggestions?: string[];
 }
 
 export interface DuplicateCheck {
@@ -82,18 +101,21 @@ export interface GraphLink {
 
 // Image generation types
 export interface ImageGenerationRequest {
-  entity_name: string;
-  entity_description: string;
-  uht_code: string;
-  active_traits: string[];
+  entity_uuid?: string;  // For generating image for existing entity
+  entity_name?: string;
+  entity_description?: string;
+  uht_code?: string;
+  active_traits?: string[];
   style?: 'realistic' | 'artistic' | 'diagram' | 'cartoon';
 }
 
 export interface ImageGenerationResponse {
-  image_url: string;
-  prompt_used: string;
-  generation_time_ms: number;
-  cost: number;
+  success: boolean;
+  image_url?: string;
+  prompt_used?: string;
+  generation_time_ms?: number;
+  cost?: number;
+  error?: string;
 }
 
 // Embeddings and comparison types
@@ -135,6 +157,7 @@ export interface ApiResponse<T> {
 
 export interface ClassificationRequest {
   entity: {
+    uuid?: string;  // Existing entity UUID (for reclassification)
     name: string;
     description?: string;
     context?: string;

@@ -202,51 +202,108 @@ async def get_entity_image(
 @router.get("/gallery")
 async def get_image_gallery(
     limit: int = 50,
+    offset: int = 0,
     layer_filter: Optional[str] = None,
+    sort_by: str = "newest",  # newest, most_views, uht_code, name, random
+    min_confidence: Optional[float] = None,
+    has_wikidata: Optional[bool] = None,
+    search: Optional[str] = None,  # Text search filter
     neo4j_client: Neo4jClient = Depends(get_neo4j_client)
 ):
     """
     Get a gallery of all generated entity images with UHT metadata.
-    
-    Optionally filter by dominant layer (Physical, Functional, Abstract, Social).
+
+    Supports pagination, filtering, sorting, and text search.
+
+    - **limit**: Number of items to return (default 50)
+    - **offset**: Number of items to skip for pagination
+    - **layer_filter**: Filter by dominant layer (Physical, Functional, Abstract, Social)
+    - **sort_by**: Sort order - newest, most_views, uht_code, name, random
+    - **min_confidence**: Filter by minimum average confidence score
+    - **has_wikidata**: Filter to only show entities with Wikidata links
+    - **search**: Text search filter (searches name and description, case-insensitive)
     """
     try:
-        # Build query with optional layer filter
-        query = """
-        MATCH (e:Entity)
-        WHERE e.image_url IS NOT NULL
-        """
-        
-        params = {"limit": limit}
-        
-        if layer_filter:
-            # Add layer filtering logic based on UHT code analysis
-            query += " AND e.uht_code IS NOT NULL"
-            params["layer_filter"] = layer_filter
-        
-        query += """
-        RETURN e.uuid as uuid,
-               e.name as name,
-               e.uht_code as uht_code,
-               e.description as description,
-               e.image_url as image_url,
-               e.created_at as created_at
-        ORDER BY e.created_at DESC
-        LIMIT $limit
-        """
-        
+        # Build dynamic query based on filters
+        where_clauses = ["e.image_url IS NOT NULL"]
+        params = {"limit": limit, "offset": offset}
+
+        # Add text search filter
+        if search and search.strip():
+            search_term = search.strip().lower()
+            params["search_term"] = f"(?i).*{search_term}.*"
+            where_clauses.append("(e.name =~ $search_term OR e.description =~ $search_term)")
+
+        if has_wikidata is True:
+            where_clauses.append("e.wikidata_qid IS NOT NULL")
+        elif has_wikidata is False:
+            where_clauses.append("e.wikidata_qid IS NULL")
+
+        # Build ORDER BY clause based on sort option
+        order_clause = "ORDER BY "
+        if sort_by == "most_views":
+            order_clause += "COALESCE(e.view_count, 0) DESC, e.created_at DESC"
+        elif sort_by == "uht_code":
+            order_clause += "e.uht_code ASC"
+        elif sort_by == "name":
+            order_clause += "e.name ASC"
+        elif sort_by == "random":
+            order_clause += "rand()"
+        else:  # newest (default)
+            order_clause += "e.created_at DESC"
+
+        # Main query with optional confidence filter via subquery
+        if min_confidence is not None:
+            params["min_confidence"] = min_confidence
+            query = f"""
+            MATCH (e:Entity)
+            WHERE {' AND '.join(where_clauses)}
+            OPTIONAL MATCH (e)-[r:HAS_TRAIT]->(t:Trait)
+            WHERE r.applicable = true
+            WITH e, avg(r.confidence) as avg_conf
+            WHERE avg_conf >= $min_confidence OR avg_conf IS NULL
+            RETURN e.uuid as uuid,
+                   e.name as name,
+                   e.uht_code as uht_code,
+                   e.description as description,
+                   e.image_url as image_url,
+                   e.created_at as created_at,
+                   COALESCE(e.view_count, 0) as view_count,
+                   e.wikidata_qid as wikidata_qid,
+                   avg_conf as avg_confidence
+            {order_clause}
+            SKIP $offset
+            LIMIT $limit
+            """
+        else:
+            query = f"""
+            MATCH (e:Entity)
+            WHERE {' AND '.join(where_clauses)}
+            RETURN e.uuid as uuid,
+                   e.name as name,
+                   e.uht_code as uht_code,
+                   e.description as description,
+                   e.image_url as image_url,
+                   e.created_at as created_at,
+                   COALESCE(e.view_count, 0) as view_count,
+                   e.wikidata_qid as wikidata_qid
+            {order_clause}
+            SKIP $offset
+            LIMIT $limit
+            """
+
         result = await neo4j_client.execute_query(query, **params)
-        
+
         gallery_items = []
         for record in result:
             # Analyze layer dominance for filtering
             uht_code = record.get("uht_code", "00000000")
             dominant_layer = calculate_dominant_layer_from_code(uht_code)
-            
-            # Apply layer filter if specified
+
+            # Apply layer filter if specified (post-query filter for layer dominance)
             if layer_filter and dominant_layer.lower() != layer_filter.lower():
                 continue
-            
+
             gallery_items.append({
                 "uuid": record.get("uuid"),
                 "name": record.get("name"),
@@ -254,17 +311,67 @@ async def get_image_gallery(
                 "description": record.get("description"),
                 "image_url": record.get("image_url"),
                 "dominant_layer": dominant_layer,
-                "created_at": record.get("created_at")
+                "created_at": record.get("created_at"),
+                "view_count": record.get("view_count", 0),
+                "wikidata_qid": record.get("wikidata_qid"),
+                "avg_confidence": record.get("avg_confidence")
             })
-        
+
+        # Get total count for pagination info
+        count_where = where_clauses.copy()
+        count_query = f"""
+        MATCH (e:Entity)
+        WHERE {' AND '.join(count_where)}
+        RETURN count(e) as total
+        """
+        count_result = await neo4j_client.execute_query(count_query, **params)
+        total_count = count_result[0]["total"] if count_result else 0
+
         return {
             "gallery": gallery_items,
-            "total_count": len(gallery_items),
-            "layer_filter": layer_filter
+            "total_count": total_count,
+            "returned_count": len(gallery_items),
+            "offset": offset,
+            "limit": limit,
+            "has_more": offset + len(gallery_items) < total_count,
+            "layer_filter": layer_filter,
+            "sort_by": sort_by
         }
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Gallery retrieval failed: {str(e)}")
+
+@router.post("/entity/{entity_uuid}/view")
+async def track_entity_view(
+    entity_uuid: str,
+    neo4j_client: Neo4jClient = Depends(get_neo4j_client)
+):
+    """
+    Track a view for an entity. Increments the view_count property.
+
+    This is called when a user views an entity in the gallery or detail view.
+    """
+    try:
+        query = """
+        MATCH (e:Entity {uuid: $uuid})
+        SET e.view_count = COALESCE(e.view_count, 0) + 1,
+            e.last_viewed_at = datetime()
+        RETURN e.view_count as view_count
+        """
+        result = await neo4j_client.execute_query(query, uuid=entity_uuid)
+
+        if not result:
+            raise HTTPException(status_code=404, detail="Entity not found")
+
+        return {
+            "entity_uuid": entity_uuid,
+            "view_count": result[0]["view_count"]
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.delete("/entity/{entity_uuid}")
 async def delete_entity_image(
@@ -360,6 +467,81 @@ async def upload_trait_example(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+
+
+@router.post("/upload")
+async def upload_entity_image(
+    image: UploadFile = File(...),
+    entity_uuid: str = Form(...),
+    neo4j_client: Neo4jClient = Depends(get_neo4j_client),
+    key_data: dict = Depends(require_images)  # Require API key with images scope
+):
+    """
+    Upload a custom image for an entity.
+
+    **Requires API key with 'images' scope.**
+
+    Replaces any existing image for this entity.
+    """
+    try:
+        # Validate file type
+        if not image.content_type or not image.content_type.startswith("image/"):
+            raise HTTPException(status_code=400, detail="File must be an image")
+
+        # Validate file size (10MB max)
+        contents = await image.read()
+        if len(contents) > 10 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="Image must be less than 10MB")
+
+        # Verify entity exists
+        entity = await get_entity_by_uuid(neo4j_client, entity_uuid)
+        if not entity:
+            raise HTTPException(status_code=404, detail="Entity not found")
+
+        # Delete old image if exists
+        old_image_url = entity.get("image_url")
+        if old_image_url and old_image_url.startswith("/static/images/"):
+            try:
+                old_file_path = f".{old_image_url}"
+                if os.path.exists(old_file_path):
+                    os.remove(old_file_path)
+            except:
+                pass  # Continue even if deletion fails
+
+        # Create images directory if it doesn't exist
+        images_dir = "static/images"
+        os.makedirs(images_dir, exist_ok=True)
+
+        # Generate unique filename
+        file_extension = image.filename.split('.')[-1] if image.filename and '.' in image.filename else 'jpg'
+        safe_name = "".join(c for c in entity.get("name", "entity") if c.isalnum() or c in (' ', '-', '_')).strip()
+        safe_name = safe_name.replace(' ', '_')[:30]
+        unique_filename = f"{safe_name}_{uuid.uuid4().hex[:8]}.{file_extension}"
+        file_path = os.path.join(images_dir, unique_filename)
+
+        # Save the uploaded file
+        with open(file_path, "wb") as buffer:
+            buffer.write(contents)
+
+        # Create web-accessible URL
+        image_url = f"/static/images/{unique_filename}"
+
+        # Update entity in Neo4j
+        await update_entity_image(neo4j_client, entity_uuid, image_url)
+
+        return {
+            "success": True,
+            "entity_uuid": entity_uuid,
+            "image_url": image_url,
+            "filename": unique_filename,
+            "message": "Image uploaded successfully"
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+
 
 # Helper functions
 

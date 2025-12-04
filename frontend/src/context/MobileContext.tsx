@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useMemo } from 'react';
+import type { ReactNode } from 'react';
 import { useTheme, useMediaQuery } from '@mui/material';
 
 interface MobileContextType {
@@ -40,18 +41,18 @@ export function MobileProvider({ children }: MobileProviderProps) {
     setDrawerOpen(false);
   }, []);
 
+  const value = useMemo(() => ({
+    isMobile,
+    isTablet,
+    isDesktop,
+    drawerOpen,
+    toggleDrawer,
+    openDrawer,
+    closeDrawer,
+  }), [isMobile, isTablet, isDesktop, drawerOpen, toggleDrawer, openDrawer, closeDrawer]);
+
   return (
-    <MobileContext.Provider
-      value={{
-        isMobile,
-        isTablet,
-        isDesktop,
-        drawerOpen,
-        toggleDrawer,
-        openDrawer,
-        closeDrawer,
-      }}
-    >
+    <MobileContext.Provider value={value}>
       {children}
     </MobileContext.Provider>
   );

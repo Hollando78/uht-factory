@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 
-from api.routes import classification, entities, traits, auth, preprocessing, graph, images, models
+from api.routes import classification, entities, traits, auth, preprocessing, graph, images, models, embeddings
 from api.middleware.api_key_auth import api_key_manager
 from db.neo4j_client import Neo4jClient
 from db.redis_client import RedisClient
@@ -27,6 +27,20 @@ async def lifespan(app: FastAPI):
     # Startup
     await neo4j_client.connect()
     await redis_client.connect()
+
+    # Store clients in app.state for shared access across routes
+    app.state.neo4j_client = neo4j_client
+    app.state.redis_client = redis_client
+
+    # Load and cache traits JSON at startup
+    import json
+    traits_path = "/root/project/uht-github/canonical_traits/traits_v2.json"
+    try:
+        with open(traits_path, "r") as f:
+            app.state.traits = json.load(f)
+    except Exception as e:
+        print(f"Warning: Could not load traits: {e}")
+        app.state.traits = []
 
     # Initialize API key manager with database clients
     await api_key_manager.initialize(neo4j_client, redis_client)
@@ -81,6 +95,7 @@ app.include_router(preprocessing.router, prefix="/api/v1/preprocess", tags=["Pre
 app.include_router(graph.router, prefix="/api/v1/graph", tags=["Graph"])
 app.include_router(images.router, prefix="/api/v1/images", tags=["Images"])
 app.include_router(models.router, prefix="/api/v1/models", tags=["Models"])
+app.include_router(embeddings.router, prefix="/api/v1/embeddings", tags=["Embeddings"])
 
 @app.get("/")
 async def root():

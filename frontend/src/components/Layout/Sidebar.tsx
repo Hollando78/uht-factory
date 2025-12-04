@@ -18,7 +18,9 @@ import {
   Category as TraitsIcon,
   TableChart as ListIcon,
   Analytics as AnalyticsIcon,
-  AutoAwesome as MetaClassIcon
+  AutoAwesome as MetaClassIcon,
+  Build as BuildIcon,
+  FolderSpecial as CollectionIcon
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
@@ -62,9 +64,21 @@ const navItems: NavItem[] = [
   },
   {
     path: '/comparison',
-    label: 'UHT vs Embeddings',
+    label: 'Entity Comparison',
     icon: <CompareIcon />,
-    description: 'Compare classification methods'
+    description: 'Compare 2-4 entities side by side'
+  },
+  {
+    path: '/build',
+    label: 'Build-a-Code',
+    icon: <BuildIcon />,
+    description: 'Create patterns & find matches'
+  },
+  {
+    path: '/collections',
+    label: 'Collections',
+    icon: <CollectionIcon />,
+    description: 'Organize entities into groups'
   },
   {
     path: '/list',

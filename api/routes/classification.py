@@ -1,6 +1,5 @@
-from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
+from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks, Request
 from typing import Dict, Any, List
-import json
 import os
 import logging
 
@@ -15,30 +14,18 @@ from workers.image_client import ImageGenerationOrchestrator
 from db.neo4j_client import Neo4jClient
 from db.redis_client import RedisClient
 from api.middleware.api_key_auth import require_classify
+from api.dependencies import get_neo4j_client, get_redis_client, get_traits
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-# Load traits from file
-def load_traits():
-    traits_path = "/root/project/uht-github/canonical_traits/traits_v2.json"
-    with open(traits_path, "r") as f:
-        return json.load(f)
 
-# Dependency to get orchestrator
-async def get_orchestrator():
-    traits_data = load_traits()
-
-    neo4j = Neo4jClient(
-        uri=os.getenv("NEO4J_URI"),
-        user=os.getenv("NEO4J_USER"),
-        password=os.getenv("NEO4J_PASSWORD")
-    )
-    await neo4j.connect()
-
-    redis = RedisClient(url=os.getenv("REDIS_URL"))
-    await redis.connect()
+# Dependency to get orchestrator using shared clients
+async def get_orchestrator(request: Request):
+    traits_data = get_traits(request)
+    neo4j = await get_neo4j_client(request)
+    redis = await get_redis_client(request)
 
     orchestrator = ClassificationOrchestrator(
         traits_data=traits_data,
@@ -49,9 +36,54 @@ async def get_orchestrator():
 
     return orchestrator
 
+
+# Background task to generate image and update entity
+async def generate_image_background(entity_result: dict, neo4j: Neo4jClient):
+    """Generate image in background and update entity in Neo4j."""
+    try:
+        logger.info(f"[Background] Generating image for: {entity_result.get('name')}")
+        image_orchestrator = ImageGenerationOrchestrator()
+        image_result = await image_orchestrator.generate_entity_image(entity_result)
+
+        if image_result.get("success") and image_result.get("image_url"):
+            await neo4j.execute_query(
+                "MATCH (e:Entity {uuid: $uuid}) SET e.image_url = $image_url",
+                uuid=entity_result["uuid"],
+                image_url=image_result["image_url"]
+            )
+            logger.info(f"[Background] Image saved: {image_result['image_url']}")
+        else:
+            logger.warning(f"[Background] Image generation failed: {image_result.get('error')}")
+    except Exception as e:
+        logger.error(f"[Background] Image generation error: {e}")
+
+
+# Background task to generate embedding and update entity
+async def generate_embedding_background(entity_result: dict, neo4j: Neo4jClient):
+    """Generate embedding in background and store in Neo4j."""
+    try:
+        logger.info(f"[Background] Generating embedding for: {entity_result.get('name')}")
+        from workers.embedding_client import EmbeddingOrchestrator
+        embedding_orchestrator = EmbeddingOrchestrator()
+        embedding_result = await embedding_orchestrator.generate_entity_embedding(entity_result)
+
+        if embedding_result.get("success") and embedding_result.get("embedding"):
+            await neo4j.store_entity_embedding(
+                uuid=entity_result["uuid"],
+                embedding=embedding_result["embedding"],
+                model_used=embedding_result["model_used"]
+            )
+            logger.info(f"[Background] Embedding saved: {embedding_result['dimension']} dims")
+        else:
+            logger.warning(f"[Background] Embedding generation failed: {embedding_result.get('error')}")
+    except Exception as e:
+        logger.error(f"[Background] Embedding generation error: {e}")
+
 @router.post("/", response_model=ClassificationResponse)
 async def classify_entity(
     request: ClassificationRequest,
+    background_tasks: BackgroundTasks,
+    fastapi_request: Request,
     orchestrator: ClassificationOrchestrator = Depends(get_orchestrator),
     key_data: dict = Depends(require_classify)  # Require API key with classify scope
 ):
@@ -65,7 +97,7 @@ async def classify_entity(
     2. If not cached, evaluates all 32 traits in parallel
     3. Generates 8-character hex UHT code
     4. Stores result in Neo4j and cache
-    5. Optionally generates AI image if requested
+    5. Optionally queues AI image/embedding generation in background
     """
     try:
         # Convert entity input to dict
@@ -75,7 +107,10 @@ async def classify_entity(
         # Process classification
         result = await orchestrator.process_entity(entity_dict)
 
-        # Generate image if requested
+        # Get shared Neo4j client
+        neo4j = await get_neo4j_client(fastapi_request)
+
+        # Generate image synchronously (user is waiting to see it)
         if request.generate_image and result.get("uuid"):
             try:
                 logger.info(f"Generating image for entity: {result.get('name')}")
@@ -84,27 +119,20 @@ async def classify_entity(
 
                 if image_result.get("success") and image_result.get("image_url"):
                     result["image_url"] = image_result["image_url"]
-                    logger.info(f"Image generated: {image_result['image_url']}")
-
-                    # Update entity in Neo4j with image URL
-                    neo4j = Neo4jClient(
-                        uri=os.getenv("NEO4J_URI"),
-                        user=os.getenv("NEO4J_USER"),
-                        password=os.getenv("NEO4J_PASSWORD")
-                    )
-                    await neo4j.connect()
                     await neo4j.execute_query(
                         "MATCH (e:Entity {uuid: $uuid}) SET e.image_url = $image_url",
                         uuid=result["uuid"],
                         image_url=result["image_url"]
                     )
-                else:
-                    logger.warning(f"Image generation failed: {image_result.get('error')}")
+                    logger.info(f"Image generated: {image_result['image_url']}")
             except Exception as img_err:
                 logger.error(f"Image generation error: {img_err}")
-                # Don't fail classification if image generation fails
 
-        # Create response
+        # Queue embedding generation in background (not immediately visible)
+        if request.generate_embedding and result.get("uuid"):
+            background_tasks.add_task(generate_embedding_background, result.copy(), neo4j)
+            logger.info(f"Queued background embedding generation for: {result.get('name')}")
+
         return ClassificationResponse(
             entity=result,
             cached=result.get("cached", False),
@@ -191,7 +219,8 @@ async def get_job_status(job_id: str):
 @router.post("/explain")
 async def explain_classification(
     entity_name: str,
-    uht_code: str
+    uht_code: str,
+    fastapi_request: Request
 ):
     """
     Explain a UHT classification code.
@@ -206,8 +235,8 @@ async def explain_classification(
         # Parse UHT code
         uht = UHTCode.from_hex(uht_code)
 
-        # Load trait definitions
-        traits_data = load_traits()
+        # Use cached trait definitions
+        traits_data = get_traits(fastapi_request)
         traits_dict = {t["bit"]: t for t in traits_data["traits"]}
 
         # Build explanation

@@ -5,6 +5,7 @@ import uuid
 
 class EntityInput(BaseModel):
     """Input for entity classification"""
+    uuid: Optional[str] = Field(None, description="Existing entity UUID (for reclassification)")
     name: str = Field(..., min_length=1, max_length=500, description="Entity name")
     description: Optional[str] = Field(None, max_length=5000, description="Entity description")
     context: Optional[str] = Field(None, max_length=2000, description="Additional context")

@@ -22,6 +22,7 @@ class Scopes:
     CLASSIFY = "classify"      # Run classifications (LLM calls)
     PREPROCESS = "preprocess"  # Run preprocessing (LLM calls)
     IMAGES = "images"          # Generate images (LLM/API calls)
+    EMBEDDINGS = "embeddings"  # Generate embeddings (OpenAI API calls)
     ADMIN = "admin"            # Manage API keys, full access
 
 
@@ -313,4 +314,5 @@ def require_scope(required_scope: str):
 require_classify = require_scope(Scopes.CLASSIFY)
 require_preprocess = require_scope(Scopes.PREPROCESS)
 require_images = require_scope(Scopes.IMAGES)
+require_embeddings = require_scope(Scopes.EMBEDDINGS)
 require_admin = require_scope(Scopes.ADMIN)

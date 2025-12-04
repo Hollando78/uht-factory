@@ -39,6 +39,7 @@ import {
   Pie,
   Legend
 } from 'recharts';
+import CooccurrenceHeatmap from './CooccurrenceHeatmap';
 
 const API_BASE_URL = '';
 
@@ -282,9 +283,10 @@ export default function TraitAnalytics() {
           </Tooltip>
         </Box>
 
-        <Tabs value={tabValue} onChange={(_, v) => setTabValue(v)} sx={{ mt: 2 }}>
+        <Tabs value={tabValue} onChange={(_, v) => setTabValue(v)} sx={{ mt: 2 }} variant="scrollable" scrollButtons="auto">
           <Tab label="Frequency" />
           <Tab label="Co-occurrence" />
+          <Tab label="Heatmap" />
           <Tab label="Exclusivity" />
           <Tab label="Layers" />
           <Tab label="Confidence" />
@@ -431,8 +433,24 @@ export default function TraitAnalytics() {
               </Grid>
             </TabPanel>
 
-            {/* Exclusivity Tab */}
+            {/* Heatmap Tab */}
             <TabPanel value={tabValue} index={2}>
+              <Typography variant="h6" gutterBottom>Trait Co-occurrence Heatmap</Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Interactive 32×32 matrix showing how often trait pairs appear together
+              </Typography>
+
+              {cooccurrenceData && (
+                <CooccurrenceHeatmap
+                  data={cooccurrenceData.matrix}
+                  totalEntities={frequencyData?.total_entities || 0}
+                  onRefresh={fetchAnalytics}
+                />
+              )}
+            </TabPanel>
+
+            {/* Exclusivity Tab */}
+            <TabPanel value={tabValue} index={3}>
               <Typography variant="h6" gutterBottom>Mutual Exclusivity</Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                 Trait pairs that rarely appear together (low Jaccard index)
@@ -515,7 +533,7 @@ export default function TraitAnalytics() {
             </TabPanel>
 
             {/* Layers Tab */}
-            <TabPanel value={tabValue} index={3}>
+            <TabPanel value={tabValue} index={4}>
               <Typography variant="h6" gutterBottom>Layer Distribution</Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                 Trait usage statistics by layer
@@ -583,7 +601,7 @@ export default function TraitAnalytics() {
             </TabPanel>
 
             {/* Confidence Tab */}
-            <TabPanel value={tabValue} index={4}>
+            <TabPanel value={tabValue} index={5}>
               <Typography variant="h6" gutterBottom>Confidence Analysis</Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                 LLM classification confidence per trait
@@ -700,7 +718,7 @@ export default function TraitAnalytics() {
             </TabPanel>
 
             {/* Hex Pairs Tab */}
-            <TabPanel value={tabValue} index={5}>
+            <TabPanel value={tabValue} index={6}>
               <Typography variant="h6" gutterBottom>Hex Pair Frequency by Layer</Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                 Most common byte values (hex pairs) for each layer in UHT codes

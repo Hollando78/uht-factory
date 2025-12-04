@@ -125,10 +125,28 @@ class GeminiImageClient:
                 raise Exception(f"Gemini API error: {error_detail}")
             
             result = response.json()
-            
+
             # Extract image data from response
             image_data = self._extract_image_data(result)
-            
+
+            # Check if image was actually generated (Gemini may silently block content)
+            if not image_data:
+                # Check for blocked content in response
+                block_reason = self._extract_block_reason(result)
+                error_msg = block_reason or "No image generated - content may have been blocked by safety filters"
+                logger.warning(f"Image generation blocked for '{entity_name}': {error_msg}")
+                return {
+                    "success": False,
+                    "error": error_msg,
+                    "image_data": None,
+                    "image_url": None,
+                    "prompt_used": enhanced_prompt,
+                    "generation_time_ms": round(generation_time_ms, 1),
+                    "cost_usd": 0,  # No charge if blocked
+                    "model_used": self.model,
+                    "created_at": datetime.utcnow().isoformat()
+                }
+
             return {
                 "success": True,
                 "image_data": image_data,
@@ -201,6 +219,45 @@ class GeminiImageClient:
             return None
         except Exception as e:
             logger.error(f"Failed to extract image data: {e}")
+            return None
+
+    def _extract_block_reason(self, api_response: Dict[str, Any]) -> Optional[str]:
+        """Extract block reason from Gemini API response when content is filtered"""
+        try:
+            # Check for prompt feedback block reason
+            if "promptFeedback" in api_response:
+                feedback = api_response["promptFeedback"]
+                if "blockReason" in feedback:
+                    reason = feedback["blockReason"]
+                    # Map common block reasons to user-friendly messages
+                    reason_map = {
+                        "SAFETY": "Content blocked due to safety filters",
+                        "BLOCK_REASON_UNSPECIFIED": "Content blocked (reason unspecified)",
+                        "OTHER": "Content blocked for policy reasons",
+                        "PROHIBITED_CONTENT": "Content prohibited by usage policies"
+                    }
+                    return reason_map.get(reason, f"Content blocked: {reason}")
+
+            # Check candidate-level finish reason
+            if "candidates" in api_response and len(api_response["candidates"]) > 0:
+                candidate = api_response["candidates"][0]
+                if candidate.get("finishReason") == "SAFETY":
+                    # Try to get specific safety ratings
+                    safety_ratings = candidate.get("safetyRatings", [])
+                    blocked_categories = [
+                        r.get("category", "").replace("HARM_CATEGORY_", "").replace("_", " ").title()
+                        for r in safety_ratings
+                        if r.get("blocked", False) or r.get("probability") in ["HIGH", "MEDIUM"]
+                    ]
+                    if blocked_categories:
+                        return f"Content blocked due to: {', '.join(blocked_categories)}"
+                    return "Content blocked due to safety filters"
+                elif candidate.get("finishReason") == "OTHER":
+                    return "Content blocked for policy reasons"
+
+            return None
+        except Exception as e:
+            logger.error(f"Failed to extract block reason: {e}")
             return None
     
     async def _save_image(self, image_data: str, entity_name: str) -> Optional[str]:

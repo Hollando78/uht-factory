@@ -109,17 +109,21 @@ class ClassificationEngine:
             # Execute batch in parallel
             batch_results = await asyncio.gather(*tasks, return_exceptions=True)
             
-            # Process results
-            for result in batch_results:
+            # Process results - enumerate to track which trait failed
+            for idx, result in enumerate(batch_results):
+                trait = batch[idx]  # Get the correct trait for this result
                 if isinstance(result, Exception):
-                    logger.error(f"Trait evaluation failed: {result}")
-                    # Create default failed evaluation
+                    # Log detailed exception info
+                    exc_type = type(result).__name__
+                    exc_msg = str(result) or repr(result)
+                    logger.error(f"Trait evaluation failed for bit {trait['bit']} ({trait['name']}): [{exc_type}] {exc_msg}")
+                    # Create default failed evaluation with correct trait info
                     evaluations.append({
-                        "trait_bit": batch[0]["bit"],
-                        "trait_name": batch[0]["name"],
+                        "trait_bit": trait["bit"],
+                        "trait_name": trait["name"],
                         "applicable": False,
                         "confidence": 0.0,
-                        "justification": f"Evaluation failed: {str(result)}",
+                        "justification": f"Evaluation failed: [{exc_type}] {exc_msg}",
                         "evaluated_at": datetime.utcnow().isoformat()
                     })
                 else:
@@ -213,15 +217,18 @@ class ClassificationOrchestrator:
         entity_input: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Process a single entity classification request"""
-        
-        # Generate UUID if not provided
-        if "uuid" not in entity_input:
+
+        # Generate UUID if not provided or if it's None/empty
+        if not entity_input.get("uuid"):
             import uuid
             entity_input["uuid"] = str(uuid.uuid4())
-        
+
+        # Extract use_cache flag (default True for backward compatibility)
+        use_cache = entity_input.pop("use_cache", True)
+
         # Classify the entity
-        result = await self.engine.classify_entity(entity_input)
-        
+        result = await self.engine.classify_entity(entity_input, use_cache=use_cache)
+
         return result
     
     async def process_batch(

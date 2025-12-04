@@ -580,7 +580,7 @@ Context: {entity.get('context', 'No context provided')}
 
 Does the trait "{trait['name']}" apply to this entity?"""
 
-        # Retry logic with model rotation on rate limits
+        # Retry logic with model rotation on rate limits and timeouts
         max_retries = 3
         retry_delay = 2.0
         last_error = None
@@ -603,7 +603,7 @@ Does the trait "{trait['name']}" apply to this entity?"""
                         ],
                         "temperature": 0.3
                     },
-                    timeout=30.0
+                    timeout=60.0  # Increased timeout for complex traits
                 )
 
                 if response.status_code == 429:
@@ -628,6 +628,18 @@ Does the trait "{trait['name']}" apply to this entity?"""
                 # Record success
                 self.selector.record_success(model)
                 break
+
+            except httpx.TimeoutException as e:
+                # Timeout - retry with exponential backoff
+                last_error = e
+                wait_time = retry_delay * (2 ** attempt)
+                logger.warning(f"Timeout evaluating trait '{trait['name']}' (attempt {attempt + 1}/{max_retries}), retrying in {wait_time}s...")
+                if attempt < max_retries - 1:
+                    await asyncio.sleep(wait_time)
+                    continue
+                else:
+                    self.selector.record_failure(model)
+                    raise
 
             except Exception as e:
                 last_error = e

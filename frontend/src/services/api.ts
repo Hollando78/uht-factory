@@ -109,6 +109,19 @@ export const entityAPI = {
     return response.data.entities || [];
   },
 
+  // Lightweight endpoint for list views - only essential fields
+  getEntitiesMinimal: async (): Promise<Pick<UHTEntity, 'uuid' | 'name' | 'uht_code' | 'description' | 'created_at'>[]> => {
+    const response = await api.get('/entities/list/minimal');
+    return response.data.entities || [];
+  },
+
+  searchEntitiesByName: async (name: string, limit = 500): Promise<UHTEntity[]> => {
+    const response = await api.get('/entities/', {
+      params: { name_contains: name, limit }
+    });
+    return response.data.entities || [];
+  },
+
   updateEntity: async (uuid: string, update: {
     name?: string;
     description?: string;
@@ -116,13 +129,29 @@ export const entityAPI = {
   }): Promise<UHTEntity> => {
     const response = await api.patch(`/entities/${uuid}`, update);
     return response.data;
+  },
+
+  // Search by binary pattern (32-char string of 0/1/X)
+  searchByPattern: async (pattern: string, tolerance: number = 0, limit: number = 100): Promise<UHTEntity[]> => {
+    const response = await api.get('/entities/search/pattern', {
+      params: { pattern, tolerance, limit }
+    });
+    return response.data.entities || [];
   }
 };
 
-// Traits API
+// Traits API with caching
+let traitsCache: { data: { traits: Trait[] }; timestamp: number } | null = null;
+const TRAITS_CACHE_TTL = 300000; // 5 minutes - traits rarely change
+
 export const traitsAPI = {
   getAllTraits: async (): Promise<{ traits: Trait[] }> => {
+    const now = Date.now();
+    if (traitsCache && now - traitsCache.timestamp < TRAITS_CACHE_TTL) {
+      return traitsCache.data;
+    }
     const response = await api.get('/traits/');
+    traitsCache = { data: response.data, timestamp: now };
     return response.data;
   },
 

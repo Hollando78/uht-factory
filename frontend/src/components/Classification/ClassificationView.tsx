@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import {
   Box,
   Card,
@@ -14,14 +14,19 @@ import {
   Alert,
   CircularProgress,
   FormControlLabel,
-  Switch
+  Switch,
+  Tooltip,
+  IconButton
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import {
   ExpandMore as ExpandMoreIcon,
   Psychology as BrainIcon,
   AutoAwesome as AutoIcon,
-  CheckCircle as CheckIcon
+  CheckCircle as CheckIcon,
+  Hub as EmbeddingIcon,
+  Image as ImageIcon,
+  OpenInNew as OpenInNewIcon
 } from '@mui/icons-material';
 import { useApp } from '../../context/AppContext';
 import { useMobile } from '../../context/MobileContext';
@@ -207,14 +212,9 @@ export default function ClassificationView() {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 multiline
-                rows={isCompact ? 2 : 3}
+                minRows={isCompact ? 2 : 3}
                 placeholder="Detailed description..."
-                sx={{
-                  mb: 2,
-                  '& .MuiOutlinedInput-root': {
-                    minHeight: isCompact ? 80 : 'auto'
-                  }
-                }}
+                sx={{ mb: 2 }}
               />
 
               <TextField
@@ -222,13 +222,10 @@ export default function ClassificationView() {
                 label="Context (Optional)"
                 value={context}
                 onChange={(e) => setContext(e.target.value)}
+                multiline
+                minRows={1}
                 placeholder="Additional context..."
-                sx={{
-                  mb: 2,
-                  '& .MuiOutlinedInput-root': {
-                    minHeight: isCompact ? 48 : 'auto'
-                  }
-                }}
+                sx={{ mb: 2 }}
               />
 
               {/* Options */}
@@ -298,42 +295,69 @@ export default function ClassificationView() {
   );
 }
 
+// Layer colors - defined at module level to avoid recreation
+const LAYER_COLORS = {
+  Physical: '#FF6B35',
+  Functional: '#00E5FF',
+  Abstract: '#9C27B0',
+  Social: '#4CAF50'
+} as const;
+
 // Classification Results Component
 interface ClassificationResultsProps {
   entity: UHTEntity;
   isCompact?: boolean;
 }
 
-function ClassificationResults({ entity, isCompact = false }: ClassificationResultsProps) {
+const ClassificationResults = memo(function ClassificationResults({ entity, isCompact = false }: ClassificationResultsProps) {
   const activeTraits = entity.trait_evaluations?.filter(t => t.applicable) || [];
+  const hasEmbedding = entity.embedding && entity.embedding.length > 0;
 
-  const layerColors = {
-    Physical: '#FF6B35',
-    Functional: '#00E5FF',
-    Abstract: '#9C27B0',
-    Social: '#4CAF50'
+  // Handle image URL - could be relative path or full URL
+  const getImageUrl = (url: string | undefined) => {
+    if (!url) return null;
+    if (url.startsWith('data:')) return url;
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    return url; // Relative URL will work with proxy
   };
+
+  const imageUrl = getImageUrl(entity.image_url);
 
   return (
     <Card>
       <CardContent sx={{ p: isCompact ? 2 : 3 }}>
-        <Typography
-          variant={isCompact ? 'subtitle1' : 'h6'}
-          gutterBottom
-          sx={{ display: 'flex', alignItems: 'center', fontWeight: 600 }}
-        >
-          <CheckIcon sx={{ mr: 1, color: 'success.main', fontSize: isCompact ? 20 : 24 }} />
-          {isCompact ? 'Results' : 'Classification Results'}
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+          <Typography
+            variant={isCompact ? 'subtitle1' : 'h6'}
+            sx={{ display: 'flex', alignItems: 'center', fontWeight: 600 }}
+          >
+            <CheckIcon sx={{ mr: 1, color: 'success.main', fontSize: isCompact ? 20 : 24 }} />
+            {isCompact ? 'Results' : 'Classification Results'}
+          </Typography>
+          {entity.uuid && (
+            <Tooltip title="Open entity details">
+              <IconButton
+                size="small"
+                onClick={() => window.location.href = `/entity/${entity.uuid}`}
+                sx={{
+                  color: 'primary.main',
+                  '&:hover': { bgcolor: 'primary.main', color: 'white' }
+                }}
+              >
+                <OpenInNewIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
+        </Box>
 
         {/* Entity Header with optional image */}
         <Box sx={{ mb: isCompact ? 2 : 3, p: isCompact ? 1.5 : 2, bgcolor: 'background.default', borderRadius: 2 }}>
           <Box sx={{ display: 'flex', flexDirection: isCompact ? 'column' : 'row', gap: 2 }}>
-            {/* Generated Image */}
-            {entity.image_url && (
+            {/* Generated Image or Placeholder */}
+            {imageUrl ? (
               <Box
                 component="img"
-                src={entity.image_url}
+                src={imageUrl}
                 alt={entity.name}
                 sx={{
                   width: isCompact ? '100%' : 120,
@@ -345,18 +369,48 @@ function ClassificationResults({ entity, isCompact = false }: ClassificationResu
                   flexShrink: 0
                 }}
               />
+            ) : (
+              <Box
+                sx={{
+                  width: isCompact ? '100%' : 120,
+                  height: isCompact ? 160 : 120,
+                  borderRadius: 2,
+                  border: '2px dashed',
+                  borderColor: 'divider',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  bgcolor: 'action.hover',
+                  flexShrink: 0
+                }}
+              >
+                <ImageIcon sx={{ fontSize: 40, color: 'text.disabled' }} />
+              </Box>
             )}
             <Box sx={{ flex: 1 }}>
               <Typography variant={isCompact ? 'h6' : 'h5'} gutterBottom>
                 {entity.name}
               </Typography>
-              <Typography
-                variant={isCompact ? 'h5' : 'h4'}
-                color="primary.main"
-                sx={{ fontFamily: 'monospace', mb: 1, fontSize: isCompact ? '1.5rem' : '2rem' }}
-              >
-                {entity.uht_code}
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                <Typography
+                  variant={isCompact ? 'h5' : 'h4'}
+                  color="primary.main"
+                  sx={{ fontFamily: 'monospace', fontSize: isCompact ? '1.5rem' : '2rem' }}
+                >
+                  {entity.uht_code}
+                </Typography>
+                {/* Status indicators */}
+                {imageUrl && (
+                  <Tooltip title="Has generated image">
+                    <ImageIcon sx={{ fontSize: 18, color: '#E91E63' }} />
+                  </Tooltip>
+                )}
+                {hasEmbedding && (
+                  <Tooltip title={`Has embedding (${entity.embedding?.length} dimensions)`}>
+                    <EmbeddingIcon sx={{ fontSize: 18, color: '#00BCD4' }} />
+                  </Tooltip>
+                )}
+              </Box>
               <Typography variant="body2" color="text.secondary" sx={{ fontSize: isCompact ? '0.8rem' : '0.875rem' }}>
                 {entity.description}
               </Typography>
@@ -378,7 +432,7 @@ function ClassificationResults({ entity, isCompact = false }: ClassificationResu
                 <Paper sx={{ p: isCompact ? 1 : 1.5, textAlign: 'center', bgcolor: 'background.default' }}>
                   <Typography
                     variant={isCompact ? 'caption' : 'subtitle2'}
-                    sx={{ color: layerColors[layer as keyof typeof layerColors], fontWeight: 600 }}
+                    sx={{ color: LAYER_COLORS[layer as keyof typeof LAYER_COLORS], fontWeight: 600 }}
                   >
                     {isCompact ? layer.slice(0, 4) : layer}
                   </Typography>
@@ -435,4 +489,4 @@ function ClassificationResults({ entity, isCompact = false }: ClassificationResu
       </CardContent>
     </Card>
   );
-}
+});

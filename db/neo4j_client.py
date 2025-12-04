@@ -58,6 +58,35 @@ class Neo4jClient:
                     await session.run(constraint)
                 except Exception as e:
                     logger.debug(f"Constraint already exists or error: {e}")
+
+        # Create vector index for embeddings (Neo4j 5.18+)
+        await self._create_vector_index()
+
+    async def _create_vector_index(self):
+        """Create vector index for entity embeddings if not exists"""
+        try:
+            async with self.driver.session() as session:
+                # Check if index already exists
+                result = await session.run("SHOW INDEXES WHERE name = 'entity_embedding'")
+                records = [record async for record in result]
+
+                if not records:
+                    # Create vector index (Neo4j 5.18+)
+                    await session.run("""
+                        CREATE VECTOR INDEX entity_embedding IF NOT EXISTS
+                        FOR (e:Entity) ON (e.embedding)
+                        OPTIONS {
+                            indexConfig: {
+                                `vector.dimensions`: 1536,
+                                `vector.similarity_function`: 'cosine'
+                            }
+                        }
+                    """)
+                    logger.info("Created vector index 'entity_embedding' for semantic search")
+                else:
+                    logger.debug("Vector index 'entity_embedding' already exists")
+        except Exception as e:
+            logger.warning(f"Could not create vector index (requires Neo4j 5.18+): {e}")
     
     async def create_trait(self, trait_data: Dict[str, Any]) -> Dict[str, Any]:
         """Create or update a trait node"""
@@ -78,21 +107,39 @@ class Neo4jClient:
             return dict(record["t"]) if record else None
     
     async def create_entity(self, entity_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Create an entity with its classification"""
+        """Create or update an entity with its classification (MERGE for reclassification support)"""
+
+        # First, delete existing trait relationships if entity exists (for clean reclassification)
+        delete_query = """
+        MATCH (e:Entity {uuid: $uuid})-[r:HAS_TRAIT]->()
+        DELETE r
+        """
+
+        # Use MERGE to create or update the entity
         query = """
-        CREATE (e:Entity {
-            uuid: $uuid,
-            name: $name,
-            description: $description,
-            uht_code: $uht_code,
-            binary_representation: $binary_representation,
-            wikidata_qid: $wikidata_qid,
-            wikidata_type: $wikidata_type,
-            wikidata_type_label: $wikidata_type_label,
-            sitelinks_count: $sitelinks_count,
-            created_at: datetime(),
-            version: 1
-        })
+        MERGE (e:Entity {uuid: $uuid})
+        ON CREATE SET
+            e.name = $name,
+            e.description = $description,
+            e.uht_code = $uht_code,
+            e.binary_representation = $binary_representation,
+            e.wikidata_qid = $wikidata_qid,
+            e.wikidata_type = $wikidata_type,
+            e.wikidata_type_label = $wikidata_type_label,
+            e.sitelinks_count = $sitelinks_count,
+            e.created_at = datetime(),
+            e.version = 1
+        ON MATCH SET
+            e.name = $name,
+            e.description = $description,
+            e.uht_code = $uht_code,
+            e.binary_representation = $binary_representation,
+            e.wikidata_qid = COALESCE($wikidata_qid, e.wikidata_qid),
+            e.wikidata_type = COALESCE($wikidata_type, e.wikidata_type),
+            e.wikidata_type_label = COALESCE($wikidata_type_label, e.wikidata_type_label),
+            e.sitelinks_count = COALESCE($sitelinks_count, e.sitelinks_count),
+            e.updated_at = datetime(),
+            e.version = COALESCE(e.version, 0) + 1
 
         WITH e
         UNWIND $trait_evaluations as eval
@@ -101,10 +148,11 @@ class Neo4jClient:
             applicable: eval.applicable,
             confidence: eval.confidence,
             justification: eval.justification,
+            model_used: eval.model_used,
             evaluated_at: datetime()
         }]->(t)
 
-        RETURN e
+        RETURN DISTINCT e
         """
 
         # Ensure wikidata fields have defaults
@@ -114,9 +162,15 @@ class Neo4jClient:
         entity_data.setdefault("sitelinks_count", None)
 
         async with self.driver.session() as session:
+            # Delete old trait relationships first (if entity exists)
+            await session.run(delete_query, uuid=entity_data["uuid"])
+            # Then create/update entity with new traits
             result = await session.run(query, **entity_data)
-            record = await result.single()
-            return dict(record["e"]) if record else None
+            # Consume all records and get the first one (DISTINCT should return only one)
+            records = [record async for record in result]
+            if records:
+                return dict(records[0]["e"])
+            return None
     
     async def find_entity_by_uuid(self, uuid: str) -> Optional[Dict[str, Any]]:
         """Find entity by UUID"""
@@ -627,4 +681,249 @@ class Neo4jClient:
                 "patterns_above_threshold": len(cross_domain_patterns),
                 "threshold_percent": min_percent,
                 "patterns": cross_domain_patterns[:50]  # Top 50
+            }
+
+    # ===== EMBEDDING METHODS =====
+
+    async def store_entity_embedding(
+        self,
+        uuid: str,
+        embedding: List[float],
+        model_used: str
+    ) -> Dict[str, Any]:
+        """
+        Store embedding vector on an entity node.
+
+        Args:
+            uuid: Entity UUID
+            embedding: 1536-dimensional embedding vector
+            model_used: Name of the embedding model
+
+        Returns:
+            Updated entity data
+        """
+        query = """
+        MATCH (e:Entity {uuid: $uuid})
+        SET e.embedding = $embedding,
+            e.embedding_model = $model_used,
+            e.embedding_created_at = datetime()
+        RETURN e.uuid as uuid,
+               e.name as name,
+               e.embedding_model as embedding_model,
+               e.embedding_created_at as embedding_created_at
+        """
+
+        async with self.driver.session() as session:
+            result = await session.run(
+                query,
+                uuid=uuid,
+                embedding=embedding,
+                model_used=model_used
+            )
+            record = await result.single()
+            if record:
+                return dict(record)
+            return None
+
+    async def get_entity_embedding(self, uuid: str) -> Optional[Dict[str, Any]]:
+        """
+        Get embedding for an entity.
+
+        Args:
+            uuid: Entity UUID
+
+        Returns:
+            Dict with embedding vector and metadata, or None if not found
+        """
+        query = """
+        MATCH (e:Entity {uuid: $uuid})
+        WHERE e.embedding IS NOT NULL
+        RETURN e.uuid as uuid,
+               e.name as name,
+               e.embedding as embedding,
+               e.embedding_model as model_used,
+               e.embedding_created_at as created_at
+        """
+
+        async with self.driver.session() as session:
+            result = await session.run(query, uuid=uuid)
+            record = await result.single()
+            if record:
+                return {
+                    "entity_uuid": record["uuid"],
+                    "name": record["name"],
+                    "embedding": list(record["embedding"]) if record["embedding"] else None,
+                    "dimension": len(record["embedding"]) if record["embedding"] else 0,
+                    "model_used": record["model_used"],
+                    "created_at": str(record["created_at"]) if record["created_at"] else None
+                }
+            return None
+
+    async def find_similar_by_embedding(
+        self,
+        embedding: List[float],
+        limit: int = 20,
+        min_score: float = 0.7
+    ) -> List[Dict[str, Any]]:
+        """
+        Find entities similar to the given embedding using vector index.
+
+        Args:
+            embedding: Query embedding vector (1536 dimensions)
+            limit: Maximum number of results
+            min_score: Minimum similarity score (0-1, cosine similarity)
+
+        Returns:
+            List of similar entities with similarity scores
+        """
+        query = """
+        CALL db.index.vector.queryNodes('entity_embedding', $limit, $embedding)
+        YIELD node, score
+        WHERE score >= $min_score
+        RETURN node.uuid as uuid,
+               node.name as name,
+               node.description as description,
+               node.uht_code as uht_code,
+               node.image_url as image_url,
+               score as similarity_score
+        ORDER BY score DESC
+        """
+
+        try:
+            async with self.driver.session() as session:
+                result = await session.run(
+                    query,
+                    embedding=embedding,
+                    limit=limit,
+                    min_score=min_score
+                )
+                entities = []
+                async for record in result:
+                    entities.append({
+                        "uuid": record["uuid"],
+                        "name": record["name"],
+                        "description": record["description"],
+                        "uht_code": record["uht_code"],
+                        "image_url": record["image_url"],
+                        "similarity_score": round(record["similarity_score"], 4)
+                    })
+                return entities
+        except Exception as e:
+            logger.error(f"Vector similarity search failed: {e}")
+            return []
+
+    async def get_all_embeddings(
+        self,
+        limit: int = 1000,
+        offset: int = 0
+    ) -> List[Dict[str, Any]]:
+        """
+        Get all entities with embeddings.
+
+        Args:
+            limit: Maximum number of results
+            offset: Offset for pagination
+
+        Returns:
+            List of entities with their embeddings
+        """
+        query = """
+        MATCH (e:Entity)
+        WHERE e.embedding IS NOT NULL
+        RETURN e.uuid as uuid,
+               e.name as name,
+               e.embedding as embedding,
+               e.embedding_model as model_used,
+               e.embedding_created_at as created_at
+        ORDER BY e.embedding_created_at DESC
+        SKIP $offset
+        LIMIT $limit
+        """
+
+        async with self.driver.session() as session:
+            result = await session.run(query, limit=limit, offset=offset)
+            embeddings = []
+            async for record in result:
+                embeddings.append({
+                    "entity_uuid": record["uuid"],
+                    "name": record["name"],
+                    "embedding": list(record["embedding"]) if record["embedding"] else None,
+                    "dimension": len(record["embedding"]) if record["embedding"] else 0,
+                    "model_used": record["model_used"],
+                    "created_at": str(record["created_at"]) if record["created_at"] else None
+                })
+            return embeddings
+
+    async def get_entities_without_embeddings(
+        self,
+        limit: int = 100
+    ) -> List[Dict[str, Any]]:
+        """
+        Get entities that don't have embeddings yet.
+
+        Used for batch migration of existing entities.
+
+        Args:
+            limit: Maximum number of results
+
+        Returns:
+            List of entities without embeddings
+        """
+        query = """
+        MATCH (e:Entity)
+        WHERE e.embedding IS NULL
+        OPTIONAL MATCH (e)-[r:HAS_TRAIT]->(t:Trait)
+        WITH e, collect({
+            trait_name: t.name,
+            applicable: r.applicable
+        }) as traits
+        RETURN e.uuid as uuid,
+               e.name as name,
+               e.description as description,
+               e.uht_code as uht_code,
+               e.binary_representation as binary_representation,
+               traits
+        LIMIT $limit
+        """
+
+        async with self.driver.session() as session:
+            result = await session.run(query, limit=limit)
+            entities = []
+            async for record in result:
+                # Build trait evaluations list
+                trait_evaluations = []
+                for trait in record["traits"]:
+                    if trait.get("trait_name"):
+                        trait_evaluations.append({
+                            "trait_name": trait["trait_name"],
+                            "applicable": trait.get("applicable", False)
+                        })
+
+                entities.append({
+                    "uuid": record["uuid"],
+                    "name": record["name"],
+                    "description": record["description"],
+                    "uht_code": record["uht_code"],
+                    "binary_representation": record["binary_representation"],
+                    "trait_evaluations": trait_evaluations
+                })
+            return entities
+
+    async def count_entities_with_embeddings(self) -> Dict[str, int]:
+        """Count entities with and without embeddings"""
+        query = """
+        MATCH (e:Entity)
+        RETURN
+            count(CASE WHEN e.embedding IS NOT NULL THEN 1 END) as with_embeddings,
+            count(CASE WHEN e.embedding IS NULL THEN 1 END) as without_embeddings,
+            count(e) as total
+        """
+
+        async with self.driver.session() as session:
+            result = await session.run(query)
+            record = await result.single()
+            return {
+                "with_embeddings": record["with_embeddings"],
+                "without_embeddings": record["without_embeddings"],
+                "total": record["total"]
             }

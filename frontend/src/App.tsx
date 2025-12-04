@@ -1,8 +1,9 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { CssBaseline, Box, Drawer, useMediaQuery } from '@mui/material';
+import { CssBaseline, Box, Drawer } from '@mui/material';
 import { AppProvider } from './context/AppContext';
 import { MobileProvider, useMobile } from './context/MobileContext';
+import { CollectionProvider } from './context/CollectionContext';
 import Header from './components/Layout/Header';
 import Sidebar from './components/Layout/Sidebar';
 import TraitsView from './components/Traits/TraitsView';
@@ -10,6 +11,8 @@ import MetaClassesView from './components/MetaClasses/MetaClassesView';
 import ClassificationView from './components/Classification/ClassificationView';
 import GraphView from './components/Graph/GraphView';
 import ComparisonView from './components/Comparison/ComparisonView';
+import BuildACodeView from './components/BuildACode/BuildACodeView';
+import CollectionsView from './components/Collections/CollectionsView';
 import ListView from './components/ListView/ListView';
 import GalleryView from './components/Gallery/GalleryView';
 import EntityDetails from './components/Entity/EntityDetails';
@@ -172,6 +175,9 @@ function AppContent() {
             <Route path="/classify" element={<ClassificationView />} />
             <Route path="/graph" element={<GraphView />} />
             <Route path="/comparison" element={<ComparisonView />} />
+            <Route path="/build" element={<BuildACodeView />} />
+            <Route path="/collections" element={<CollectionsView />} />
+            <Route path="/collections/:id" element={<CollectionsView />} />
             <Route path="/list" element={<ListView />} />
             <Route path="/gallery" element={<GalleryView />} />
             <Route path="/entity/:uuid" element={<EntityDetails />} />
@@ -188,11 +194,13 @@ function App() {
     <ThemeProvider theme={darkTheme}>
       <CssBaseline />
       <AppProvider>
-        <Router>
-          <MobileProvider>
-            <AppContent />
-          </MobileProvider>
-        </Router>
+        <CollectionProvider>
+          <Router>
+            <MobileProvider>
+              <AppContent />
+            </MobileProvider>
+          </Router>
+        </CollectionProvider>
       </AppProvider>
     </ThemeProvider>
   );

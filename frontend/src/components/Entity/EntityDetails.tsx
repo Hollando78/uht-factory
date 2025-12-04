@@ -30,10 +30,13 @@ import {
   CompareArrows as SimilarIcon,
   Refresh as RefreshIcon,
   AutoAwesome as PreprocessIcon,
-  Psychology as ClassifyIcon
+  Psychology as ClassifyIcon,
+  Upload as UploadIcon,
+  Hub as EmbeddingIcon
 } from '@mui/icons-material';
 import { entityAPI, traitsAPI, imageAPI, preprocessAPI, classificationAPI, getApiKey } from '../../services/api';
 import { useMobile } from '../../context/MobileContext';
+import AddToCollectionButton from '../common/AddToCollectionButton';
 import type { Trait } from '../../types';
 
 // Layer configuration
@@ -51,6 +54,7 @@ interface EntityData {
   uht_code: string;
   binary_representation: string;
   image_url?: string;
+  embedding?: number[];
   created_at: any;
   updated_at?: any;
   version: number;
@@ -573,9 +577,16 @@ export default function EntityDetails() {
     reasoning: string;
   } | null>(null);
   const [acceptingPreprocess, setAcceptingPreprocess] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const fetchInProgress = React.useRef(false);
 
-  const fetchEntity = async () => {
+  const fetchEntity = React.useCallback(async (force = false) => {
     if (!uuid) return;
+
+    // Prevent duplicate fetches (StrictMode protection)
+    if (fetchInProgress.current && !force) return;
+    fetchInProgress.current = true;
 
     try {
       setLoading(true);
@@ -603,12 +614,14 @@ export default function EntityDetails() {
       setError(err instanceof Error ? err.message : 'Failed to load entity');
     } finally {
       setLoading(false);
+      fetchInProgress.current = false;
     }
-  };
+  }, [uuid]);
 
   useEffect(() => {
+    fetchInProgress.current = false; // Reset on uuid change
     fetchEntity();
-  }, [uuid]);
+  }, [uuid, fetchEntity]);
 
   const handleCopyCode = () => {
     if (entity) {
@@ -642,7 +655,7 @@ export default function EntityDetails() {
       }
 
       // Refresh entity data to get the new image
-      await fetchEntity();
+      await fetchEntity(true);
       setImageError(false);
     } catch (err) {
       console.error('Image generation failed:', err);
@@ -652,6 +665,65 @@ export default function EntityDetails() {
       setImageGenError(errorMessage);
     } finally {
       setGeneratingImage(false);
+    }
+  };
+
+  const handleUploadImage = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !entity?.uuid) return;
+
+    const apiKey = getApiKey();
+    if (!apiKey) {
+      setImageGenError('API key required. Please configure your API key in Settings.');
+      return;
+    }
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setImageGenError('Please select an image file');
+      return;
+    }
+
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      setImageGenError('Image must be less than 10MB');
+      return;
+    }
+
+    setUploadingImage(true);
+    setImageGenError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      formData.append('entity_uuid', entity.uuid);
+
+      const response = await fetch('/api/v1/images/upload', {
+        method: 'POST',
+        headers: {
+          'X-API-Key': apiKey
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Upload failed');
+      }
+
+      // Refresh entity data to get the new image
+      await fetchEntity(true);
+      setImageError(false);
+    } catch (err) {
+      console.error('Image upload failed:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to upload image';
+      setImageGenError(errorMessage);
+    } finally {
+      setUploadingImage(false);
+      // Reset the input so the same file can be selected again
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
@@ -676,7 +748,7 @@ export default function EntityDetails() {
         suggested_description: result.suggested_description,
         additional_context: result.additional_context,
         confidence: result.confidence,
-        reasoning: result.reasoning
+        reasoning: result.reasoning || ''
       });
     } catch (err) {
       console.error('Reprocessing failed:', err);
@@ -715,7 +787,7 @@ export default function EntityDetails() {
       });
 
       // Refresh entity data
-      await fetchEntity();
+      await fetchEntity(true);
       setPreprocessResult(null);
       setActionSuccess(`Entity updated: "${preprocessResult.suggested_name}"`);
     } catch (err) {
@@ -729,7 +801,7 @@ export default function EntityDetails() {
   };
 
   const handleReclassify = async () => {
-    if (!entity?.name) return;
+    if (!entity?.name || !entity?.uuid) return;
 
     const apiKey = getApiKey();
     if (!apiKey) {
@@ -742,8 +814,9 @@ export default function EntityDetails() {
     setActionSuccess(null);
 
     try {
-      const result = await classificationAPI.classifyEntity({
+      await classificationAPI.classifyEntity({
         entity: {
+          uuid: entity.uuid,  // Pass existing UUID to update instead of creating new
           name: entity.name,
           description: entity.description
         },
@@ -754,7 +827,7 @@ export default function EntityDetails() {
       });
 
       // Refresh entity data to get the new classification
-      await fetchEntity();
+      await fetchEntity(true);
       setActionSuccess('Re-classification complete! Entity updated.');
     } catch (err) {
       console.error('Reclassification failed:', err);
@@ -849,7 +922,7 @@ export default function EntityDetails() {
           <Typography variant={isCompact ? 'h6' : 'h5'} sx={{ flex: 1 }}>
             Entity Details
           </Typography>
-          <IconButton onClick={fetchEntity}>
+          <IconButton onClick={() => fetchEntity(true)}>
             <RefreshIcon />
           </IconButton>
         </Box>
@@ -895,72 +968,123 @@ export default function EntityDetails() {
                   {entity.name}
                 </Typography>
 
-                {/* UHT Code */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                  <CodeIcon color="primary" />
+                {/* UHT Code + Actions */}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25, mb: 2 }}>
+                  {/* Hidden file input for upload */}
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleUploadImage}
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                  />
+
                   <Chip
                     label={entity.uht_code}
+                    size="small"
                     sx={{
                       fontFamily: 'monospace',
-                      fontSize: '1.1rem',
+                      fontSize: '0.85rem',
                       fontWeight: 600,
                       backgroundColor: 'rgba(0, 229, 255, 0.2)',
-                      color: 'primary.main'
+                      color: 'primary.main',
+                      height: 24,
+                      '& .MuiChip-label': { px: 1 }
                     }}
                   />
                   <Tooltip title={copied ? 'Copied!' : 'Copy UHT Code'}>
-                    <IconButton size="small" onClick={handleCopyCode}>
-                      {copied ? <CheckIcon color="success" /> : <CopyIcon />}
+                    <IconButton size="small" onClick={handleCopyCode} sx={{ p: 0.25 }}>
+                      {copied ? <CheckIcon color="success" sx={{ fontSize: 16 }} /> : <CopyIcon sx={{ fontSize: 16 }} />}
                     </IconButton>
                   </Tooltip>
-                  <Tooltip title="Generate Image">
+
+                  <Divider orientation="vertical" flexItem sx={{ mx: 0.25, borderColor: 'rgba(255,255,255,0.15)', height: 18, alignSelf: 'center' }} />
+
+                  <Tooltip title="Generate AI Image">
                     <span>
                       <IconButton
                         size="small"
                         onClick={handleGenerateImage}
-                        disabled={generatingImage}
-                        sx={{ ml: 0.5 }}
+                        disabled={generatingImage || uploadingImage}
+                        sx={{ p: 0.25 }}
                       >
                         {generatingImage ? (
-                          <CircularProgress size={20} />
+                          <CircularProgress size={16} />
                         ) : (
-                          <ImageIcon color="secondary" />
+                          <ImageIcon sx={{ fontSize: 18, color: '#E91E63' }} />
                         )}
                       </IconButton>
                     </span>
                   </Tooltip>
+
+                  <Tooltip title="Upload Image">
+                    <span>
+                      <IconButton
+                        size="small"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={generatingImage || uploadingImage}
+                        sx={{ p: 0.25 }}
+                      >
+                        {uploadingImage ? (
+                          <CircularProgress size={16} />
+                        ) : (
+                          <UploadIcon sx={{ fontSize: 18, color: '#4CAF50' }} />
+                        )}
+                      </IconButton>
+                    </span>
+                  </Tooltip>
+
                   <Tooltip title="Re-process (AI Enhancement)">
                     <span>
                       <IconButton
                         size="small"
                         onClick={handleReprocess}
                         disabled={reprocessing || reclassifying}
-                        sx={{ ml: 0.5 }}
+                        sx={{ p: 0.25 }}
                       >
                         {reprocessing ? (
-                          <CircularProgress size={20} />
+                          <CircularProgress size={16} />
                         ) : (
-                          <PreprocessIcon sx={{ color: '#FF9800' }} />
+                          <PreprocessIcon sx={{ fontSize: 18, color: '#FF9800' }} />
                         )}
                       </IconButton>
                     </span>
                   </Tooltip>
+
                   <Tooltip title="Re-classify Entity">
                     <span>
                       <IconButton
                         size="small"
                         onClick={handleReclassify}
                         disabled={reprocessing || reclassifying}
-                        sx={{ ml: 0.5 }}
+                        sx={{ p: 0.25 }}
                       >
                         {reclassifying ? (
-                          <CircularProgress size={20} />
+                          <CircularProgress size={16} />
                         ) : (
-                          <ClassifyIcon sx={{ color: '#9C27B0' }} />
+                          <ClassifyIcon sx={{ fontSize: 18, color: '#9C27B0' }} />
                         )}
                       </IconButton>
                     </span>
                   </Tooltip>
+
+                  <Divider orientation="vertical" flexItem sx={{ mx: 0.25, borderColor: 'rgba(255,255,255,0.15)', height: 18, alignSelf: 'center' }} />
+
+                  <AddToCollectionButton
+                    entityUuid={entity.uuid}
+                    entityName={entity.name}
+                    size="small"
+                  />
+
+                  {/* Status indicators */}
+                  {entity.embedding && entity.embedding.length > 0 && (
+                    <>
+                      <Divider orientation="vertical" flexItem sx={{ mx: 0.25, borderColor: 'rgba(255,255,255,0.15)', height: 18, alignSelf: 'center' }} />
+                      <Tooltip title={`Has embedding (${entity.embedding.length} dimensions)`}>
+                        <EmbeddingIcon sx={{ fontSize: 16, color: '#00BCD4' }} />
+                      </Tooltip>
+                    </>
+                  )}
                 </Box>
 
                 {/* Image generation error */}

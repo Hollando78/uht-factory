@@ -42,6 +42,7 @@ import { useNavigate } from 'react-router-dom';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { entityAPI, traitsAPI } from '../../services/api';
 import { useMobile } from '../../context/MobileContext';
+import AddToCollectionButton from '../common/AddToCollectionButton';
 import type { UHTEntity, Trait } from '../../types';
 
 // Layer configuration
@@ -74,7 +75,7 @@ const metricsCache = new Map<string, EntityMetrics>();
 // Cache for API data (persists across navigation)
 let entitiesCache: { data: UHTEntity[]; timestamp: number } | null = null;
 let traitsCache: { data: Trait[]; timestamp: number } | null = null;
-const CACHE_TTL = 60000; // 1 minute cache
+const CACHE_TTL = 300000; // 5 minute cache for all entities
 
 // LocalStorage keys for filter persistence
 const STORAGE_KEYS = {
@@ -416,7 +417,7 @@ export default function ListView() {
   const fetchData = useCallback(async (forceRefresh = false) => {
     const now = Date.now();
 
-    // Check cache first (unless force refresh)
+    // Check cache first (unless force refresh) - 5 min cache for all entities
     if (!forceRefresh && entitiesCache && traitsCache &&
         now - entitiesCache.timestamp < CACHE_TTL &&
         now - traitsCache.timestamp < CACHE_TTL) {
@@ -429,15 +430,18 @@ export default function ListView() {
     try {
       setLoading(true);
       const [entitiesData, traitsData] = await Promise.all([
-        entityAPI.getAllEntities(),
+        entityAPI.getEntitiesMinimal(),
         traitsAPI.getAllTraits()
       ]);
 
+      // Cast minimal entities to full type (ListView only uses minimal fields)
+      const fullEntities = entitiesData as unknown as UHTEntity[];
+
       // Update cache
-      entitiesCache = { data: entitiesData, timestamp: now };
+      entitiesCache = { data: fullEntities, timestamp: now };
       traitsCache = { data: traitsData.traits || [], timestamp: now };
 
-      setEntities(entitiesData);
+      setEntities(fullEntities);
       setTraits(traitsData.traits || []);
       setError(null);
     } catch (err) {
@@ -890,7 +894,14 @@ export default function ListView() {
                         </Box>
                       </>
                     )}
-                    <Box sx={{ width: '5%', display: 'flex', justifyContent: 'center' }}>
+                    <Box sx={{ width: '8%', display: 'flex', justifyContent: 'center', gap: 0.5 }}>
+                      <Box onClick={(e) => e.stopPropagation()}>
+                        <AddToCollectionButton
+                          entityUuid={entity.uuid}
+                          entityName={entity.name}
+                          size="small"
+                        />
+                      </Box>
                       <IconButton
                         size="small"
                         onClick={(e) => { e.stopPropagation(); handleEntityClick(entity.uuid); }}
