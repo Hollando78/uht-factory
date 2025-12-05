@@ -72,7 +72,7 @@ export default function Header() {
               textOverflow: 'ellipsis'
             }}
           >
-            {getViewTitle(state.currentView)}
+            UHT Factory
             {/* Hide entity info on mobile to save space */}
             {!isMobile && state.selectedEntity && (
               <Typography
@@ -193,20 +193,6 @@ export default function Header() {
       </Collapse>
     </>
   );
-}
-
-function getViewTitle(view: string): string {
-  const titles: Record<string, string> = {
-    classification: 'Classification',
-    graph: '3D Graph',
-    comparison: 'Compare',
-    gallery: 'Gallery',
-    traits: 'Traits',
-    list: 'List',
-    analytics: 'Analytics',
-    'meta-classes': 'Meta-Classes'
-  };
-  return titles[view] || 'UHT Factory';
 }
 
 function getLoadingText(loading: Record<string, boolean>): string {

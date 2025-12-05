@@ -169,7 +169,7 @@ function AppContent() {
           minWidth: 0
         }}>
           <Routes>
-            <Route path="/" element={<ClassificationView />} />
+            <Route path="/" element={<GalleryView />} />
             <Route path="/traits" element={<TraitsView />} />
             <Route path="/meta-classes" element={<MetaClassesView />} />
             <Route path="/classify" element={<ClassificationView />} />

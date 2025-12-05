@@ -126,6 +126,7 @@ export const entityAPI = {
     name?: string;
     description?: string;
     additional_context?: string;
+    nsfw?: boolean;
   }): Promise<UHTEntity> => {
     const response = await api.patch(`/entities/${uuid}`, update);
     return response.data;
@@ -137,6 +138,18 @@ export const entityAPI = {
       params: { pattern, tolerance, limit }
     });
     return response.data.entities || [];
+  },
+
+  // Flag as NSFW (no auth required - anyone can flag)
+  flagNsfw: async (uuid: string): Promise<UHTEntity> => {
+    const response = await api.post(`/entities/${uuid}/flag-nsfw`);
+    return response.data;
+  },
+
+  // Unflag NSFW (requires auth)
+  unflagNsfw: async (uuid: string): Promise<UHTEntity> => {
+    const response = await api.post(`/entities/${uuid}/unflag-nsfw`);
+    return response.data;
   }
 };
 

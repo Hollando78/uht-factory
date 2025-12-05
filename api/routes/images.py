@@ -208,6 +208,7 @@ async def get_image_gallery(
     min_confidence: Optional[float] = None,
     has_wikidata: Optional[bool] = None,
     search: Optional[str] = None,  # Text search filter
+    include_nsfw: bool = False,  # Whether to include NSFW content
     neo4j_client: Neo4jClient = Depends(get_neo4j_client)
 ):
     """
@@ -222,11 +223,16 @@ async def get_image_gallery(
     - **min_confidence**: Filter by minimum average confidence score
     - **has_wikidata**: Filter to only show entities with Wikidata links
     - **search**: Text search filter (searches name and description, case-insensitive)
+    - **include_nsfw**: Include NSFW content (default false)
     """
     try:
         # Build dynamic query based on filters
         where_clauses = ["e.image_url IS NOT NULL"]
         params = {"limit": limit, "offset": offset}
+
+        # Filter NSFW content unless explicitly included
+        if not include_nsfw:
+            where_clauses.append("(e.nsfw IS NULL OR e.nsfw = false)")
 
         # Add text search filter
         if search and search.strip():

@@ -15,7 +15,9 @@ import {
   Divider,
   Card,
   CardContent,
-  Grid
+  Grid,
+  FormControlLabel,
+  Checkbox
 } from '@mui/material';
 import {
   ArrowBack as BackIcon,
@@ -32,7 +34,8 @@ import {
   AutoAwesome as PreprocessIcon,
   Psychology as ClassifyIcon,
   Upload as UploadIcon,
-  Hub as EmbeddingIcon
+  Hub as EmbeddingIcon,
+  Visibility as ViewsIcon
 } from '@mui/icons-material';
 import { entityAPI, traitsAPI, imageAPI, preprocessAPI, classificationAPI, getApiKey } from '../../services/api';
 import { useMobile } from '../../context/MobileContext';
@@ -59,6 +62,8 @@ interface EntityData {
   updated_at?: any;
   version: number;
   traits: TraitEvaluation[];
+  nsfw?: boolean;
+  view_count?: number;
 }
 
 interface TraitEvaluation {
@@ -631,6 +636,37 @@ export default function EntityDetails() {
     }
   };
 
+  const handleToggleNsfw = async () => {
+    if (!entity?.uuid) return;
+
+    const isCurrentlyNsfw = entity.nsfw || false;
+
+    // Unflagging requires API key
+    if (isCurrentlyNsfw) {
+      const apiKey = getApiKey();
+      if (!apiKey) {
+        setActionError('API key required to remove NSFW flag. Configure in Settings.');
+        return;
+      }
+    }
+
+    try {
+      if (isCurrentlyNsfw) {
+        await entityAPI.unflagNsfw(entity.uuid);
+        setEntity(prev => prev ? { ...prev, nsfw: false } : prev);
+        setActionSuccess('NSFW flag removed');
+      } else {
+        await entityAPI.flagNsfw(entity.uuid);
+        setEntity(prev => prev ? { ...prev, nsfw: true } : prev);
+        setActionSuccess('Entity flagged as NSFW');
+      }
+      setTimeout(() => setActionSuccess(null), 2000);
+    } catch (err) {
+      console.error('Failed to update NSFW status:', err);
+      setActionError('Failed to update NSFW status');
+    }
+  };
+
   const handleGenerateImage = async () => {
     if (!entity?.uuid) return;
 
@@ -937,6 +973,7 @@ export default function EntityDetails() {
             <Card sx={{ mb: isCompact ? 2 : 3 }}>
               <Box
                 sx={{
+                  position: 'relative',
                   height: isCompact ? 200 : 250,
                   display: 'flex',
                   alignItems: 'center',
@@ -962,6 +999,14 @@ export default function EntityDetails() {
                     <Typography variant="body2">No image available</Typography>
                   </Box>
                 )}
+                {/* Add to Collection button overlay */}
+                <Box sx={{ position: 'absolute', top: 8, right: 8 }}>
+                  <AddToCollectionButton
+                    entityUuid={entity.uuid}
+                    entityName={entity.name}
+                    size="small"
+                  />
+                </Box>
               </Box>
               <CardContent>
                 <Typography variant="h5" gutterBottom>
@@ -969,7 +1014,19 @@ export default function EntityDetails() {
                 </Typography>
 
                 {/* UHT Code + Actions */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25, mb: 2 }}>
+                <Box sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: { xs: 0, sm: 0.25 },
+                  mb: 2,
+                  flexWrap: 'nowrap',
+                  '& .MuiIconButton-root': {
+                    p: { xs: 0.125, sm: 0.25 }
+                  },
+                  '& .MuiSvgIcon-root': {
+                    fontSize: { xs: 14, sm: 16 }
+                  }
+                }}>
                   {/* Hidden file input for upload */}
                   <input
                     type="file"
@@ -984,12 +1041,12 @@ export default function EntityDetails() {
                     size="small"
                     sx={{
                       fontFamily: 'monospace',
-                      fontSize: '0.85rem',
+                      fontSize: { xs: '0.7rem', sm: '0.85rem' },
                       fontWeight: 600,
                       backgroundColor: 'rgba(0, 229, 255, 0.2)',
                       color: 'primary.main',
-                      height: 24,
-                      '& .MuiChip-label': { px: 1 }
+                      height: { xs: 20, sm: 24 },
+                      '& .MuiChip-label': { px: { xs: 0.5, sm: 1 } }
                     }}
                   />
                   <Tooltip title={copied ? 'Copied!' : 'Copy UHT Code'}>
@@ -998,7 +1055,7 @@ export default function EntityDetails() {
                     </IconButton>
                   </Tooltip>
 
-                  <Divider orientation="vertical" flexItem sx={{ mx: 0.25, borderColor: 'rgba(255,255,255,0.15)', height: 18, alignSelf: 'center' }} />
+                  <Divider orientation="vertical" flexItem sx={{ mx: { xs: 0.125, sm: 0.25 }, borderColor: 'rgba(255,255,255,0.15)', height: { xs: 14, sm: 18 }, alignSelf: 'center' }} />
 
                   <Tooltip title="Generate AI Image">
                     <span>
@@ -1068,23 +1125,6 @@ export default function EntityDetails() {
                     </span>
                   </Tooltip>
 
-                  <Divider orientation="vertical" flexItem sx={{ mx: 0.25, borderColor: 'rgba(255,255,255,0.15)', height: 18, alignSelf: 'center' }} />
-
-                  <AddToCollectionButton
-                    entityUuid={entity.uuid}
-                    entityName={entity.name}
-                    size="small"
-                  />
-
-                  {/* Status indicators */}
-                  {entity.embedding && entity.embedding.length > 0 && (
-                    <>
-                      <Divider orientation="vertical" flexItem sx={{ mx: 0.25, borderColor: 'rgba(255,255,255,0.15)', height: 18, alignSelf: 'center' }} />
-                      <Tooltip title={`Has embedding (${entity.embedding.length} dimensions)`}>
-                        <EmbeddingIcon sx={{ fontSize: 16, color: '#00BCD4' }} />
-                      </Tooltip>
-                    </>
-                  )}
                 </Box>
 
                 {/* Image generation error */}
@@ -1165,7 +1205,7 @@ export default function EntityDetails() {
                 )}
 
                 {/* Stats */}
-                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2 }}>
+                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2, alignItems: 'center' }}>
                   <Chip
                     icon={<TraitIcon />}
                     label={`${activeTraitCount}/${totalTraitCount} traits`}
@@ -1177,6 +1217,55 @@ export default function EntityDetails() {
                     label={`v${entity.version}`}
                     size="small"
                     variant="outlined"
+                  />
+                  {(entity.view_count !== undefined && entity.view_count > 0) && (
+                    <Chip
+                      icon={<ViewsIcon />}
+                      label={`${entity.view_count} views`}
+                      size="small"
+                      variant="outlined"
+                      sx={{
+                        borderColor: 'text.secondary',
+                        '& .MuiChip-icon': { color: 'text.secondary' }
+                      }}
+                    />
+                  )}
+                  {entity.embedding && entity.embedding.length > 0 && (
+                    <Tooltip title={`Has embedding (${entity.embedding.length} dimensions)`}>
+                      <Chip
+                        icon={<EmbeddingIcon />}
+                        label="Embedded"
+                        size="small"
+                        variant="outlined"
+                        sx={{
+                          borderColor: '#00BCD4',
+                          color: '#00BCD4',
+                          '& .MuiChip-icon': { color: '#00BCD4' }
+                        }}
+                      />
+                    </Tooltip>
+                  )}
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={entity.nsfw || false}
+                        onChange={handleToggleNsfw}
+                        size="small"
+                        sx={{
+                          color: 'rgba(255,255,255,0.5)',
+                          '&.Mui-checked': { color: '#f44336' },
+                          p: 0.5
+                        }}
+                      />
+                    }
+                    label="NSFW"
+                    sx={{
+                      ml: 'auto',
+                      '& .MuiFormControlLabel-label': {
+                        fontSize: '0.75rem',
+                        color: entity.nsfw ? '#f44336' : 'text.secondary'
+                      }
+                    }}
                   />
                 </Box>
 

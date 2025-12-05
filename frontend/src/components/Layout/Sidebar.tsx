@@ -34,6 +34,7 @@ interface NavItem {
   icon: React.ReactElement;
   description: string;
   hideOnMobile?: boolean;
+  hidden?: boolean;
 }
 
 const navItems: NavItem[] = [
@@ -60,7 +61,8 @@ const navItems: NavItem[] = [
     label: '3D Graph',
     icon: <GraphIcon />,
     description: 'Explore entity relationships',
-    hideOnMobile: true
+    hideOnMobile: true,
+    hidden: true  // Non-functional at present
   },
   {
     path: '/comparison',
@@ -111,10 +113,10 @@ export default function Sidebar({ onNavigate }: SidebarProps) {
   const { state } = useApp();
   const { isMobile } = useMobile();
 
-  // Filter out mobile-hidden items when on mobile
-  const visibleNavItems = isMobile
-    ? navItems.filter(item => !item.hideOnMobile)
-    : navItems;
+  // Filter out hidden items and mobile-hidden items when on mobile
+  const visibleNavItems = navItems
+    .filter(item => !item.hidden)
+    .filter(item => !isMobile || !item.hideOnMobile);
 
   const isSelected = (path: string) => location.pathname === path;
 

@@ -54,7 +54,14 @@ class Entity(BaseModel):
     wikidata_type: Optional[str] = Field(None, description="Wikidata type Q-ID")
     wikidata_type_label: Optional[str] = Field(None, description="Wikidata type label")
     sitelinks_count: Optional[int] = Field(None, description="Wikidata sitelinks count")
-    
+
+    # Generated assets
+    image_url: Optional[str] = Field(None, description="Generated image URL")
+    embedding: Optional[List[float]] = Field(None, description="Entity embedding vector")
+
+    # Content flags
+    nsfw: bool = Field(default=False, description="NSFW content flag")
+
     class Config:
         json_schema_extra = {
             "example": {

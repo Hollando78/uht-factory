@@ -19,7 +19,11 @@ import {
   CircularProgress,
   TextField,
   InputAdornment,
-  Tooltip
+  Collapse,
+  Badge,
+  Paper,
+  FormControlLabel,
+  Checkbox
 } from '@mui/material';
 import {
   Close as CloseIcon,
@@ -31,7 +35,11 @@ import {
   Sort as SortIcon,
   Search as SearchIcon,
   Clear as ClearIcon,
-  AutoAwesome as SemanticIcon
+  AutoAwesome as SemanticIcon,
+  FilterList as FilterIcon,
+  ExpandMore as ExpandMoreIcon,
+  ExpandLess as ExpandLessIcon,
+  Refresh as RefreshIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useMobile } from '../../context/MobileContext';
@@ -106,7 +114,8 @@ const GALLERY_STORAGE_KEYS = {
   sortBy: 'gallery_sortBy',
   hasWikidata: 'gallery_hasWikidata',
   textSearch: 'gallery_textSearch',
-  viewMode: 'gallery_viewMode'
+  viewMode: 'gallery_viewMode',
+  includeNsfw: 'gallery_includeNsfw'
 };
 
 // Load persisted filters from localStorage
@@ -117,10 +126,11 @@ const loadGalleryFilters = () => {
       sortBy: (localStorage.getItem(GALLERY_STORAGE_KEYS.sortBy) as SortOption) || 'newest',
       hasWikidata: localStorage.getItem(GALLERY_STORAGE_KEYS.hasWikidata) || 'all',
       textSearch: localStorage.getItem(GALLERY_STORAGE_KEYS.textSearch) || '',
-      viewMode: (localStorage.getItem(GALLERY_STORAGE_KEYS.viewMode) as 'grid' | 'freeform') || 'grid'
+      viewMode: (localStorage.getItem(GALLERY_STORAGE_KEYS.viewMode) as 'grid' | 'freeform') || 'grid',
+      includeNsfw: localStorage.getItem(GALLERY_STORAGE_KEYS.includeNsfw) === 'true'
     };
   } catch {
-    return { layerFilter: '', sortBy: 'newest' as SortOption, hasWikidata: 'all', textSearch: '', viewMode: 'grid' as const };
+    return { layerFilter: '', sortBy: 'newest' as SortOption, hasWikidata: 'all', textSearch: '', viewMode: 'grid' as const, includeNsfw: false };
   }
 };
 
@@ -208,8 +218,9 @@ const DraggableCard: FC<{
     setIsDragging(false);
   }, []);
 
-  // Touch event handlers
+  // Touch event handlers - disabled on mobile
   const handleTouchStart = (e: React.TouchEvent) => {
+    if (isMobile) return; // Disable touch drag on mobile
     if (e.touches.length !== 1) return;
     const touch = e.touches[0];
     setIsDragging(true);
@@ -271,12 +282,12 @@ const DraggableCard: FC<{
         width: position.width,
         height: position.height,
         zIndex: position.zIndex,
-        cursor: isDragging ? 'grabbing' : 'grab',
+        cursor: isMobile ? 'pointer' : (isDragging ? 'grabbing' : 'grab'),
         boxShadow: isDragging ? '0 8px 32px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.1)',
         transition: isDragging ? 'none' : 'box-shadow 0.2s ease',
         transform: isDragging ? 'scale(1.02)' : 'scale(1)',
         border: '2px solid transparent',
-        touchAction: isMobile ? 'none' : 'auto', // Prevent scroll interference on mobile
+        touchAction: isMobile ? 'auto' : 'none', // Allow scroll on mobile, prevent on desktop
         '&:hover': {
           border: `2px solid ${layerColors[item.dominant_layer] || layerColors.Unknown}`,
           boxShadow: '0 4px 16px rgba(0,0,0,0.2)'
@@ -287,25 +298,63 @@ const DraggableCard: FC<{
       onClick={handleClick}
       onDoubleClick={() => !isMobile && onDoubleClick(item)}
     >
-      <CardMedia
-        component="img"
-        image={getImageUrl(item.image_url)}
-        alt={item.name}
-        sx={{
-          height: position.height * 0.7,
-          objectFit: 'cover'
-        }}
-        onLoad={handleImageLoad}
-        onError={(e) => {
-          const target = e.target as HTMLImageElement;
-          target.style.display = 'none';
-        }}
-      />
+      {/* Image with overlay buttons */}
+      <Box sx={{ position: 'relative', height: position.height * 0.7 }}>
+        <CardMedia
+          component="img"
+          image={getImageUrl(item.image_url)}
+          alt={item.name}
+          sx={{
+            height: '100%',
+            objectFit: 'cover'
+          }}
+          onLoad={handleImageLoad}
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            target.style.display = 'none';
+          }}
+        />
+        {/* Top-right: Add to collection */}
+        <Box
+          sx={{ position: 'absolute', top: 4, right: 4 }}
+          onClick={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+        >
+          <AddToCollectionButton
+            entityUuid={item.uuid}
+            entityName={item.name}
+            size="small"
+          />
+        </Box>
+        {/* Bottom-right: Open entity */}
+        <IconButton
+          size="small"
+          onClick={(e) => {
+            e.stopPropagation();
+            onOpenEntity(item);
+          }}
+          onMouseDown={(e) => e.stopPropagation()}
+          sx={{
+            position: 'absolute',
+            bottom: 4,
+            right: 4,
+            p: 0.5,
+            backgroundColor: 'rgba(0,0,0,0.6)',
+            color: 'white',
+            '&:hover': {
+              backgroundColor: layerColors[item.dominant_layer] || layerColors.Unknown
+            }
+          }}
+          title="Open entity definition"
+        >
+          <OpenInNewIcon sx={{ fontSize: isMobile ? '0.7rem' : '0.85rem' }} />
+        </IconButton>
+      </Box>
       <CardContent sx={{
         height: position.height * 0.3,
         minHeight: 0,
-        p: 0.75,
-        '&:last-child': { pb: 0.75 },
+        p: isMobile ? 0.5 : 0.75,
+        '&:last-child': { pb: isMobile ? 0.5 : 0.75 },
         position: 'relative',
         overflow: 'hidden',
         display: 'flex',
@@ -317,7 +366,7 @@ const DraggableCard: FC<{
           component="h3"
           sx={{
             fontWeight: 'bold',
-            fontSize: '0.65rem',
+            fontSize: isMobile ? '0.55rem' : '0.65rem',
             lineHeight: 1.2,
             overflow: 'hidden',
             textOverflow: 'ellipsis',
@@ -327,59 +376,63 @@ const DraggableCard: FC<{
           {item.name}
         </Typography>
 
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, overflow: 'hidden' }}>
-          <Chip
-            label={item.dominant_layer}
-            size="small"
-            sx={{
-              backgroundColor: layerColors[item.dominant_layer] || layerColors.Unknown,
-              color: 'white',
-              fontSize: '0.65rem',
-              height: '20px',
-              '& .MuiChip-label': { px: 0.75 }
-            }}
-          />
-          <Chip
-            label={item.uht_code}
-            size="small"
-            variant="outlined"
-            sx={{
-              fontSize: '0.6rem',
-              height: '20px',
-              fontFamily: 'monospace',
-              '& .MuiChip-label': { px: 0.6 }
-            }}
-          />
-          <Box
-            sx={{ ml: 'auto', display: 'flex', alignItems: 'center' }}
-            onClick={(e) => e.stopPropagation()}
-            onMouseDown={(e) => e.stopPropagation()}
-          >
-            <AddToCollectionButton
-              entityUuid={item.uuid}
-              entityName={item.name}
-              size="small"
-            />
-            <IconButton
-              size="small"
-              onClick={(e) => {
-                e.stopPropagation();
-                onOpenEntity(item);
-              }}
-              onMouseDown={(e) => e.stopPropagation()}
+        {isMobile ? (
+          /* Mobile: stacked layout */
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
+            <Typography
+              variant="caption"
               sx={{
-                p: 0.25,
-                '&:hover': {
-                  backgroundColor: layerColors[item.dominant_layer] || layerColors.Unknown,
-                  color: 'white'
-                }
+                fontFamily: 'monospace',
+                fontSize: '0.5rem',
+                color: 'text.secondary',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap'
               }}
-              title="Open entity definition"
             >
-              <OpenInNewIcon sx={{ fontSize: '0.75rem' }} />
-            </IconButton>
+              {item.uht_code}
+            </Typography>
+            <Chip
+              label={item.dominant_layer.slice(0, 1)}
+              size="small"
+              sx={{
+                backgroundColor: layerColors[item.dominant_layer] || layerColors.Unknown,
+                color: 'white',
+                fontSize: '0.5rem',
+                height: '14px',
+                minWidth: '14px',
+                width: 'fit-content',
+                '& .MuiChip-label': { px: 0.25 }
+              }}
+            />
           </Box>
-        </Box>
+        ) : (
+          /* Desktop: horizontal layout */
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, overflow: 'hidden' }}>
+            <Chip
+              label={item.dominant_layer}
+              size="small"
+              sx={{
+                backgroundColor: layerColors[item.dominant_layer] || layerColors.Unknown,
+                color: 'white',
+                fontSize: '0.65rem',
+                height: '20px',
+                '& .MuiChip-label': { px: 0.75 }
+              }}
+            />
+            <Chip
+              label={item.uht_code}
+              size="small"
+              variant="outlined"
+              sx={{
+                fontSize: '0.6rem',
+                height: '20px',
+                fontFamily: 'monospace',
+                '& .MuiChip-label': { px: 0.6 }
+              }}
+            />
+          </Box>
+        )}
       </CardContent>
     </Card>
   );
@@ -539,6 +592,25 @@ export default function GalleryView() {
   const [isSearching, setIsSearching] = useState(false);
   const [isSemanticMode, setIsSemanticMode] = useState(false);
 
+  // Mobile filter collapse state
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
+
+  // NSFW filter state
+  const [includeNsfw, setIncludeNsfwState] = useState(persistedFilters.includeNsfw);
+  const setIncludeNsfw = (value: boolean) => {
+    setIncludeNsfwState(value);
+    saveGalleryFilter('includeNsfw', value.toString());
+  };
+
+  // Count active filters for badge
+  const activeFilterCount = [
+    layerFilter ? 1 : 0,
+    activeTextSearch ? 1 : 0,
+    hasWikidata !== 'all' ? 1 : 0,
+    isSemanticMode ? 1 : 0,
+    includeNsfw ? 1 : 0
+  ].reduce((a, b) => a + b, 0);
+
   const handleOpenEntity = (item: GalleryItem) => {
     // Track view
     trackEntityView(item.uuid);
@@ -592,6 +664,9 @@ export default function GalleryView() {
       }
       if (search && search.trim()) {
         url.searchParams.set('search', search.trim());
+      }
+      if (includeNsfw) {
+        url.searchParams.set('include_nsfw', 'true');
       }
 
       const response = await fetch(url.toString());
@@ -701,7 +776,8 @@ export default function GalleryView() {
       layerFilter: layer || '',
       sortBy: sort || sortBy,
       hasWikidata: wikidata || hasWikidata,
-      textSearch: activeTextSearch
+      textSearch: activeTextSearch,
+      includeNsfw
     };
 
     // Check cache first (only for initial load, not append mode)
@@ -711,7 +787,8 @@ export default function GalleryView() {
         galleryCache.filters.layerFilter === currentFilters.layerFilter &&
         galleryCache.filters.sortBy === currentFilters.sortBy &&
         galleryCache.filters.hasWikidata === currentFilters.hasWikidata &&
-        galleryCache.filters.textSearch === currentFilters.textSearch;
+        galleryCache.filters.textSearch === currentFilters.textSearch &&
+        (galleryCache.filters as any).includeNsfw === currentFilters.includeNsfw;
 
       if (filtersMatch && now - galleryCache.timestamp < CACHE_TTL) {
         setGallery(galleryCache.data);
@@ -749,6 +826,9 @@ export default function GalleryView() {
         url.searchParams.set('has_wikidata', 'true');
       } else if (wikidataFilter === 'no') {
         url.searchParams.set('has_wikidata', 'false');
+      }
+      if (includeNsfw) {
+        url.searchParams.set('include_nsfw', 'true');
       }
 
       const response = await fetch(url.toString());
@@ -818,10 +898,13 @@ export default function GalleryView() {
       const containerWidth = containerRef.current?.clientWidth || (isCompact ? 375 : 1200);
       const containerHeight = containerRef.current?.clientHeight || 800;
 
-      // Use smaller cards on mobile
-      const cardWidth = isCompact ? 140 : 200;
-      const cardHeight = isCompact ? 180 : 260;
-      const spacing = isCompact ? 12 : 20;
+      // Mobile: force 3 columns, calculate card width based on container
+      const spacing = isCompact ? 8 : 20;
+      const cols = isCompact ? 3 : Math.max(1, Math.floor((containerWidth - spacing) / (200 + spacing)));
+      const cardWidth = isCompact
+        ? Math.floor((containerWidth - spacing * 4) / 3)  // 3 cards with spacing
+        : 200;
+      const cardHeight = isCompact ? Math.floor(cardWidth * 1.4) : 260;  // Maintain aspect ratio
 
       displayItems.forEach((item, index) => {
         // Skip items that already have positions (unless in freeform mode which randomizes)
@@ -831,8 +914,6 @@ export default function GalleryView() {
         const effectiveViewMode = isCompact ? 'grid' : viewMode;
 
         if (effectiveViewMode === 'grid') {
-          // Calculate how many columns can fit in the available width (min 1)
-          const cols = Math.max(1, Math.floor((containerWidth - spacing) / (cardWidth + spacing)));
           const row = Math.floor(index / cols);
           const col = index % cols;
 
@@ -885,7 +966,7 @@ export default function GalleryView() {
     } else {
       fetchGallery(layerFilter || undefined, sortBy, hasWikidata, false);
     }
-  }, [layerFilter, sortBy, hasWikidata, activeTextSearch]);
+  }, [layerFilter, sortBy, hasWikidata, activeTextSearch, includeNsfw]);
 
   // Scroll-based infinite scroll (more reliable with absolute positioning)
   // Disabled in search mode since search results are not paginated
@@ -978,195 +1059,248 @@ export default function GalleryView() {
       bgcolor: 'background.default'
     }}>
       {/* Controls Bar */}
-      <Box sx={{
-        p: isCompact ? 1 : 2,
-        display: 'flex',
-        alignItems: 'center',
-        gap: isCompact ? 1 : 2,
-        borderBottom: '1px solid',
-        borderColor: 'divider',
-        bgcolor: 'background.paper',
-        flexWrap: 'wrap'
-      }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+      <Paper sx={{ p: isCompact ? 1.5 : 2, borderRadius: 0, borderBottom: '1px solid rgba(0, 229, 255, 0.3)', flexShrink: 0 }}>
+        {/* Header Row */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: isCompact ? 1 : 2, mb: isCompact ? 1 : 2, flexWrap: 'wrap' }}>
           <GalleryIcon color="primary" sx={{ fontSize: isCompact ? 20 : 24 }} />
-          <Typography variant={isCompact ? 'subtitle1' : 'h6'}>
-            Gallery
+          <Typography variant={isCompact ? 'subtitle1' : 'h6'} color="primary" sx={{ fontWeight: 600 }}>
+            {isCompact ? 'Gallery' : 'Image Gallery'}
           </Typography>
+          <Chip
+            label={isCompact ? `${gallery.length}/${totalCount}` : `${gallery.length} of ${totalCount} images`}
+            size="small"
+            color="primary"
+            variant="outlined"
+            sx={{ fontSize: isCompact ? '0.7rem' : '0.8rem' }}
+          />
+          {(loading || isSearching) && <CircularProgress size={16} />}
+
+          {/* Mobile: Filter toggle and refresh buttons */}
+          {isCompact && (
+            <Box sx={{ ml: 'auto', display: 'flex', gap: 0.5 }}>
+              <Badge badgeContent={activeFilterCount} color="primary">
+                <IconButton
+                  size="small"
+                  onClick={() => setFiltersExpanded(!filtersExpanded)}
+                  sx={{
+                    minWidth: 44,
+                    minHeight: 44,
+                    backgroundColor: filtersExpanded ? 'rgba(0, 229, 255, 0.15)' : 'rgba(255,255,255,0.03)',
+                    border: '1px solid rgba(255,255,255,0.1)'
+                  }}
+                >
+                  <FilterIcon sx={{ fontSize: 18 }} />
+                  {filtersExpanded ? <ExpandLessIcon sx={{ fontSize: 14, ml: -0.5 }} /> : <ExpandMoreIcon sx={{ fontSize: 14, ml: -0.5 }} />}
+                </IconButton>
+              </Badge>
+              <IconButton
+                size="small"
+                onClick={() => fetchGallery(layerFilter || undefined, sortBy, hasWikidata, false, true)}
+                disabled={loading}
+                sx={{
+                  minWidth: 44,
+                  minHeight: 44,
+                  backgroundColor: 'rgba(255,255,255,0.03)',
+                  border: '1px solid rgba(255,255,255,0.1)'
+                }}
+              >
+                <RefreshIcon sx={{ fontSize: 18 }} />
+              </IconButton>
+            </Box>
+          )}
         </Box>
 
-        {/* Simple Text Search - filters by name/description (Enter or click to search) */}
-        <Tooltip title="Filter by name. Press Enter or click 🔍 to search." arrow>
-          <TextField
-            size="small"
-            placeholder="Filter by name..."
-            value={textSearch}
-            onChange={(e) => setTextSearch(e.target.value)}
-            onKeyDown={handleTextSearchKeyDown}
-            disabled={isSemanticMode}
-            sx={{
-              minWidth: isCompact ? 100 : 150,
-              maxWidth: isCompact ? 130 : 180,
-              '& .MuiOutlinedInput-root': {
-                fontSize: isCompact ? '0.85rem' : '1rem',
-                bgcolor: activeTextSearch ? 'action.selected' : 'transparent'
-              }
-            }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <IconButton
-                    size="small"
-                    onClick={handleTextSearchSubmit}
-                    disabled={isSemanticMode || !textSearch.trim()}
-                    sx={{ p: 0, mr: -0.5 }}
-                  >
-                    <SearchIcon sx={{ fontSize: 18, color: textSearch.trim() ? 'primary.main' : 'action.active' }} />
-                  </IconButton>
-                </InputAdornment>
-              ),
-              endAdornment: textSearch && (
-                <InputAdornment position="end">
-                  <IconButton
-                    size="small"
-                    onClick={clearTextSearch}
-                    edge="end"
-                    sx={{ p: 0.5 }}
-                  >
-                    <ClearIcon sx={{ fontSize: 16 }} />
-                  </IconButton>
-                </InputAdornment>
-              )
-            }}
-          />
-        </Tooltip>
+        {/* Filters - collapsible on mobile */}
+        <Collapse in={!isCompact || filtersExpanded}>
+          <Box sx={{ display: 'flex', gap: isCompact ? 1 : 1.5, flexWrap: 'wrap', alignItems: 'center' }}>
+            {/* Simple Text Search */}
+            <TextField
+              size="small"
+              placeholder="Search by name..."
+              value={textSearch}
+              onChange={(e) => setTextSearch(e.target.value)}
+              onKeyDown={handleTextSearchKeyDown}
+              disabled={isSemanticMode}
+              sx={{
+                width: isCompact ? '100%' : 180,
+                '& .MuiOutlinedInput-root': {
+                  height: isCompact ? 44 : 36,
+                  fontSize: isCompact ? '0.85rem' : '1rem',
+                  bgcolor: activeTextSearch ? 'action.selected' : 'rgba(255,255,255,0.03)'
+                }
+              }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <IconButton
+                      size="small"
+                      onClick={handleTextSearchSubmit}
+                      disabled={isSemanticMode || !textSearch.trim()}
+                      sx={{ p: 0, mr: -0.5 }}
+                    >
+                      <SearchIcon sx={{ fontSize: 18, color: textSearch.trim() ? 'primary.main' : 'action.active' }} />
+                    </IconButton>
+                  </InputAdornment>
+                ),
+                endAdornment: textSearch && (
+                  <InputAdornment position="end">
+                    <IconButton size="small" onClick={clearTextSearch} edge="end" sx={{ p: 0.5 }}>
+                      <ClearIcon sx={{ fontSize: 16 }} />
+                    </IconButton>
+                  </InputAdornment>
+                )
+              }}
+            />
 
-        {/* Semantic Search Input - press Enter or click icon to search */}
-        <Tooltip title="AI semantic search. Press Enter or click ✨ to search." arrow>
-          <TextField
-            size="small"
-            placeholder={isCompact ? "AI search..." : "Semantic search..."}
-            value={semanticQuery}
-            onChange={(e) => setSemanticQuery(e.target.value)}
-            onKeyDown={handleSemanticKeyDown}
-            sx={{
-              minWidth: isCompact ? 100 : 160,
-              maxWidth: isCompact ? 140 : 200,
-              '& .MuiOutlinedInput-root': {
-                fontSize: isCompact ? '0.85rem' : '1rem',
-                bgcolor: isSemanticMode ? 'action.selected' : 'transparent'
-              }
-            }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <IconButton
-                    size="small"
-                    onClick={performSemanticSearch}
-                    disabled={!semanticQuery.trim() || isSearching}
-                    sx={{ p: 0.25 }}
-                  >
-                    {isSearching ? (
-                      <CircularProgress size={16} />
-                    ) : (
-                      <SemanticIcon sx={{ fontSize: 18, color: isSemanticMode ? 'primary.main' : 'action.active' }} />
-                    )}
-                  </IconButton>
-                </InputAdornment>
-              ),
-              endAdornment: (semanticQuery || isSemanticMode) && (
-                <InputAdornment position="end">
-                  <IconButton
-                    size="small"
-                    onClick={clearSemanticSearch}
-                    edge="end"
-                    sx={{ p: 0.5 }}
-                  >
-                    <ClearIcon sx={{ fontSize: 16 }} />
-                  </IconButton>
-                </InputAdornment>
-              )
-            }}
-          />
-        </Tooltip>
+            {/* Semantic Search */}
+            <TextField
+              size="small"
+              placeholder={isCompact ? "AI search..." : "Semantic search..."}
+              value={semanticQuery}
+              onChange={(e) => setSemanticQuery(e.target.value)}
+              onKeyDown={handleSemanticKeyDown}
+              sx={{
+                width: isCompact ? '100%' : 180,
+                '& .MuiOutlinedInput-root': {
+                  height: isCompact ? 44 : 36,
+                  fontSize: isCompact ? '0.85rem' : '1rem',
+                  bgcolor: isSemanticMode ? 'action.selected' : 'rgba(255,255,255,0.03)'
+                }
+              }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <IconButton
+                      size="small"
+                      onClick={performSemanticSearch}
+                      disabled={!semanticQuery.trim() || isSearching}
+                      sx={{ p: 0.25 }}
+                    >
+                      {isSearching ? (
+                        <CircularProgress size={16} />
+                      ) : (
+                        <SemanticIcon sx={{ fontSize: 18, color: isSemanticMode ? 'primary.main' : 'action.active' }} />
+                      )}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+                endAdornment: (semanticQuery || isSemanticMode) && (
+                  <InputAdornment position="end">
+                    <IconButton size="small" onClick={clearSemanticSearch} edge="end" sx={{ p: 0.5 }}>
+                      <ClearIcon sx={{ fontSize: 16 }} />
+                    </IconButton>
+                  </InputAdornment>
+                )
+              }}
+            />
 
-        {/* Sort dropdown - hidden in semantic search mode */}
-        {!isSemanticMode && (
-          <FormControl size="small" sx={{ minWidth: isCompact ? 100 : 130 }}>
-            <InputLabel sx={{ fontSize: isCompact ? '0.8rem' : '1rem' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <SortIcon sx={{ fontSize: 16 }} /> Sort
-              </Box>
-            </InputLabel>
-            <Select
-              value={sortBy}
-              label="Sort"
-              onChange={(e) => setSortBy(e.target.value as SortOption)}
-              sx={{ fontSize: isCompact ? '0.85rem' : '1rem' }}
-            >
-              <MenuItem value="newest">Newest</MenuItem>
-              <MenuItem value="most_views">Most Views</MenuItem>
-              <MenuItem value="uht_code">UHT Code</MenuItem>
-              <MenuItem value="name">Name</MenuItem>
-              <MenuItem value="random">Random</MenuItem>
-            </Select>
-          </FormControl>
-        )}
-
-        {/* Layer filter - hidden in semantic search mode */}
-        {!isSemanticMode && (
-          <FormControl size="small" sx={{ minWidth: isCompact ? 100 : 130 }}>
-            <InputLabel sx={{ fontSize: isCompact ? '0.8rem' : '1rem' }}>
-              Layer
-            </InputLabel>
-            <Select
-              value={layerFilter}
-              label="Layer"
-              onChange={(e) => setLayerFilter(e.target.value)}
-              sx={{ fontSize: isCompact ? '0.85rem' : '1rem' }}
-            >
-              <MenuItem value="">All Layers</MenuItem>
-              <MenuItem value="Physical">Physical</MenuItem>
-              <MenuItem value="Functional">Functional</MenuItem>
-              <MenuItem value="Abstract">Abstract</MenuItem>
-              <MenuItem value="Social">Social</MenuItem>
-            </Select>
-          </FormControl>
-        )}
-
-        {/* Wikidata filter - hidden in semantic search mode */}
-        {!isSemanticMode && (
-          <FormControl size="small" sx={{ minWidth: isCompact ? 100 : 130 }}>
-            <InputLabel sx={{ fontSize: isCompact ? '0.8rem' : '1rem' }}>
-              Source
-            </InputLabel>
-            <Select
-              value={hasWikidata}
-              label="Source"
-              onChange={(e) => setHasWikidata(e.target.value)}
-              sx={{ fontSize: isCompact ? '0.85rem' : '1rem' }}
-            >
-              <MenuItem value="all">All Sources</MenuItem>
-              <MenuItem value="yes">Wikidata</MenuItem>
-              <MenuItem value="no">Custom</MenuItem>
-            </Select>
-          </FormControl>
-        )}
-
-        {/* Status text */}
-        {!loading && (
-          <Typography variant="body2" color="text.secondary" sx={{ fontSize: isCompact ? '0.75rem' : '0.875rem', ml: 'auto' }}>
-            {isSemanticMode ? (
-              <>
-                <SemanticIcon sx={{ fontSize: 14, mr: 0.5, verticalAlign: 'middle' }} />
-                {searchResultsAsGallery.length} results
-              </>
-            ) : (
-              <>{gallery.length} of {totalCount} {isCompact ? '' : 'images'}</>
+            {/* Sort dropdown - hidden in semantic search mode */}
+            {!isSemanticMode && (
+              <FormControl size="small" sx={{ minWidth: isCompact ? 'calc(50% - 4px)' : 130, flex: isCompact ? 1 : 'none' }}>
+                <InputLabel sx={{ fontSize: isCompact ? '0.8rem' : '1rem' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <SortIcon sx={{ fontSize: 16 }} /> Sort
+                  </Box>
+                </InputLabel>
+                <Select
+                  value={sortBy}
+                  label="Sort"
+                  onChange={(e) => setSortBy(e.target.value as SortOption)}
+                  sx={{ height: isCompact ? 44 : 36, fontSize: isCompact ? '0.85rem' : '1rem' }}
+                >
+                  <MenuItem value="newest">Newest</MenuItem>
+                  <MenuItem value="most_views">Most Views</MenuItem>
+                  <MenuItem value="uht_code">UHT Code</MenuItem>
+                  <MenuItem value="name">Name</MenuItem>
+                  <MenuItem value="random">Random</MenuItem>
+                </Select>
+              </FormControl>
             )}
-          </Typography>
-        )}
-      </Box>
+
+            {/* Layer filter - hidden in semantic search mode */}
+            {!isSemanticMode && (
+              <FormControl size="small" sx={{ minWidth: isCompact ? 'calc(50% - 4px)' : 130, flex: isCompact ? 1 : 'none' }}>
+                <InputLabel sx={{ fontSize: isCompact ? '0.8rem' : '1rem' }}>Layer</InputLabel>
+                <Select
+                  value={layerFilter}
+                  label="Layer"
+                  onChange={(e) => setLayerFilter(e.target.value)}
+                  sx={{ height: isCompact ? 44 : 36, fontSize: isCompact ? '0.85rem' : '1rem' }}
+                >
+                  <MenuItem value="">All Layers</MenuItem>
+                  <MenuItem value="Physical">Physical</MenuItem>
+                  <MenuItem value="Functional">Functional</MenuItem>
+                  <MenuItem value="Abstract">Abstract</MenuItem>
+                  <MenuItem value="Social">Social</MenuItem>
+                </Select>
+              </FormControl>
+            )}
+
+            {/* Wikidata filter - hidden in semantic search mode */}
+            {!isSemanticMode && (
+              <FormControl size="small" sx={{ minWidth: isCompact ? 'calc(50% - 4px)' : 130, flex: isCompact ? 1 : 'none' }}>
+                <InputLabel sx={{ fontSize: isCompact ? '0.8rem' : '1rem' }}>Source</InputLabel>
+                <Select
+                  value={hasWikidata}
+                  label="Source"
+                  onChange={(e) => setHasWikidata(e.target.value)}
+                  sx={{ height: isCompact ? 44 : 36, fontSize: isCompact ? '0.85rem' : '1rem' }}
+                >
+                  <MenuItem value="all">All Sources</MenuItem>
+                  <MenuItem value="yes">Wikidata</MenuItem>
+                  <MenuItem value="no">Custom</MenuItem>
+                </Select>
+              </FormControl>
+            )}
+
+            {/* NSFW filter */}
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={includeNsfw}
+                  onChange={(e) => setIncludeNsfw(e.target.checked)}
+                  size="small"
+                  sx={{
+                    color: 'rgba(255,255,255,0.5)',
+                    '&.Mui-checked': { color: '#f44336' }
+                  }}
+                />
+              }
+              label="NSFW"
+              sx={{
+                ml: 0,
+                '& .MuiFormControlLabel-label': {
+                  fontSize: isCompact ? '0.8rem' : '0.875rem',
+                  color: includeNsfw ? '#f44336' : 'text.secondary'
+                }
+              }}
+            />
+
+            {/* Clear filters button - mobile only */}
+            {isCompact && activeFilterCount > 0 && (
+              <IconButton
+                size="small"
+                onClick={() => {
+                  setLayerFilter('');
+                  setHasWikidata('all');
+                  setIncludeNsfw(false);
+                  clearTextSearch();
+                  clearSemanticSearch();
+                }}
+                sx={{
+                  minWidth: 44,
+                  minHeight: 44,
+                  backgroundColor: 'rgba(255,255,255,0.03)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  color: 'error.main'
+                }}
+              >
+                <ClearIcon sx={{ fontSize: 18 }} />
+              </IconButton>
+            )}
+          </Box>
+        </Collapse>
+      </Paper>
 
       {/* View Mode Toggle - hidden on mobile (grid only) */}
       {!isCompact && (

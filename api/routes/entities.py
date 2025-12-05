@@ -41,6 +41,7 @@ class EntityUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     additional_context: Optional[str] = None
+    nsfw: Optional[bool] = None
 
 
 def serialize_entity(entity: Dict[str, Any]) -> Dict[str, Any]:
@@ -303,6 +304,10 @@ async def update_entity(
         set_clauses.append("e.additional_context = $additional_context")
         params["additional_context"] = update.additional_context
 
+    if update.nsfw is not None:
+        set_clauses.append("e.nsfw = $nsfw")
+        params["nsfw"] = update.nsfw
+
     if not set_clauses:
         raise HTTPException(status_code=400, detail="No fields to update")
 
@@ -317,6 +322,61 @@ async def update_entity(
 
     async with neo4j.driver.session() as session:
         result = await session.run(query, **params)
+        record = await result.single()
+
+        if not record:
+            raise HTTPException(status_code=404, detail="Entity not found")
+
+        entity = dict(record["e"])
+        return serialize_entity(entity)
+
+
+@router.post("/{uuid}/flag-nsfw")
+async def flag_entity_nsfw(
+    uuid: str,
+    neo4j: Neo4jClient = Depends(get_neo4j_client)
+):
+    """
+    Flag an entity as NSFW.
+
+    **No authentication required** - anyone can flag content.
+    """
+    query = """
+    MATCH (e:Entity {uuid: $uuid})
+    SET e.nsfw = true, e.updated_at = datetime()
+    RETURN e
+    """
+
+    async with neo4j.driver.session() as session:
+        result = await session.run(query, uuid=uuid)
+        record = await result.single()
+
+        if not record:
+            raise HTTPException(status_code=404, detail="Entity not found")
+
+        entity = dict(record["e"])
+        return serialize_entity(entity)
+
+
+@router.post("/{uuid}/unflag-nsfw")
+async def unflag_entity_nsfw(
+    uuid: str,
+    key_data: dict = Depends(require_classify),
+    neo4j: Neo4jClient = Depends(get_neo4j_client)
+):
+    """
+    Remove NSFW flag from an entity.
+
+    **Requires API key with 'classify' scope.**
+    """
+    query = """
+    MATCH (e:Entity {uuid: $uuid})
+    SET e.nsfw = false, e.updated_at = datetime()
+    RETURN e
+    """
+
+    async with neo4j.driver.session() as session:
+        result = await session.run(query, uuid=uuid)
         record = await result.single()
 
         if not record:
