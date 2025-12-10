@@ -724,19 +724,26 @@ export default function EntityDetails() {
       setError(null);
 
       // Fetch identical entities (d=0 - same UHT code) in background
-      setLoadingIdentical(true);
-      try {
-        const identicalData = await entityAPI.searchEntities({
-          uht_pattern: (entityData as unknown as EntityData).uht_code,
-          limit: 50
-        });
-        // Filter out the current entity itself
-        const others = (identicalData.entities || []).filter((e: any) => e.uuid !== uuid);
-        setIdenticalEntities(others);
-      } catch (identicalErr) {
-        console.error('Failed to fetch identical entities:', identicalErr);
+      const uhtCode = (entityData as unknown as EntityData).uht_code;
+      if (uhtCode) {
+        setLoadingIdentical(true);
+        try {
+          const identicalData = await entityAPI.searchEntities({
+            uht_pattern: uhtCode,
+            limit: 50
+          });
+          // Filter out the current entity itself
+          const others = (identicalData.entities || []).filter((e: any) => e.uuid !== uuid);
+          setIdenticalEntities(others);
+        } catch (identicalErr) {
+          console.error('Failed to fetch identical entities:', identicalErr);
+          setIdenticalEntities([]);
+        } finally {
+          setLoadingIdentical(false);
+        }
+      } else {
+        // No UHT code, skip identical entities search
         setIdenticalEntities([]);
-      } finally {
         setLoadingIdentical(false);
       }
 
@@ -1099,7 +1106,7 @@ export default function EntityDetails() {
     <Box sx={{ height: '100%', overflow: 'auto' }}>
       <SEO
         title={entity.name}
-        description={entity.description.substring(0, 160)}
+        description={entity.description ? entity.description.substring(0, 160) : entity.name}
         keywords={`${entity.name}, UHT code ${entity.uht_code}, ${entity.traits?.filter(t => t.evaluation?.applicable).map(t => t.name).slice(0, 5).join(', ')}, entity classification`}
         image={imageUrl && imageUrl.startsWith('http') ? imageUrl : `https://factory.universalhex.org${imageUrl || '/og-image.png'}`}
         url={`https://factory.universalhex.org/entity/${entity.uuid}`}
@@ -1427,9 +1434,11 @@ export default function EntityDetails() {
                 </Box>
 
                 {/* Description */}
-                <Typography variant="body2" color="text.secondary">
-                  {entity.description}
-                </Typography>
+                {entity.description && (
+                  <Typography variant="body2" color="text.secondary">
+                    {entity.description}
+                  </Typography>
+                )}
               </CardContent>
             </Card>
 
