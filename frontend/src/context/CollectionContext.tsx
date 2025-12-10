@@ -1,47 +1,77 @@
-import { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
+import { createContext, useContext, useReducer, useEffect, useCallback, useRef } from 'react';
 import type { ReactNode } from 'react';
 import type { Collection } from '../types';
+import { useAuth } from './AuthContext';
+import { collectionsAPI } from '../services/api';
+
+// Helper to handle API calls with automatic token refresh on 401
+async function withTokenRefresh<T>(
+  apiCall: (token: string) => Promise<T>,
+  getToken: () => string | null,
+  refreshToken: () => Promise<boolean>
+): Promise<T> {
+  const token = getToken();
+  if (!token) throw new Error('No access token');
+
+  try {
+    return await apiCall(token);
+  } catch (error: any) {
+    // If 401, try to refresh token and retry
+    if (error.response?.status === 401) {
+      const refreshed = await refreshToken();
+      if (refreshed) {
+        const newToken = getToken();
+        if (newToken) {
+          return await apiCall(newToken);
+        }
+      }
+    }
+    throw error;
+  }
+}
 
 interface CollectionState {
   collections: Collection[];
   activeCollectionId: string | null;
+  isLoading: boolean;
+  isSynced: boolean;  // Whether we're using server-side collections
 }
 
 type CollectionAction =
-  | { type: 'LOAD_COLLECTIONS'; payload: Collection[] }
+  | { type: 'SET_LOADING'; payload: boolean }
+  | { type: 'LOAD_COLLECTIONS'; payload: { collections: Collection[]; synced: boolean } }
   | { type: 'CREATE_COLLECTION'; payload: Collection }
+  | { type: 'UPDATE_COLLECTION'; payload: Collection }
   | { type: 'DELETE_COLLECTION'; payload: string }
-  | { type: 'RENAME_COLLECTION'; payload: { id: string; name: string } }
-  | { type: 'ADD_ENTITY'; payload: { collectionId: string; entityUuid: string } }
-  | { type: 'REMOVE_ENTITY'; payload: { collectionId: string; entityUuid: string } }
-  | { type: 'ADD_ENTITIES'; payload: { collectionId: string; entityUuids: string[] } }
-  | { type: 'CLEAR_COLLECTION'; payload: string }
-  | { type: 'SET_ACTIVE_COLLECTION'; payload: string | null };
+  | { type: 'SET_ACTIVE_COLLECTION'; payload: string | null }
+  | { type: 'CLEAR_ALL'; payload?: undefined };
 
 interface CollectionContextType {
   state: CollectionState;
-  createCollection: (name: string) => Collection;
-  deleteCollection: (id: string) => void;
-  renameCollection: (id: string, name: string) => void;
-  addEntity: (collectionId: string, entityUuid: string) => void;
-  removeEntity: (collectionId: string, entityUuid: string) => void;
-  addEntities: (collectionId: string, entityUuids: string[]) => void;
-  clearCollection: (id: string) => void;
+  createCollection: (name: string, description?: string) => Promise<Collection | null>;
+  deleteCollection: (id: string) => Promise<void>;
+  renameCollection: (id: string, name: string) => Promise<void>;
+  addEntity: (collectionId: string, entityUuid: string) => Promise<void>;
+  removeEntity: (collectionId: string, entityUuid: string) => Promise<void>;
+  addEntities: (collectionId: string, entityUuids: string[]) => Promise<void>;
+  clearCollection: (id: string) => Promise<void>;
   setActiveCollection: (id: string | null) => void;
   getCollection: (id: string) => Collection | undefined;
   isEntityInCollection: (collectionId: string, entityUuid: string) => boolean;
   getCollectionsForEntity: (entityUuid: string) => Collection[];
   exportCollectionToUrl: (id: string) => string;
-  importCollectionFromUrl: (params: URLSearchParams) => Collection | null;
+  importCollectionFromUrl: (params: URLSearchParams) => Promise<Collection | null>;
+  refreshCollections: () => Promise<void>;
+  migrateLocalCollections: () => Promise<number>;
 }
 
 const STORAGE_KEY = 'uht_collections';
 
-// Generate unique ID
+// Generate unique ID for localStorage collections
 const generateId = () => `col_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
 // Load collections from localStorage
-const loadCollections = (): Collection[] => {
+const loadLocalCollections = (): Collection[] => {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     return stored ? JSON.parse(stored) : [];
@@ -51,7 +81,7 @@ const loadCollections = (): Collection[] => {
 };
 
 // Save collections to localStorage
-const saveCollections = (collections: Collection[]) => {
+const saveLocalCollections = (collections: Collection[]) => {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(collections));
   } catch (error) {
@@ -59,107 +89,55 @@ const saveCollections = (collections: Collection[]) => {
   }
 };
 
+// Clear localStorage collections (after migration)
+const clearLocalCollections = () => {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch (error) {
+    console.error('Failed to clear local collections:', error);
+  }
+};
+
 // Reducer
 function collectionReducer(state: CollectionState, action: CollectionAction): CollectionState {
-  let newState: CollectionState;
-
   switch (action.type) {
+    case 'SET_LOADING':
+      return { ...state, isLoading: action.payload };
+
     case 'LOAD_COLLECTIONS':
-      return { ...state, collections: action.payload };
+      return {
+        ...state,
+        collections: action.payload.collections,
+        isSynced: action.payload.synced,
+        isLoading: false
+      };
 
     case 'CREATE_COLLECTION':
-      newState = {
-        ...state,
-        collections: [...state.collections, action.payload]
-      };
-      saveCollections(newState.collections);
-      return newState;
+      const newCollections = [...state.collections, action.payload];
+      if (!state.isSynced) saveLocalCollections(newCollections);
+      return { ...state, collections: newCollections };
+
+    case 'UPDATE_COLLECTION':
+      const updatedCollections = state.collections.map(c =>
+        c.id === action.payload.id ? action.payload : c
+      );
+      if (!state.isSynced) saveLocalCollections(updatedCollections);
+      return { ...state, collections: updatedCollections };
 
     case 'DELETE_COLLECTION':
-      newState = {
+      const filteredCollections = state.collections.filter(c => c.id !== action.payload);
+      if (!state.isSynced) saveLocalCollections(filteredCollections);
+      return {
         ...state,
-        collections: state.collections.filter(c => c.id !== action.payload),
+        collections: filteredCollections,
         activeCollectionId: state.activeCollectionId === action.payload ? null : state.activeCollectionId
       };
-      saveCollections(newState.collections);
-      return newState;
-
-    case 'RENAME_COLLECTION':
-      newState = {
-        ...state,
-        collections: state.collections.map(c =>
-          c.id === action.payload.id
-            ? { ...c, name: action.payload.name, updatedAt: new Date().toISOString() }
-            : c
-        )
-      };
-      saveCollections(newState.collections);
-      return newState;
-
-    case 'ADD_ENTITY':
-      newState = {
-        ...state,
-        collections: state.collections.map(c =>
-          c.id === action.payload.collectionId && !c.entityUuids.includes(action.payload.entityUuid)
-            ? {
-                ...c,
-                entityUuids: [...c.entityUuids, action.payload.entityUuid],
-                updatedAt: new Date().toISOString()
-              }
-            : c
-        )
-      };
-      saveCollections(newState.collections);
-      return newState;
-
-    case 'REMOVE_ENTITY':
-      newState = {
-        ...state,
-        collections: state.collections.map(c =>
-          c.id === action.payload.collectionId
-            ? {
-                ...c,
-                entityUuids: c.entityUuids.filter(uuid => uuid !== action.payload.entityUuid),
-                updatedAt: new Date().toISOString()
-              }
-            : c
-        )
-      };
-      saveCollections(newState.collections);
-      return newState;
-
-    case 'ADD_ENTITIES':
-      newState = {
-        ...state,
-        collections: state.collections.map(c => {
-          if (c.id !== action.payload.collectionId) return c;
-          const existingSet = new Set(c.entityUuids);
-          const newUuids = action.payload.entityUuids.filter(uuid => !existingSet.has(uuid));
-          if (newUuids.length === 0) return c;
-          return {
-            ...c,
-            entityUuids: [...c.entityUuids, ...newUuids],
-            updatedAt: new Date().toISOString()
-          };
-        })
-      };
-      saveCollections(newState.collections);
-      return newState;
-
-    case 'CLEAR_COLLECTION':
-      newState = {
-        ...state,
-        collections: state.collections.map(c =>
-          c.id === action.payload
-            ? { ...c, entityUuids: [], updatedAt: new Date().toISOString() }
-            : c
-        )
-      };
-      saveCollections(newState.collections);
-      return newState;
 
     case 'SET_ACTIVE_COLLECTION':
       return { ...state, activeCollectionId: action.payload };
+
+    case 'CLEAR_ALL':
+      return { ...state, collections: [], activeCollectionId: null };
 
     default:
       return state;
@@ -171,53 +149,304 @@ const CollectionContext = createContext<CollectionContextType | undefined>(undef
 
 // Provider
 export function CollectionProvider({ children }: { children: ReactNode }) {
+  const { state: authState, getAccessToken, refreshToken } = useAuth();
   const [state, dispatch] = useReducer(collectionReducer, {
     collections: [],
-    activeCollectionId: null
+    activeCollectionId: null,
+    isLoading: true,
+    isSynced: false
   });
 
-  // Load collections on mount
+  // Track if we've already loaded for the current auth state
+  const loadedForAuth = useRef<string | null>(null);
+
+  // Load collections when auth state changes
   useEffect(() => {
-    const collections = loadCollections();
-    dispatch({ type: 'LOAD_COLLECTIONS', payload: collections });
-  }, []);
+    const loadCollections = async () => {
+      const authKey: string | null = authState.isAuthenticated ? (authState.user?.id ?? null) : 'anonymous';
 
-  const createCollection = useCallback((name: string): Collection => {
-    const now = new Date().toISOString();
-    const collection: Collection = {
-      id: generateId(),
-      name: name || 'Untitled Collection',
-      entityUuids: [],
-      createdAt: now,
-      updatedAt: now
+      // Skip if we've already loaded for this auth state
+      if (loadedForAuth.current === authKey) return;
+
+      dispatch({ type: 'SET_LOADING', payload: true });
+
+      if (authState.isAuthenticated && !authState.isLoading) {
+        // Load from server
+        try {
+          const token = getAccessToken();
+          if (token) {
+            const response = await collectionsAPI.list(token);
+            // Convert server format to local format
+            const collections: Collection[] = response.collections.map(c => ({
+              id: c.id,
+              name: c.name,
+              entityUuids: c.entity_uuids || [],
+              createdAt: c.created_at,
+              updatedAt: c.updated_at
+            }));
+            dispatch({ type: 'LOAD_COLLECTIONS', payload: { collections, synced: true } });
+            loadedForAuth.current = authKey;
+          }
+        } catch (error) {
+          console.error('Failed to load collections from server:', error);
+          // Fall back to localStorage
+          const localCollections = loadLocalCollections();
+          dispatch({ type: 'LOAD_COLLECTIONS', payload: { collections: localCollections, synced: false } });
+          loadedForAuth.current = authKey;
+        }
+      } else if (!authState.isLoading) {
+        // Load from localStorage for anonymous users
+        const localCollections = loadLocalCollections();
+        dispatch({ type: 'LOAD_COLLECTIONS', payload: { collections: localCollections, synced: false } });
+        loadedForAuth.current = authKey;
+      }
     };
-    dispatch({ type: 'CREATE_COLLECTION', payload: collection });
-    return collection;
-  }, []);
 
-  const deleteCollection = useCallback((id: string) => {
-    dispatch({ type: 'DELETE_COLLECTION', payload: id });
-  }, []);
+    loadCollections();
+  }, [authState.isAuthenticated, authState.isLoading, authState.user?.id, getAccessToken]);
 
-  const renameCollection = useCallback((id: string, name: string) => {
-    dispatch({ type: 'RENAME_COLLECTION', payload: { id, name } });
-  }, []);
+  const refreshCollections = useCallback(async () => {
+    if (!authState.isAuthenticated) {
+      const localCollections = loadLocalCollections();
+      dispatch({ type: 'LOAD_COLLECTIONS', payload: { collections: localCollections, synced: false } });
+      return;
+    }
 
-  const addEntity = useCallback((collectionId: string, entityUuid: string) => {
-    dispatch({ type: 'ADD_ENTITY', payload: { collectionId, entityUuid } });
-  }, []);
+    const token = getAccessToken();
+    if (!token) return;
 
-  const removeEntity = useCallback((collectionId: string, entityUuid: string) => {
-    dispatch({ type: 'REMOVE_ENTITY', payload: { collectionId, entityUuid } });
-  }, []);
+    try {
+      const response = await collectionsAPI.list(token);
+      const collections: Collection[] = response.collections.map(c => ({
+        id: c.id,
+        name: c.name,
+        entityUuids: c.entity_uuids || [],
+        createdAt: c.created_at,
+        updatedAt: c.updated_at
+      }));
+      dispatch({ type: 'LOAD_COLLECTIONS', payload: { collections, synced: true } });
+    } catch (error) {
+      console.error('Failed to refresh collections:', error);
+    }
+  }, [authState.isAuthenticated, getAccessToken]);
 
-  const addEntities = useCallback((collectionId: string, entityUuids: string[]) => {
-    dispatch({ type: 'ADD_ENTITIES', payload: { collectionId, entityUuids } });
-  }, []);
+  const createCollection = useCallback(async (name: string, description?: string): Promise<Collection | null> => {
+    const now = new Date().toISOString();
 
-  const clearCollection = useCallback((id: string) => {
-    dispatch({ type: 'CLEAR_COLLECTION', payload: id });
-  }, []);
+    if (authState.isAuthenticated) {
+      try {
+        const serverCollection = await withTokenRefresh(
+          (token) => collectionsAPI.create(token, name, description),
+          getAccessToken,
+          refreshToken
+        );
+        const collection: Collection = {
+          id: serverCollection.id,
+          name: serverCollection.name,
+          entityUuids: [],
+          createdAt: serverCollection.created_at,
+          updatedAt: serverCollection.updated_at
+        };
+        dispatch({ type: 'CREATE_COLLECTION', payload: collection });
+        return collection;
+      } catch (error) {
+        console.error('Failed to create collection:', error);
+        return null;
+      }
+    } else {
+      // Local storage mode
+      const collection: Collection = {
+        id: generateId(),
+        name: name || 'Untitled Collection',
+        entityUuids: [],
+        createdAt: now,
+        updatedAt: now
+      };
+      dispatch({ type: 'CREATE_COLLECTION', payload: collection });
+      return collection;
+    }
+  }, [authState.isAuthenticated, getAccessToken, refreshToken]);
+
+  const deleteCollection = useCallback(async (id: string) => {
+    if (authState.isAuthenticated) {
+      try {
+        await withTokenRefresh(
+          (token) => collectionsAPI.delete(token, id),
+          getAccessToken,
+          refreshToken
+        );
+        dispatch({ type: 'DELETE_COLLECTION', payload: id });
+      } catch (error) {
+        console.error('Failed to delete collection:', error);
+      }
+    } else {
+      dispatch({ type: 'DELETE_COLLECTION', payload: id });
+    }
+  }, [authState.isAuthenticated, getAccessToken, refreshToken]);
+
+  const renameCollection = useCallback(async (id: string, name: string) => {
+    if (authState.isAuthenticated) {
+      try {
+        const updated = await withTokenRefresh(
+          (token) => collectionsAPI.update(token, id, { name }),
+          getAccessToken,
+          refreshToken
+        );
+        const collection = state.collections.find(c => c.id === id);
+        if (collection) {
+          dispatch({
+            type: 'UPDATE_COLLECTION',
+            payload: { ...collection, name: updated.name, updatedAt: updated.updated_at }
+          });
+        }
+      } catch (error) {
+        console.error('Failed to rename collection:', error);
+      }
+    } else {
+      const collection = state.collections.find(c => c.id === id);
+      if (collection) {
+        dispatch({
+          type: 'UPDATE_COLLECTION',
+          payload: { ...collection, name, updatedAt: new Date().toISOString() }
+        });
+      }
+    }
+  }, [authState.isAuthenticated, getAccessToken, refreshToken, state.collections]);
+
+  const addEntity = useCallback(async (collectionId: string, entityUuid: string) => {
+    const collection = state.collections.find(c => c.id === collectionId);
+    if (!collection || collection.entityUuids.includes(entityUuid)) return;
+
+    if (authState.isAuthenticated) {
+      try {
+        await withTokenRefresh(
+          (token) => collectionsAPI.addEntities(token, collectionId, [entityUuid]),
+          getAccessToken,
+          refreshToken
+        );
+        dispatch({
+          type: 'UPDATE_COLLECTION',
+          payload: {
+            ...collection,
+            entityUuids: [...collection.entityUuids, entityUuid],
+            updatedAt: new Date().toISOString()
+          }
+        });
+      } catch (error) {
+        console.error('Failed to add entity:', error);
+      }
+    } else {
+      dispatch({
+        type: 'UPDATE_COLLECTION',
+        payload: {
+          ...collection,
+          entityUuids: [...collection.entityUuids, entityUuid],
+          updatedAt: new Date().toISOString()
+        }
+      });
+    }
+  }, [authState.isAuthenticated, getAccessToken, refreshToken, state.collections]);
+
+  const removeEntity = useCallback(async (collectionId: string, entityUuid: string) => {
+    const collection = state.collections.find(c => c.id === collectionId);
+    if (!collection) return;
+
+    if (authState.isAuthenticated) {
+      try {
+        await withTokenRefresh(
+          (token) => collectionsAPI.removeEntities(token, collectionId, [entityUuid]),
+          getAccessToken,
+          refreshToken
+        );
+        dispatch({
+          type: 'UPDATE_COLLECTION',
+          payload: {
+            ...collection,
+            entityUuids: collection.entityUuids.filter(uuid => uuid !== entityUuid),
+            updatedAt: new Date().toISOString()
+          }
+        });
+      } catch (error) {
+        console.error('Failed to remove entity:', error);
+      }
+    } else {
+      dispatch({
+        type: 'UPDATE_COLLECTION',
+        payload: {
+          ...collection,
+          entityUuids: collection.entityUuids.filter(uuid => uuid !== entityUuid),
+          updatedAt: new Date().toISOString()
+        }
+      });
+    }
+  }, [authState.isAuthenticated, getAccessToken, refreshToken, state.collections]);
+
+  const addEntities = useCallback(async (collectionId: string, entityUuids: string[]) => {
+    const collection = state.collections.find(c => c.id === collectionId);
+    if (!collection) return;
+
+    const existingSet = new Set(collection.entityUuids);
+    const newUuids = entityUuids.filter(uuid => !existingSet.has(uuid));
+    if (newUuids.length === 0) return;
+
+    if (authState.isAuthenticated) {
+      try {
+        await withTokenRefresh(
+          (token) => collectionsAPI.addEntities(token, collectionId, newUuids),
+          getAccessToken,
+          refreshToken
+        );
+        dispatch({
+          type: 'UPDATE_COLLECTION',
+          payload: {
+            ...collection,
+            entityUuids: [...collection.entityUuids, ...newUuids],
+            updatedAt: new Date().toISOString()
+          }
+        });
+      } catch (error) {
+        console.error('Failed to add entities:', error);
+      }
+    } else {
+      dispatch({
+        type: 'UPDATE_COLLECTION',
+        payload: {
+          ...collection,
+          entityUuids: [...collection.entityUuids, ...newUuids],
+          updatedAt: new Date().toISOString()
+        }
+      });
+    }
+  }, [authState.isAuthenticated, getAccessToken, refreshToken, state.collections]);
+
+  const clearCollection = useCallback(async (id: string) => {
+    const collection = state.collections.find(c => c.id === id);
+    if (!collection) return;
+
+    if (authState.isAuthenticated) {
+      try {
+        // Remove all entities
+        if (collection.entityUuids.length > 0) {
+          await withTokenRefresh(
+            (token) => collectionsAPI.removeEntities(token, id, collection.entityUuids),
+            getAccessToken,
+            refreshToken
+          );
+        }
+        dispatch({
+          type: 'UPDATE_COLLECTION',
+          payload: { ...collection, entityUuids: [], updatedAt: new Date().toISOString() }
+        });
+      } catch (error) {
+        console.error('Failed to clear collection:', error);
+      }
+    } else {
+      dispatch({
+        type: 'UPDATE_COLLECTION',
+        payload: { ...collection, entityUuids: [], updatedAt: new Date().toISOString() }
+      });
+    }
+  }, [authState.isAuthenticated, getAccessToken, refreshToken, state.collections]);
 
   const setActiveCollection = useCallback((id: string | null) => {
     dispatch({ type: 'SET_ACTIVE_COLLECTION', payload: id });
@@ -246,7 +475,7 @@ export function CollectionProvider({ children }: { children: ReactNode }) {
     return `${window.location.origin}/collections?${params.toString()}`;
   }, [state.collections]);
 
-  const importCollectionFromUrl = useCallback((params: URLSearchParams): Collection | null => {
+  const importCollectionFromUrl = useCallback(async (params: URLSearchParams): Promise<Collection | null> => {
     const name = params.get('name');
     const entitiesParam = params.get('entities');
 
@@ -255,18 +484,49 @@ export function CollectionProvider({ children }: { children: ReactNode }) {
     const entityUuids = entitiesParam.split(',').filter(Boolean);
     if (entityUuids.length === 0) return null;
 
-    const now = new Date().toISOString();
-    const collection: Collection = {
-      id: generateId(),
-      name: `${name} (Imported)`,
-      entityUuids,
-      createdAt: now,
-      updatedAt: now
-    };
-
-    dispatch({ type: 'CREATE_COLLECTION', payload: collection });
+    const collection = await createCollection(`${name} (Imported)`);
+    if (collection && entityUuids.length > 0) {
+      await addEntities(collection.id, entityUuids);
+    }
     return collection;
-  }, []);
+  }, [createCollection, addEntities]);
+
+  // Migrate localStorage collections to server
+  const migrateLocalCollections = useCallback(async (): Promise<number> => {
+    if (!authState.isAuthenticated) return 0;
+
+    const token = getAccessToken();
+    if (!token) return 0;
+
+    const localCollections = loadLocalCollections();
+    if (localCollections.length === 0) return 0;
+
+    let migrated = 0;
+
+    for (const local of localCollections) {
+      try {
+        // Create collection on server
+        const serverCollection = await collectionsAPI.create(token, local.name);
+
+        // Add entities if any
+        if (local.entityUuids.length > 0) {
+          await collectionsAPI.addEntities(token, serverCollection.id, local.entityUuids);
+        }
+
+        migrated++;
+      } catch (error) {
+        console.error(`Failed to migrate collection "${local.name}":`, error);
+      }
+    }
+
+    // Clear localStorage after successful migration
+    if (migrated > 0) {
+      clearLocalCollections();
+      await refreshCollections();
+    }
+
+    return migrated;
+  }, [authState.isAuthenticated, getAccessToken, refreshCollections]);
 
   const value: CollectionContextType = {
     state,
@@ -282,7 +542,9 @@ export function CollectionProvider({ children }: { children: ReactNode }) {
     isEntityInCollection,
     getCollectionsForEntity,
     exportCollectionToUrl,
-    importCollectionFromUrl
+    importCollectionFromUrl,
+    refreshCollections,
+    migrateLocalCollections
   };
 
   return (

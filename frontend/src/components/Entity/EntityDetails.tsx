@@ -40,6 +40,7 @@ import {
 import { entityAPI, traitsAPI, imageAPI, preprocessAPI, classificationAPI, getApiKey } from '../../services/api';
 import { useMobile } from '../../context/MobileContext';
 import AddToCollectionButton from '../common/AddToCollectionButton';
+import SEO from '../common/SEO';
 import type { Trait } from '../../types';
 
 // Layer configuration
@@ -418,6 +419,123 @@ const LayerSection: React.FC<{
   );
 };
 
+// Identical Entities Card Component (d=0 - same UHT code)
+const IdenticalEntitiesCard: React.FC<{
+  entities: any[];
+  loading: boolean;
+  onEntityClick: (uuid: string) => void;
+  currentUhtCode: string;
+}> = ({ entities, loading, onEntityClick, currentUhtCode }) => {
+  const getDominantLayer = (uhtCode: string): string => {
+    if (!uhtCode || uhtCode.length !== 8) return 'Physical';
+    try {
+      const physical = uhtCode.slice(0, 2);
+      const functional = uhtCode.slice(2, 4);
+      const abstract = uhtCode.slice(4, 6);
+      const social = uhtCode.slice(6, 8);
+
+      const counts: Record<string, number> = {
+        Physical: (parseInt(physical, 16)).toString(2).split('1').length - 1,
+        Functional: (parseInt(functional, 16)).toString(2).split('1').length - 1,
+        Abstract: (parseInt(abstract, 16)).toString(2).split('1').length - 1,
+        Social: (parseInt(social, 16)).toString(2).split('1').length - 1
+      };
+
+      return Object.entries(counts).reduce((a, b) => a[1] > b[1] ? a : b)[0];
+    } catch {
+      return 'Physical';
+    }
+  };
+
+  const getLayerColor = (layer: string): string => {
+    const colors: Record<string, string> = {
+      Physical: '#FF6B35',
+      Functional: '#00E5FF',
+      Abstract: '#9C27B0',
+      Social: '#4CAF50'
+    };
+    return colors[layer] || '#FF6B35';
+  };
+
+  if (loading || entities.length === 0) {
+    return null; // Don't show the card if there are no identical entities
+  }
+
+  const dominantLayer = getDominantLayer(currentUhtCode);
+  const layerColor = getLayerColor(dominantLayer);
+
+  return (
+    <Card sx={{ mt: 3, border: `2px solid ${layerColor}50` }}>
+      <CardContent>
+        <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <CodeIcon sx={{ color: layerColor }} />
+          Identical Entities (d=0)
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          {entities.length} {entities.length === 1 ? 'entity shares' : 'entities share'} the exact same UHT code: <strong style={{ color: layerColor, fontFamily: 'monospace' }}>{currentUhtCode}</strong>
+        </Typography>
+
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+          {entities.map((entity, index) => (
+            <Paper
+              key={entity.uuid || index}
+              onClick={() => onEntityClick(entity.uuid)}
+              sx={{
+                p: 1.5,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 2,
+                border: `1px solid ${layerColor}50`,
+                backgroundColor: `${layerColor}08`,
+                '&:hover': {
+                  backgroundColor: `${layerColor}15`,
+                  borderColor: `${layerColor}80`
+                },
+                transition: 'all 0.2s ease'
+              }}
+            >
+              <Box
+                sx={{
+                  width: 10,
+                  height: 10,
+                  borderRadius: '50%',
+                  backgroundColor: layerColor,
+                  flexShrink: 0
+                }}
+              />
+              <Typography
+                variant="body2"
+                sx={{
+                  flex: 1,
+                  fontWeight: 500,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                {entity.name}
+              </Typography>
+              <Chip
+                label="d=0"
+                size="small"
+                sx={{
+                  minWidth: 45,
+                  backgroundColor: `${layerColor}30`,
+                  color: layerColor,
+                  fontWeight: 700,
+                  fontFamily: 'monospace',
+                  fontSize: '0.75rem'
+                }}
+              />
+            </Paper>
+          ))}
+        </Box>
+      </CardContent>
+    </Card>
+  );
+};
+
 // Similar Entities Card Component
 const SimilarEntitiesCard: React.FC<{
   entities: any[];
@@ -570,6 +688,8 @@ export default function EntityDetails() {
   const [imageGenError, setImageGenError] = useState<string | null>(null);
   const [similarEntities, setSimilarEntities] = useState<any[]>([]);
   const [loadingSimilar, setLoadingSimilar] = useState(false);
+  const [identicalEntities, setIdenticalEntities] = useState<any[]>([]);
+  const [loadingIdentical, setLoadingIdentical] = useState(false);
   const [reprocessing, setReprocessing] = useState(false);
   const [reclassifying, setReclassifying] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -603,7 +723,24 @@ export default function EntityDetails() {
       setAllTraits(traitsData.traits || []);
       setError(null);
 
-      // Fetch similar entities in background
+      // Fetch identical entities (d=0 - same UHT code) in background
+      setLoadingIdentical(true);
+      try {
+        const identicalData = await entityAPI.searchEntities({
+          uht_pattern: (entityData as unknown as EntityData).uht_code,
+          limit: 50
+        });
+        // Filter out the current entity itself
+        const others = (identicalData.entities || []).filter((e: any) => e.uuid !== uuid);
+        setIdenticalEntities(others);
+      } catch (identicalErr) {
+        console.error('Failed to fetch identical entities:', identicalErr);
+        setIdenticalEntities([]);
+      } finally {
+        setLoadingIdentical(false);
+      }
+
+      // Fetch similar entities (d>=1) in background
       setLoadingSimilar(true);
       try {
         const similarData = await entityAPI.findSimilarEntities(uuid, 28);
@@ -947,8 +1084,28 @@ export default function EntityDetails() {
   const activeTraitCount = entity.traits?.filter(t => t.evaluation?.applicable).length || 0;
   const totalTraitCount = entity.traits?.length || 0;
 
+  // Structured data for entity
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "Thing",
+    "name": entity.name,
+    "description": entity.description,
+    "identifier": entity.uht_code,
+    "url": `https://factory.universalhex.org/entity/${entity.uuid}`,
+    ...(imageUrl && { "image": imageUrl.startsWith('http') ? imageUrl : `https://factory.universalhex.org${imageUrl}` })
+  };
+
   return (
     <Box sx={{ height: '100%', overflow: 'auto' }}>
+      <SEO
+        title={entity.name}
+        description={entity.description.substring(0, 160)}
+        keywords={`${entity.name}, UHT code ${entity.uht_code}, ${entity.traits?.filter(t => t.evaluation?.applicable).map(t => t.name).slice(0, 5).join(', ')}, entity classification`}
+        image={imageUrl && imageUrl.startsWith('http') ? imageUrl : `https://factory.universalhex.org${imageUrl || '/og-image.png'}`}
+        url={`https://factory.universalhex.org/entity/${entity.uuid}`}
+        type="article"
+        structuredData={structuredData}
+      />
       {/* Header */}
       <Paper sx={{ p: isCompact ? 1.5 : 2, borderRadius: 0, borderBottom: '1px solid rgba(0, 229, 255, 0.3)' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: isCompact ? 1 : 2 }}>
@@ -1316,7 +1473,15 @@ export default function EntityDetails() {
               </CardContent>
             </Card>
 
-            {/* Similar Entities */}
+            {/* Identical Entities (d=0) */}
+            <IdenticalEntitiesCard
+              entities={identicalEntities}
+              loading={loadingIdentical}
+              onEntityClick={(uuid) => navigate(`/entity/${uuid}`)}
+              currentUhtCode={entity.uht_code}
+            />
+
+            {/* Similar Entities (d>=1) */}
             <SimilarEntitiesCard
               entities={similarEntities}
               loading={loadingSimilar}

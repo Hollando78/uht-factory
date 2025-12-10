@@ -1,0 +1,50 @@
+# UHT Factory - Universal Hex Taxonomy
+# Robots.txt for factory.universalhex.org
+
+User-agent: *
+Allow: /
+Allow: /gallery
+Allow: /entity/*
+Allow: /traits
+Allow: /meta-classes
+Allow: /analytics
+
+# Disallow auth and API endpoints
+Disallow: /api/
+Disallow: /verify-email
+
+# Interactive tools - allow but deprioritize
+Allow: /classify
+Allow: /graph
+Allow: /comparison
+Allow: /build
+Allow: /collections
+Allow: /list
+
+# Specific crawler instructions
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 1
+
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 2
+
+# Block aggressive SEO crawlers that don't respect standard rates
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: DotBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: BLEXBot
+Disallow: /
+
+# Sitemap location
+Sitemap: https://factory.universalhex.org/api/v1/sitemap.xml

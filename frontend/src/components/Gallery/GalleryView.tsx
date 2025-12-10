@@ -32,7 +32,6 @@ import {
   ViewModule as GridIcon,
   ViewStream as FreeformIcon,
   OpenInNew as OpenInNewIcon,
-  Sort as SortIcon,
   Search as SearchIcon,
   Clear as ClearIcon,
   AutoAwesome as SemanticIcon,
@@ -44,6 +43,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useMobile } from '../../context/MobileContext';
 import AddToCollectionButton from '../common/AddToCollectionButton';
+import SEO from '../common/SEO';
 
 interface GalleryItem {
   uuid: string;
@@ -748,6 +748,7 @@ export default function GalleryView() {
   const clearTextSearch = () => {
     setTextSearch('');
     setActiveTextSearch('');
+    saveGalleryFilter('textSearch', ''); // Clear from localStorage
     setOffset(0);
     setCardPositions({});
     fetchGallery(layerFilter || undefined, sortBy, hasWikidata, false);
@@ -1058,6 +1059,12 @@ export default function GalleryView() {
       overflow: 'hidden',
       bgcolor: 'background.default'
     }}>
+      <SEO
+        title="Image Gallery - Explore the UHT Taxonomy"
+        description={`Browse ${totalCount} classified entities in the Universal Hex Taxonomy. Explore concepts across physical, functional, abstract, and social domains with AI-generated images and detailed trait analysis.`}
+        keywords="entity gallery, UHT entities, taxonomy visualization, classified concepts, AI images, knowledge graph browser"
+        url="https://factory.universalhex.org/gallery"
+      />
       {/* Controls Bar */}
       <Paper sx={{ p: isCompact ? 1.5 : 2, borderRadius: 0, borderBottom: '1px solid rgba(0, 229, 255, 0.3)', flexShrink: 0 }}>
         {/* Header Row */}
@@ -1116,35 +1123,34 @@ export default function GalleryView() {
             {/* Simple Text Search */}
             <TextField
               size="small"
-              placeholder="Search by name..."
+              placeholder="Search name..."
               value={textSearch}
               onChange={(e) => setTextSearch(e.target.value)}
               onKeyDown={handleTextSearchKeyDown}
               disabled={isSemanticMode}
               sx={{
-                width: isCompact ? '100%' : 180,
+                width: isCompact ? '100%' : 160,
                 '& .MuiOutlinedInput-root': {
-                  height: isCompact ? 44 : 36,
-                  fontSize: isCompact ? '0.85rem' : '1rem',
+                  height: 36,
+                  fontSize: '0.875rem',
                   bgcolor: activeTextSearch ? 'action.selected' : 'rgba(255,255,255,0.03)'
+                },
+                '& .MuiOutlinedInput-input': {
+                  py: '7px'
                 }
               }}
               InputProps={{
                 startAdornment: (
-                  <InputAdornment position="start">
-                    <IconButton
-                      size="small"
+                  <InputAdornment position="start" sx={{ mr: 0 }}>
+                    <SearchIcon
                       onClick={handleTextSearchSubmit}
-                      disabled={isSemanticMode || !textSearch.trim()}
-                      sx={{ p: 0, mr: -0.5 }}
-                    >
-                      <SearchIcon sx={{ fontSize: 18, color: textSearch.trim() ? 'primary.main' : 'action.active' }} />
-                    </IconButton>
+                      sx={{ fontSize: 18, color: textSearch.trim() ? 'primary.main' : 'action.active', cursor: 'pointer' }}
+                    />
                   </InputAdornment>
                 ),
                 endAdornment: textSearch && (
                   <InputAdornment position="end">
-                    <IconButton size="small" onClick={clearTextSearch} edge="end" sx={{ p: 0.5 }}>
+                    <IconButton size="small" onClick={clearTextSearch} edge="end" sx={{ p: 0.25 }}>
                       <ClearIcon sx={{ fontSize: 16 }} />
                     </IconButton>
                   </InputAdornment>
@@ -1155,38 +1161,37 @@ export default function GalleryView() {
             {/* Semantic Search */}
             <TextField
               size="small"
-              placeholder={isCompact ? "AI search..." : "Semantic search..."}
+              placeholder="AI search..."
               value={semanticQuery}
               onChange={(e) => setSemanticQuery(e.target.value)}
               onKeyDown={handleSemanticKeyDown}
               sx={{
-                width: isCompact ? '100%' : 180,
+                width: isCompact ? '100%' : 140,
                 '& .MuiOutlinedInput-root': {
-                  height: isCompact ? 44 : 36,
-                  fontSize: isCompact ? '0.85rem' : '1rem',
+                  height: 36,
+                  fontSize: '0.875rem',
                   bgcolor: isSemanticMode ? 'action.selected' : 'rgba(255,255,255,0.03)'
+                },
+                '& .MuiOutlinedInput-input': {
+                  py: '7px'
                 }
               }}
               InputProps={{
                 startAdornment: (
-                  <InputAdornment position="start">
-                    <IconButton
-                      size="small"
-                      onClick={performSemanticSearch}
-                      disabled={!semanticQuery.trim() || isSearching}
-                      sx={{ p: 0.25 }}
-                    >
-                      {isSearching ? (
-                        <CircularProgress size={16} />
-                      ) : (
-                        <SemanticIcon sx={{ fontSize: 18, color: isSemanticMode ? 'primary.main' : 'action.active' }} />
-                      )}
-                    </IconButton>
+                  <InputAdornment position="start" sx={{ mr: 0 }}>
+                    {isSearching ? (
+                      <CircularProgress size={16} />
+                    ) : (
+                      <SemanticIcon
+                        onClick={performSemanticSearch}
+                        sx={{ fontSize: 18, color: isSemanticMode ? 'primary.main' : 'action.active', cursor: 'pointer' }}
+                      />
+                    )}
                   </InputAdornment>
                 ),
                 endAdornment: (semanticQuery || isSemanticMode) && (
                   <InputAdornment position="end">
-                    <IconButton size="small" onClick={clearSemanticSearch} edge="end" sx={{ p: 0.5 }}>
+                    <IconButton size="small" onClick={clearSemanticSearch} edge="end" sx={{ p: 0.25 }}>
                       <ClearIcon sx={{ fontSize: 16 }} />
                     </IconButton>
                   </InputAdornment>
@@ -1196,17 +1201,13 @@ export default function GalleryView() {
 
             {/* Sort dropdown - hidden in semantic search mode */}
             {!isSemanticMode && (
-              <FormControl size="small" sx={{ minWidth: isCompact ? 'calc(50% - 4px)' : 130, flex: isCompact ? 1 : 'none' }}>
-                <InputLabel sx={{ fontSize: isCompact ? '0.8rem' : '1rem' }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <SortIcon sx={{ fontSize: 16 }} /> Sort
-                  </Box>
-                </InputLabel>
+              <FormControl size="small" sx={{ minWidth: isCompact ? 'calc(50% - 4px)' : 110, flex: isCompact ? 1 : 'none' }}>
+                <InputLabel sx={{ fontSize: '0.875rem' }}>Sort</InputLabel>
                 <Select
                   value={sortBy}
                   label="Sort"
                   onChange={(e) => setSortBy(e.target.value as SortOption)}
-                  sx={{ height: isCompact ? 44 : 36, fontSize: isCompact ? '0.85rem' : '1rem' }}
+                  sx={{ height: 36, fontSize: '0.875rem' }}
                 >
                   <MenuItem value="newest">Newest</MenuItem>
                   <MenuItem value="most_views">Most Views</MenuItem>
@@ -1219,15 +1220,15 @@ export default function GalleryView() {
 
             {/* Layer filter - hidden in semantic search mode */}
             {!isSemanticMode && (
-              <FormControl size="small" sx={{ minWidth: isCompact ? 'calc(50% - 4px)' : 130, flex: isCompact ? 1 : 'none' }}>
-                <InputLabel sx={{ fontSize: isCompact ? '0.8rem' : '1rem' }}>Layer</InputLabel>
+              <FormControl size="small" sx={{ minWidth: isCompact ? 'calc(50% - 4px)' : 110, flex: isCompact ? 1 : 'none' }}>
+                <InputLabel sx={{ fontSize: '0.875rem' }}>Layer</InputLabel>
                 <Select
                   value={layerFilter}
                   label="Layer"
                   onChange={(e) => setLayerFilter(e.target.value)}
-                  sx={{ height: isCompact ? 44 : 36, fontSize: isCompact ? '0.85rem' : '1rem' }}
+                  sx={{ height: 36, fontSize: '0.875rem' }}
                 >
-                  <MenuItem value="">All Layers</MenuItem>
+                  <MenuItem value="">All</MenuItem>
                   <MenuItem value="Physical">Physical</MenuItem>
                   <MenuItem value="Functional">Functional</MenuItem>
                   <MenuItem value="Abstract">Abstract</MenuItem>
@@ -1238,15 +1239,15 @@ export default function GalleryView() {
 
             {/* Wikidata filter - hidden in semantic search mode */}
             {!isSemanticMode && (
-              <FormControl size="small" sx={{ minWidth: isCompact ? 'calc(50% - 4px)' : 130, flex: isCompact ? 1 : 'none' }}>
-                <InputLabel sx={{ fontSize: isCompact ? '0.8rem' : '1rem' }}>Source</InputLabel>
+              <FormControl size="small" sx={{ minWidth: isCompact ? 'calc(50% - 4px)' : 100, flex: isCompact ? 1 : 'none' }}>
+                <InputLabel sx={{ fontSize: '0.875rem' }}>Source</InputLabel>
                 <Select
                   value={hasWikidata}
                   label="Source"
                   onChange={(e) => setHasWikidata(e.target.value)}
-                  sx={{ height: isCompact ? 44 : 36, fontSize: isCompact ? '0.85rem' : '1rem' }}
+                  sx={{ height: 36, fontSize: '0.875rem' }}
                 >
-                  <MenuItem value="all">All Sources</MenuItem>
+                  <MenuItem value="all">All</MenuItem>
                   <MenuItem value="yes">Wikidata</MenuItem>
                   <MenuItem value="no">Custom</MenuItem>
                 </Select>
@@ -1261,6 +1262,7 @@ export default function GalleryView() {
                   onChange={(e) => setIncludeNsfw(e.target.checked)}
                   size="small"
                   sx={{
+                    p: 0.5,
                     color: 'rgba(255,255,255,0.5)',
                     '&.Mui-checked': { color: '#f44336' }
                   }}
@@ -1269,8 +1271,9 @@ export default function GalleryView() {
               label="NSFW"
               sx={{
                 ml: 0,
+                mr: 0,
                 '& .MuiFormControlLabel-label': {
-                  fontSize: isCompact ? '0.8rem' : '0.875rem',
+                  fontSize: '0.875rem',
                   color: includeNsfw ? '#f44336' : 'text.secondary'
                 }
               }}
@@ -1288,8 +1291,8 @@ export default function GalleryView() {
                   clearSemanticSearch();
                 }}
                 sx={{
-                  minWidth: 44,
-                  minHeight: 44,
+                  minWidth: 36,
+                  minHeight: 36,
                   backgroundColor: 'rgba(255,255,255,0.03)',
                   border: '1px solid rgba(255,255,255,0.1)',
                   color: 'error.main'

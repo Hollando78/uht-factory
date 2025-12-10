@@ -1,9 +1,11 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { CssBaseline, Box, Drawer } from '@mui/material';
+import { HelmetProvider } from 'react-helmet-async';
 import { AppProvider } from './context/AppContext';
 import { MobileProvider, useMobile } from './context/MobileContext';
 import { CollectionProvider } from './context/CollectionContext';
+import { AuthProvider } from './context/AuthContext';
 import Header from './components/Layout/Header';
 import Sidebar from './components/Layout/Sidebar';
 import TraitsView from './components/Traits/TraitsView';
@@ -17,6 +19,8 @@ import ListView from './components/ListView/ListView';
 import GalleryView from './components/Gallery/GalleryView';
 import EntityDetails from './components/Entity/EntityDetails';
 import TraitAnalytics from './components/Analytics/TraitAnalytics';
+import VerifyEmailPage from './components/Auth/VerifyEmailPage';
+import HowItWorksView from './components/HowItWorks/HowItWorksView';
 
 // Dark theme optimized for graph visualization with responsive typography
 const darkTheme = createTheme({
@@ -171,6 +175,7 @@ function AppContent() {
           <Routes>
             <Route path="/" element={<GalleryView />} />
             <Route path="/traits" element={<TraitsView />} />
+            <Route path="/how-it-works" element={<HowItWorksView />} />
             <Route path="/meta-classes" element={<MetaClassesView />} />
             <Route path="/classify" element={<ClassificationView />} />
             <Route path="/graph" element={<GraphView />} />
@@ -182,6 +187,7 @@ function AppContent() {
             <Route path="/gallery" element={<GalleryView />} />
             <Route path="/entity/:uuid" element={<EntityDetails />} />
             <Route path="/analytics" element={<TraitAnalytics />} />
+            <Route path="/verify-email" element={<VerifyEmailPage />} />
           </Routes>
         </Box>
       </Box>
@@ -191,18 +197,22 @@ function AppContent() {
 
 function App() {
   return (
-    <ThemeProvider theme={darkTheme}>
-      <CssBaseline />
-      <AppProvider>
-        <CollectionProvider>
-          <Router>
-            <MobileProvider>
-              <AppContent />
-            </MobileProvider>
-          </Router>
-        </CollectionProvider>
-      </AppProvider>
-    </ThemeProvider>
+    <HelmetProvider>
+      <ThemeProvider theme={darkTheme}>
+        <CssBaseline />
+        <AuthProvider>
+          <AppProvider>
+            <CollectionProvider>
+              <Router>
+                <MobileProvider>
+                  <AppContent />
+                </MobileProvider>
+              </Router>
+            </CollectionProvider>
+          </AppProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </HelmetProvider>
   );
 }
 

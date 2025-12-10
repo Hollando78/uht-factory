@@ -592,7 +592,7 @@ export default function ListView() {
 
         {/* Filters - collapsible on mobile */}
         <Collapse in={!isCompact || filtersExpanded}>
-          <Box sx={{ display: 'flex', gap: isCompact ? 1 : 1.5, flexWrap: 'wrap', alignItems: 'center' }}>
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
             {/* Search */}
             <TextField
               size="small"
@@ -600,9 +600,10 @@ export default function ListView() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               sx={{
-                width: isCompact ? '100%' : 220,
+                width: isCompact ? '100%' : 180,
                 '& .MuiOutlinedInput-root': {
-                  height: isCompact ? 44 : 36,
+                  height: 36,
+                  fontSize: '0.875rem',
                   backgroundColor: 'rgba(255,255,255,0.03)'
                 }
               }}
@@ -618,26 +619,25 @@ export default function ListView() {
               }}
             />
 
-            {!isCompact && <Divider orientation="vertical" flexItem sx={{ mx: 0.5, borderColor: 'rgba(255,255,255,0.1)' }} />}
-
             {/* Layer Filter */}
-            <FormControl size="small" sx={{ minWidth: isCompact ? 'calc(50% - 4px)' : 140, flex: isCompact ? 1 : 'none' }}>
-              <InputLabel sx={{ fontSize: '0.85rem' }}>Layer</InputLabel>
+            <FormControl size="small" sx={{ minWidth: isCompact ? 'calc(50% - 4px)' : 120, flex: isCompact ? 1 : 'none' }}>
+              <InputLabel sx={{ fontSize: '0.875rem' }}>Layer</InputLabel>
               <Select
                 multiple
                 value={selectedLayers}
                 onChange={(e) => setSelectedLayers(e.target.value as string[])}
                 input={<OutlinedInput label="Layer" />}
                 sx={{
-                  height: isCompact ? 44 : 36,
+                  height: 36,
+                  fontSize: '0.875rem',
                   backgroundColor: selectedLayers.length > 0 ? 'rgba(0, 229, 255, 0.08)' : 'rgba(255,255,255,0.03)',
-                  '& .MuiSelect-select': { py: 0.75 }
+                  '& .MuiSelect-select': { py: 0.5 }
                 }}
                 renderValue={(selected) => (
                   <Box sx={{ display: 'flex', gap: 0.5 }}>
                     {selected.map((layer) => (
                       <Chip key={layer} label={layer.slice(0, 1)} size="small"
-                        sx={{ height: 18, fontSize: '0.65rem', backgroundColor: LAYER_COLORS[layer], color: 'white' }} />
+                        sx={{ height: 20, fontSize: '0.7rem', backgroundColor: LAYER_COLORS[layer], color: 'white' }} />
                     ))}
                   </Box>
                 )}
@@ -646,7 +646,7 @@ export default function ListView() {
                   <MenuItem key={layer.name} value={layer.name}>
                     <Checkbox checked={selectedLayers.includes(layer.name)} size="small" />
                     <Box sx={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: layer.color, mr: 1 }} />
-                    <ListItemText primary={layer.name} primaryTypographyProps={{ fontSize: '0.85rem' }} />
+                    <ListItemText primary={layer.name} primaryTypographyProps={{ fontSize: '0.875rem' }} />
                   </MenuItem>
                 ))}
               </Select>
@@ -656,16 +656,17 @@ export default function ListView() {
             <TextField
               size="small"
               type="number"
-              label={isCompact ? 'Min' : 'Min Traits'}
+              label="Min"
               value={minTraitCount}
               onChange={(e) => setMinTraitCount(e.target.value === '' ? '' : parseInt(e.target.value))}
               sx={{
-                width: isCompact ? 80 : 100,
+                width: 70,
                 '& .MuiOutlinedInput-root': {
-                  height: isCompact ? 44 : 36,
+                  height: 36,
+                  fontSize: '0.875rem',
                   backgroundColor: minTraitCount !== '' ? 'rgba(0, 229, 255, 0.08)' : 'rgba(255,255,255,0.03)'
                 },
-                '& .MuiInputLabel-root': { fontSize: '0.85rem' }
+                '& .MuiInputLabel-root': { fontSize: '0.875rem' }
               }}
               inputProps={{ min: 0, max: 32 }}
             />
@@ -675,27 +676,22 @@ export default function ListView() {
               <Button
                 size="small"
                 variant={activeTraitFilterCount > 0 ? 'contained' : 'outlined'}
-                startIcon={!isCompact && <TuneIcon sx={{ fontSize: 16 }} />}
+                startIcon={<TuneIcon sx={{ fontSize: 16 }} />}
                 onClick={() => setTraitFilterDialogOpen(true)}
                 sx={{
-                  height: isCompact ? 44 : 36,
-                  minWidth: isCompact ? 44 : 'auto',
+                  height: 36,
                   textTransform: 'none',
-                  fontSize: '0.85rem',
-                  px: isCompact ? 1.5 : 2
+                  fontSize: '0.875rem',
+                  px: 1.5
                 }}
               >
-                {isCompact ? <TuneIcon sx={{ fontSize: 18 }} /> : 'Traits'}
+                Traits
               </Button>
             </Badge>
 
-            {!isCompact && <Divider orientation="vertical" flexItem sx={{ mx: 0.5, borderColor: 'rgba(255,255,255,0.1)' }} />}
-
-            {/* Hex Filters per Layer - simplified on mobile */}
-            <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center', flexWrap: isCompact ? 'wrap' : 'nowrap', width: isCompact ? '100%' : 'auto' }}>
-              <Typography variant="caption" sx={{ color: 'text.secondary', mr: 0.5, width: isCompact ? '100%' : 'auto', mb: isCompact ? 0.5 : 0 }}>
-                {isCompact ? 'Hex Filters (P/F/A/S):' : 'Hex:'}
-              </Typography>
+            {/* Hex Filters per Layer */}
+            <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
+              <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.75rem', mr: 0.5 }}>Hex:</Typography>
               {LAYERS.map((layer) => (
                 <TextField
                   key={layer.name}
@@ -704,10 +700,9 @@ export default function ListView() {
                   value={hexFilters[layer.name as keyof HexFilters]}
                   onChange={(e) => updateHexFilter(layer.name as keyof HexFilters, e.target.value)}
                   sx={{
-                    width: isCompact ? 'calc(25% - 3px)' : 48,
-                    flex: isCompact ? 1 : 'none',
+                    width: 44,
                     '& .MuiOutlinedInput-root': {
-                      height: isCompact ? 44 : 36,
+                      height: 36,
                       backgroundColor: hexFilters[layer.name as keyof HexFilters]
                         ? `${layer.color}20`
                         : 'rgba(255,255,255,0.03)',
@@ -716,18 +711,16 @@ export default function ListView() {
                     '& .MuiOutlinedInput-input': {
                       textAlign: 'center',
                       fontFamily: 'monospace',
-                      fontSize: '0.85rem',
+                      fontSize: '0.875rem',
                       textTransform: 'uppercase',
-                      p: isCompact ? '10px 4px' : '8px 4px'
+                      p: '6px 4px'
                     }
                   }}
                   inputProps={{ maxLength: 2 }}
-                  title={`${layer.name} layer hex filter (e.g. A7)`}
+                  title={`${layer.name} layer hex filter`}
                 />
               ))}
             </Box>
-
-            {!isCompact && <Divider orientation="vertical" flexItem sx={{ mx: 0.5, borderColor: 'rgba(255,255,255,0.1)' }} />}
 
             {/* Clear All Filters */}
             <Button
@@ -738,11 +731,10 @@ export default function ListView() {
               color={hasAnyFilter ? 'error' : 'inherit'}
               disabled={!hasAnyFilter}
               sx={{
-                height: isCompact ? 44 : 36,
+                height: 36,
                 textTransform: 'none',
-                fontSize: '0.85rem',
-                px: 2,
-                flex: isCompact ? 1 : 'none',
+                fontSize: '0.875rem',
+                px: 1.5,
                 borderColor: hasAnyFilter ? undefined : 'rgba(255,255,255,0.2)',
                 color: hasAnyFilter ? undefined : 'text.secondary'
               }}

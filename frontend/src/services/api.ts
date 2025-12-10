@@ -44,6 +44,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true, // Send cookies with requests (for refresh token)
 });
 
 // Add API key to requests if available
@@ -262,6 +263,152 @@ export const systemAPI = {
   }
 };
 
+// User Authentication API
+export interface AuthTokens {
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
+  expires_in: number;
+}
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  verified: boolean;
+  created_at: string;
+  last_login?: string;
+}
+
+export const authAPI = {
+  register: async (email: string, password: string): Promise<AuthUser> => {
+    const response = await api.post('/users/register', { email, password });
+    return response.data;
+  },
+
+  login: async (email: string, password: string): Promise<AuthTokens> => {
+    const response = await api.post('/users/login', { email, password });
+    return response.data;
+  },
+
+  logout: async (accessToken: string): Promise<void> => {
+    await api.post('/users/logout', null, {
+      headers: { Authorization: `Bearer ${accessToken}` }
+    });
+  },
+
+  refresh: async (refreshToken?: string): Promise<AuthTokens> => {
+    const response = await api.post('/users/refresh',
+      refreshToken ? { refresh_token: refreshToken } : {}
+    );
+    return response.data;
+  },
+
+  me: async (accessToken: string): Promise<AuthUser> => {
+    const response = await api.get('/users/me', {
+      headers: { Authorization: `Bearer ${accessToken}` }
+    });
+    return response.data;
+  },
+
+  forgotPassword: async (email: string): Promise<{ message: string }> => {
+    const response = await api.post('/users/forgot-password', { email });
+    return response.data;
+  },
+
+  resetPassword: async (token: string, password: string): Promise<{ message: string }> => {
+    const response = await api.post('/users/reset-password', { token, password });
+    return response.data;
+  },
+
+  changePassword: async (accessToken: string, currentPassword: string, newPassword: string): Promise<{ message: string }> => {
+    const response = await api.post('/users/change-password',
+      { current_password: currentPassword, new_password: newPassword },
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+    return response.data;
+  },
+
+  getMyApiKeys: async (accessToken: string): Promise<{ api_keys: any[]; count: number }> => {
+    const response = await api.get('/users/me/apikeys', {
+      headers: { Authorization: `Bearer ${accessToken}` }
+    });
+    return response.data;
+  },
+
+  generateMyApiKey: async (accessToken: string): Promise<{ api_key: string; key_id: string; message: string; scopes: string[]; expires_at?: string }> => {
+    const response = await api.post('/users/me/apikeys/generate', null, {
+      headers: { Authorization: `Bearer ${accessToken}` }
+    });
+    return response.data;
+  }
+};
+
+// Collections API (authenticated)
+export interface Collection {
+  id: string;
+  name: string;
+  description?: string;
+  entity_count: number;
+  entity_uuids: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CollectionDetail extends Collection {
+  entities: Array<{
+    uuid: string;
+    name: string;
+    uht_code: string;
+    added_at?: string;
+  }>;
+}
+
+const createAuthHeader = (accessToken: string) => ({
+  headers: { Authorization: `Bearer ${accessToken}` }
+});
+
+export const collectionsAPI = {
+  list: async (accessToken: string): Promise<{ collections: Collection[]; total: number }> => {
+    const response = await api.get('/collections', createAuthHeader(accessToken));
+    return response.data;
+  },
+
+  create: async (accessToken: string, name: string, description?: string): Promise<Collection> => {
+    const response = await api.post('/collections', { name, description }, createAuthHeader(accessToken));
+    return response.data;
+  },
+
+  get: async (accessToken: string, collectionId: string): Promise<CollectionDetail> => {
+    const response = await api.get(`/collections/${collectionId}`, createAuthHeader(accessToken));
+    return response.data;
+  },
+
+  update: async (accessToken: string, collectionId: string, updates: { name?: string; description?: string }): Promise<Collection> => {
+    const response = await api.patch(`/collections/${collectionId}`, updates, createAuthHeader(accessToken));
+    return response.data;
+  },
+
+  delete: async (accessToken: string, collectionId: string): Promise<void> => {
+    await api.delete(`/collections/${collectionId}`, createAuthHeader(accessToken));
+  },
+
+  addEntities: async (accessToken: string, collectionId: string, entityUuids: string[]): Promise<{ added_count: number }> => {
+    const response = await api.post(`/collections/${collectionId}/entities`,
+      { entity_uuids: entityUuids },
+      createAuthHeader(accessToken)
+    );
+    return response.data;
+  },
+
+  removeEntities: async (accessToken: string, collectionId: string, entityUuids: string[]): Promise<{ removed_count: number }> => {
+    const response = await api.delete(`/collections/${collectionId}/entities`, {
+      ...createAuthHeader(accessToken),
+      data: { entity_uuids: entityUuids }
+    });
+    return response.data;
+  }
+};
+
 export default {
   classification: classificationAPI,
   entities: entityAPI,
@@ -270,5 +417,7 @@ export default {
   images: imageAPI,
   embeddings: embeddingAPI,
   graph: graphAPI,
-  system: systemAPI
+  system: systemAPI,
+  auth: authAPI,
+  collections: collectionsAPI
 };

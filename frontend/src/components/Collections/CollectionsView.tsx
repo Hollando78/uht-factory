@@ -44,17 +44,20 @@ export default function CollectionsView() {
 
   // Check for import params on mount
   useEffect(() => {
-    const name = searchParams.get('name');
-    const entities = searchParams.get('entities');
+    const handleImport = async () => {
+      const name = searchParams.get('name');
+      const entities = searchParams.get('entities');
 
-    if (name && entities) {
-      const imported = importCollectionFromUrl(searchParams);
-      if (imported) {
-        setImportMessage(`Imported collection "${imported.name}" with ${imported.entityUuids.length} entities`);
-        // Clear URL params
-        navigate('/collections', { replace: true });
+      if (name && entities) {
+        const imported = await importCollectionFromUrl(searchParams);
+        if (imported) {
+          setImportMessage(`Imported collection "${imported.name}" with ${imported.entityUuids.length} entities`);
+          // Clear URL params
+          navigate('/collections', { replace: true });
+        }
       }
-    }
+    };
+    handleImport();
   }, []);
 
   // Load entity previews for collections
@@ -85,9 +88,9 @@ export default function CollectionsView() {
     loadPreviews();
   }, [state.collections]);
 
-  const handleCreateCollection = () => {
+  const handleCreateCollection = async () => {
     if (!newCollectionName.trim()) return;
-    createCollection(newCollectionName.trim());
+    await createCollection(newCollectionName.trim());
     setNewCollectionName('');
     setCreateDialogOpen(false);
   };

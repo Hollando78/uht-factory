@@ -439,7 +439,7 @@ export default function CollectionDetails({ collection, onBack, isCompact = fals
   const [entities, setEntities] = useState<UHTEntity[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'list' | 'canvas'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'canvas'>('canvas');
   const [cardPositions, setCardPositions] = useState<Record<string, CardPosition>>(() =>
     loadPositions(collection.id) || {}
   );
@@ -982,8 +982,10 @@ export default function CollectionDetails({ collection, onBack, isCompact = fals
             {/* Transformable canvas content */}
             <Box
               onMouseMove={handleCanvasMouseMove}
-              onClick={() => {
-                if (pendingConnection) {
+              onClick={(e) => {
+                // Only clear pending connection if clicking directly on canvas background
+                // (not when clicking on a card which handles its own selection)
+                if (pendingConnection && e.target === e.currentTarget) {
                   setPendingConnection(null);
                   setMousePos(null);
                 }

@@ -9,23 +9,32 @@ import {
   LinearProgress,
   Tooltip,
   Alert,
-  Collapse
+  Collapse,
+  Button,
+  CircularProgress
 } from '@mui/material';
 import {
   Refresh as RefreshIcon,
   Settings as SettingsIcon,
   Close as CloseIcon,
   CheckCircle as CheckIcon,
-  Menu as MenuIcon
+  Menu as MenuIcon,
+  Login as LoginIcon,
+  Logout as LogoutIcon,
+  Person as PersonIcon
 } from '@mui/icons-material';
 import { useApp } from '../../context/AppContext';
 import { useMobile } from '../../context/MobileContext';
+import { useAuth } from '../../context/AuthContext';
 import SettingsDialog from './SettingsDialog';
+import AuthModal from '../Auth/AuthModal';
 
 export default function Header() {
   const { state, actions } = useApp();
   const { isMobile, isTablet, toggleDrawer } = useMobile();
+  const { state: authState, logout } = useAuth();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
 
   const showHamburger = isMobile || isTablet;
   const isLoading = Object.values(state.loading).some(loading => loading);
@@ -33,6 +42,10 @@ export default function Header() {
 
   const handleRefresh = () => {
     window.location.reload();
+  };
+
+  const handleLogout = async () => {
+    await logout();
   };
 
   return (
@@ -130,7 +143,39 @@ export default function Header() {
           </Box>
 
           {/* Action Buttons */}
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            {/* Auth Button */}
+            {authState.isLoading ? (
+              <CircularProgress size={24} sx={{ mx: 1 }} />
+            ) : authState.isAuthenticated ? (
+              <>
+                {!isMobile && (
+                  <Chip
+                    icon={<PersonIcon />}
+                    label={authState.user?.email?.split('@')[0] || 'User'}
+                    size="small"
+                    variant="outlined"
+                    sx={{ mr: 1 }}
+                  />
+                )}
+                <Tooltip title="Logout">
+                  <IconButton color="inherit" onClick={handleLogout}>
+                    <LogoutIcon />
+                  </IconButton>
+                </Tooltip>
+              </>
+            ) : (
+              <Button
+                color="inherit"
+                startIcon={!isMobile && <LoginIcon />}
+                onClick={() => setAuthModalOpen(true)}
+                size="small"
+                sx={{ mr: 1 }}
+              >
+                {isMobile ? <LoginIcon /> : 'Login'}
+              </Button>
+            )}
+
             <Tooltip title="Refresh">
               <IconButton
                 color="inherit"
@@ -151,6 +196,9 @@ export default function Header() {
 
         {/* Settings Dialog */}
         <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+
+        {/* Auth Modal */}
+        <AuthModal open={authModalOpen} onClose={() => setAuthModalOpen(false)} />
 
         {/* Loading Progress Bar */}
         {isLoading && (

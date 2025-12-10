@@ -49,7 +49,15 @@ class Neo4jClient:
             "CREATE INDEX entity_uht IF NOT EXISTS FOR (e:Entity) ON (e.uht_code)",
             "CREATE INDEX entity_wikidata_qid IF NOT EXISTS FOR (e:Entity) ON (e.wikidata_qid)",
             "CREATE INDEX entity_wikidata_type IF NOT EXISTS FOR (e:Entity) ON (e.wikidata_type)",
-            "CREATE INDEX classification_date IF NOT EXISTS FOR (c:Classification) ON (c.created_at)"
+            "CREATE INDEX classification_date IF NOT EXISTS FOR (c:Classification) ON (c.created_at)",
+            # User authentication
+            "CREATE CONSTRAINT user_id IF NOT EXISTS FOR (u:User) REQUIRE u.id IS UNIQUE",
+            "CREATE CONSTRAINT user_email IF NOT EXISTS FOR (u:User) REQUIRE u.email IS UNIQUE",
+            "CREATE INDEX user_verification_token IF NOT EXISTS FOR (u:User) ON (u.verification_token)",
+            "CREATE INDEX user_reset_token IF NOT EXISTS FOR (u:User) ON (u.password_reset_token)",
+            # Collections
+            "CREATE CONSTRAINT collection_id IF NOT EXISTS FOR (c:Collection) REQUIRE c.id IS UNIQUE",
+            "CREATE INDEX collection_name IF NOT EXISTS FOR (c:Collection) ON (c.name)"
         ]
 
         async with self.driver.session() as session:
@@ -927,3 +935,362 @@ class Neo4jClient:
                 "without_embeddings": record["without_embeddings"],
                 "total": record["total"]
             }
+
+    # ==================== User Management ====================
+
+    async def create_user(self, user_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Create a new user"""
+        query = """
+        CREATE (u:User {
+            id: $id,
+            email: $email,
+            password_hash: $password_hash,
+            verified: false,
+            verification_token: $verification_token,
+            verification_expires: datetime($verification_expires),
+            created_at: datetime(),
+            updated_at: datetime()
+        })
+        RETURN u
+        """
+
+        async with self.driver.session() as session:
+            result = await session.run(query, **user_data)
+            record = await result.single()
+            if record:
+                user = dict(record["u"])
+                # Convert datetime objects to ISO strings
+                for key in ["created_at", "updated_at", "verification_expires", "last_login"]:
+                    if key in user and user[key] is not None:
+                        user[key] = user[key].isoformat() if hasattr(user[key], 'isoformat') else str(user[key])
+                return user
+            return None
+
+    async def find_user_by_email(self, email: str) -> Optional[Dict[str, Any]]:
+        """Find user by email (case-insensitive)"""
+        query = """
+        MATCH (u:User)
+        WHERE toLower(u.email) = toLower($email)
+        RETURN u
+        """
+
+        async with self.driver.session() as session:
+            result = await session.run(query, email=email)
+            record = await result.single()
+            if record:
+                user = dict(record["u"])
+                for key in ["created_at", "updated_at", "verification_expires", "password_reset_expires", "last_login"]:
+                    if key in user and user[key] is not None:
+                        user[key] = user[key].isoformat() if hasattr(user[key], 'isoformat') else str(user[key])
+                return user
+            return None
+
+    async def find_user_by_id(self, user_id: str) -> Optional[Dict[str, Any]]:
+        """Find user by ID"""
+        query = """
+        MATCH (u:User {id: $user_id})
+        RETURN u
+        """
+
+        async with self.driver.session() as session:
+            result = await session.run(query, user_id=user_id)
+            record = await result.single()
+            if record:
+                user = dict(record["u"])
+                for key in ["created_at", "updated_at", "verification_expires", "password_reset_expires", "last_login"]:
+                    if key in user and user[key] is not None:
+                        user[key] = user[key].isoformat() if hasattr(user[key], 'isoformat') else str(user[key])
+                return user
+            return None
+
+    async def find_user_by_verification_token(self, token: str) -> Optional[Dict[str, Any]]:
+        """Find user by verification token"""
+        query = """
+        MATCH (u:User {verification_token: $token})
+        WHERE u.verification_expires > datetime()
+        RETURN u
+        """
+
+        async with self.driver.session() as session:
+            result = await session.run(query, token=token)
+            record = await result.single()
+            if record:
+                user = dict(record["u"])
+                for key in ["created_at", "updated_at", "verification_expires", "last_login"]:
+                    if key in user and user[key] is not None:
+                        user[key] = user[key].isoformat() if hasattr(user[key], 'isoformat') else str(user[key])
+                return user
+            return None
+
+    async def verify_user_email(self, user_id: str) -> bool:
+        """Mark user email as verified"""
+        query = """
+        MATCH (u:User {id: $user_id})
+        SET u.verified = true,
+            u.verification_token = null,
+            u.verification_expires = null,
+            u.updated_at = datetime()
+        RETURN u
+        """
+
+        async with self.driver.session() as session:
+            result = await session.run(query, user_id=user_id)
+            record = await result.single()
+            return record is not None
+
+    async def update_user_last_login(self, user_id: str) -> bool:
+        """Update user's last login timestamp"""
+        query = """
+        MATCH (u:User {id: $user_id})
+        SET u.last_login = datetime(),
+            u.updated_at = datetime()
+        RETURN u
+        """
+
+        async with self.driver.session() as session:
+            result = await session.run(query, user_id=user_id)
+            record = await result.single()
+            return record is not None
+
+    async def set_password_reset_token(self, user_id: str, token: str, expires: str) -> bool:
+        """Set password reset token for user"""
+        query = """
+        MATCH (u:User {id: $user_id})
+        SET u.password_reset_token = $token,
+            u.password_reset_expires = datetime($expires),
+            u.updated_at = datetime()
+        RETURN u
+        """
+
+        async with self.driver.session() as session:
+            result = await session.run(query, user_id=user_id, token=token, expires=expires)
+            record = await result.single()
+            return record is not None
+
+    async def find_user_by_reset_token(self, token: str) -> Optional[Dict[str, Any]]:
+        """Find user by password reset token"""
+        query = """
+        MATCH (u:User {password_reset_token: $token})
+        WHERE u.password_reset_expires > datetime()
+        RETURN u
+        """
+
+        async with self.driver.session() as session:
+            result = await session.run(query, token=token)
+            record = await result.single()
+            if record:
+                user = dict(record["u"])
+                for key in ["created_at", "updated_at", "verification_expires", "password_reset_expires", "last_login"]:
+                    if key in user and user[key] is not None:
+                        user[key] = user[key].isoformat() if hasattr(user[key], 'isoformat') else str(user[key])
+                return user
+            return None
+
+    async def update_user_password(self, user_id: str, password_hash: str) -> bool:
+        """Update user password and clear reset token"""
+        query = """
+        MATCH (u:User {id: $user_id})
+        SET u.password_hash = $password_hash,
+            u.password_reset_token = null,
+            u.password_reset_expires = null,
+            u.updated_at = datetime()
+        RETURN u
+        """
+
+        async with self.driver.session() as session:
+            result = await session.run(query, user_id=user_id, password_hash=password_hash)
+            record = await result.single()
+            return record is not None
+
+    # ==================== Collection Management ====================
+
+    async def create_collection(self, user_id: str, collection_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Create a new collection owned by user"""
+        query = """
+        MATCH (u:User {id: $user_id})
+        CREATE (c:Collection {
+            id: $id,
+            name: $name,
+            description: $description,
+            created_at: datetime(),
+            updated_at: datetime()
+        })
+        CREATE (u)-[:OWNS]->(c)
+        RETURN c
+        """
+
+        async with self.driver.session() as session:
+            result = await session.run(
+                query,
+                user_id=user_id,
+                id=collection_data["id"],
+                name=collection_data["name"],
+                description=collection_data.get("description")
+            )
+            record = await result.single()
+            if record:
+                collection = dict(record["c"])
+                for key in ["created_at", "updated_at"]:
+                    if key in collection and collection[key] is not None:
+                        collection[key] = collection[key].isoformat() if hasattr(collection[key], 'isoformat') else str(collection[key])
+                return collection
+            return None
+
+    async def get_user_collections(self, user_id: str) -> List[Dict[str, Any]]:
+        """Get all collections owned by user"""
+        query = """
+        MATCH (u:User {id: $user_id})-[:OWNS]->(c:Collection)
+        OPTIONAL MATCH (c)-[:CONTAINS]->(e:Entity)
+        RETURN c, count(e) as entity_count, collect(e.uuid) as entity_uuids
+        ORDER BY c.updated_at DESC
+        """
+
+        async with self.driver.session() as session:
+            result = await session.run(query, user_id=user_id)
+            collections = []
+            async for record in result:
+                collection = dict(record["c"])
+                collection["entity_count"] = record["entity_count"]
+                collection["entity_uuids"] = [u for u in record["entity_uuids"] if u is not None]
+                for key in ["created_at", "updated_at"]:
+                    if key in collection and collection[key] is not None:
+                        collection[key] = collection[key].isoformat() if hasattr(collection[key], 'isoformat') else str(collection[key])
+                collections.append(collection)
+            return collections
+
+    async def get_collection_by_id(self, collection_id: str, user_id: str) -> Optional[Dict[str, Any]]:
+        """Get collection by ID (must be owned by user)"""
+        query = """
+        MATCH (u:User {id: $user_id})-[:OWNS]->(c:Collection {id: $collection_id})
+        OPTIONAL MATCH (c)-[r:CONTAINS]->(e:Entity)
+        WITH c, collect({uuid: e.uuid, name: e.name, uht_code: e.uht_code, added_at: r.added_at}) as entities
+        RETURN c, entities
+        """
+
+        async with self.driver.session() as session:
+            result = await session.run(query, collection_id=collection_id, user_id=user_id)
+            record = await result.single()
+            if record:
+                collection = dict(record["c"])
+                # Filter out null entities (from OPTIONAL MATCH)
+                entities = [e for e in record["entities"] if e["uuid"] is not None]
+                for e in entities:
+                    if e.get("added_at"):
+                        e["added_at"] = e["added_at"].isoformat() if hasattr(e["added_at"], 'isoformat') else str(e["added_at"])
+                collection["entities"] = entities
+                collection["entity_count"] = len(entities)
+                for key in ["created_at", "updated_at"]:
+                    if key in collection and collection[key] is not None:
+                        collection[key] = collection[key].isoformat() if hasattr(collection[key], 'isoformat') else str(collection[key])
+                return collection
+            return None
+
+    async def update_collection(self, collection_id: str, user_id: str, updates: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Update collection name or description"""
+        set_clauses = ["c.updated_at = datetime()"]
+        params = {"collection_id": collection_id, "user_id": user_id}
+
+        if "name" in updates:
+            set_clauses.append("c.name = $name")
+            params["name"] = updates["name"]
+        if "description" in updates:
+            set_clauses.append("c.description = $description")
+            params["description"] = updates["description"]
+
+        query = f"""
+        MATCH (u:User {{id: $user_id}})-[:OWNS]->(c:Collection {{id: $collection_id}})
+        SET {', '.join(set_clauses)}
+        RETURN c
+        """
+
+        async with self.driver.session() as session:
+            result = await session.run(query, **params)
+            record = await result.single()
+            if record:
+                collection = dict(record["c"])
+                for key in ["created_at", "updated_at"]:
+                    if key in collection and collection[key] is not None:
+                        collection[key] = collection[key].isoformat() if hasattr(collection[key], 'isoformat') else str(collection[key])
+                return collection
+            return None
+
+    async def delete_collection(self, collection_id: str, user_id: str) -> bool:
+        """Delete collection and all CONTAINS relationships"""
+        query = """
+        MATCH (u:User {id: $user_id})-[:OWNS]->(c:Collection {id: $collection_id})
+        DETACH DELETE c
+        RETURN count(c) as deleted
+        """
+
+        async with self.driver.session() as session:
+            result = await session.run(query, collection_id=collection_id, user_id=user_id)
+            record = await result.single()
+            return record["deleted"] > 0 if record else False
+
+    async def add_entities_to_collection(self, collection_id: str, user_id: str, entity_uuids: List[str]) -> int:
+        """Add entities to collection"""
+        query = """
+        MATCH (u:User {id: $user_id})-[:OWNS]->(c:Collection {id: $collection_id})
+        UNWIND $entity_uuids as uuid
+        MATCH (e:Entity {uuid: uuid})
+        MERGE (c)-[r:CONTAINS]->(e)
+        ON CREATE SET r.added_at = datetime()
+        SET c.updated_at = datetime()
+        RETURN count(r) as added
+        """
+
+        async with self.driver.session() as session:
+            result = await session.run(query, collection_id=collection_id, user_id=user_id, entity_uuids=entity_uuids)
+            record = await result.single()
+            return record["added"] if record else 0
+
+    async def remove_entities_from_collection(self, collection_id: str, user_id: str, entity_uuids: List[str]) -> int:
+        """Remove entities from collection"""
+        query = """
+        MATCH (u:User {id: $user_id})-[:OWNS]->(c:Collection {id: $collection_id})
+        MATCH (c)-[r:CONTAINS]->(e:Entity)
+        WHERE e.uuid IN $entity_uuids
+        DELETE r
+        SET c.updated_at = datetime()
+        RETURN count(r) as removed
+        """
+
+        async with self.driver.session() as session:
+            result = await session.run(query, collection_id=collection_id, user_id=user_id, entity_uuids=entity_uuids)
+            record = await result.single()
+            return record["removed"] if record else 0
+
+    async def link_api_key_to_user(self, user_id: str, key_id: str) -> bool:
+        """Link an existing API key to a user"""
+        query = """
+        MATCH (u:User {id: $user_id})
+        MATCH (k:APIKey {key_id: $key_id})
+        MERGE (u)-[:HAS_KEY]->(k)
+        RETURN u, k
+        """
+
+        async with self.driver.session() as session:
+            result = await session.run(query, user_id=user_id, key_id=key_id)
+            record = await result.single()
+            return record is not None
+
+    async def get_user_api_keys(self, user_id: str) -> List[Dict[str, Any]]:
+        """Get all API keys owned by user"""
+        query = """
+        MATCH (u:User {id: $user_id})-[:HAS_KEY]->(k:APIKey)
+        RETURN k
+        ORDER BY k.created_at DESC
+        """
+
+        async with self.driver.session() as session:
+            result = await session.run(query, user_id=user_id)
+            keys = []
+            async for record in result:
+                key = dict(record["k"])
+                # Don't expose hashed key
+                key.pop("hashed_key", None)
+                for date_key in ["created_at", "expires_at", "last_used"]:
+                    if date_key in key and key[date_key] is not None:
+                        key[date_key] = key[date_key].isoformat() if hasattr(key[date_key], 'isoformat') else str(key[date_key])
+                keys.append(key)
+            return keys

@@ -2,13 +2,10 @@ import { useState } from 'react';
 import {
   Card,
   CardContent,
-  CardActions,
   Typography,
   Box,
   IconButton,
   Tooltip,
-  AvatarGroup,
-  Avatar,
   Chip,
   Menu,
   MenuItem,
@@ -28,7 +25,8 @@ import {
   Share as ShareIcon,
   OpenInNew as OpenIcon,
   Compare as CompareIcon,
-  Clear as ClearIcon
+  Clear as ClearIcon,
+  FolderSpecial as FolderIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useCollections } from '../../context/CollectionContext';
@@ -100,16 +98,134 @@ export default function CollectionCard({
     return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   };
 
+  // Fill preview grid with placeholders if needed
+  const previewSlots = [...entityPreviews.slice(0, 4)];
+  while (previewSlots.length < 4) {
+    previewSlots.push(null as any);
+  }
+
   return (
     <>
       <Card
         sx={{
           cursor: onSelect ? 'pointer' : 'default',
-          '&:hover': onSelect ? { borderColor: 'primary.main' } : {}
+          transition: 'all 0.2s ease',
+          '&:hover': onSelect ? {
+            borderColor: 'primary.main',
+            transform: 'translateY(-2px)',
+            boxShadow: '0 4px 20px rgba(0, 229, 255, 0.15)'
+          } : {}
         }}
         onClick={onSelect}
       >
-        <CardContent sx={{ pb: 1 }}>
+        {/* Image Preview Grid */}
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gridTemplateRows: '1fr 1fr',
+            aspectRatio: '1',
+            backgroundColor: 'rgba(0, 0, 0, 0.3)',
+            position: 'relative',
+            overflow: 'hidden'
+          }}
+        >
+          {previewSlots.map((entity, index) => (
+            <Box
+              key={entity?.uuid || `empty-${index}`}
+              sx={{
+                backgroundColor: 'rgba(0, 229, 255, 0.05)',
+                borderRight: index % 2 === 0 ? '1px solid rgba(255,255,255,0.1)' : 'none',
+                borderBottom: index < 2 ? '1px solid rgba(255,255,255,0.1)' : 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                overflow: 'hidden'
+              }}
+            >
+              {entity?.image_url ? (
+                <img
+                  src={entity.image_url}
+                  alt={entity.name}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover'
+                  }}
+                />
+              ) : entity ? (
+                <Typography
+                  variant="h6"
+                  sx={{
+                    color: 'rgba(255,255,255,0.3)',
+                    fontWeight: 600
+                  }}
+                >
+                  {entity.name?.[0] || '?'}
+                </Typography>
+              ) : (
+                <Box
+                  sx={{
+                    width: '100%',
+                    height: '100%',
+                    background: 'linear-gradient(135deg, rgba(0,229,255,0.03) 0%, rgba(0,229,255,0.08) 100%)'
+                  }}
+                />
+              )}
+            </Box>
+          ))}
+
+          {/* Overlay with entity count if more than 4 */}
+          {collection.entityUuids.length > 4 && (
+            <Box
+              sx={{
+                position: 'absolute',
+                bottom: 0,
+                right: 0,
+                width: '50%',
+                height: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: 'rgba(0,0,0,0.7)',
+                backdropFilter: 'blur(4px)'
+              }}
+            >
+              <Typography
+                variant="h5"
+                sx={{
+                  color: 'primary.main',
+                  fontWeight: 700
+                }}
+              >
+                +{collection.entityUuids.length - 3}
+              </Typography>
+            </Box>
+          )}
+
+          {/* Empty state */}
+          {entityPreviews.length === 0 && (
+            <Box
+              sx={{
+                position: 'absolute',
+                inset: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexDirection: 'column',
+                gap: 1
+              }}
+            >
+              <FolderIcon sx={{ fontSize: 48, color: 'rgba(255,255,255,0.2)' }} />
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.3)' }}>
+                Empty collection
+              </Typography>
+            </Box>
+          )}
+        </Box>
+
+        <CardContent sx={{ p: isCompact ? 1.5 : 2 }}>
+          {/* Header row with title and menu */}
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
             <Typography
               variant={isCompact ? 'body1' : 'subtitle1'}
@@ -118,118 +234,89 @@ export default function CollectionCard({
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
-                flex: 1
+                flex: 1,
+                pr: 1
               }}
             >
               {collection.name}
             </Typography>
-            <IconButton size="small" onClick={handleMenuClick}>
+            <IconButton
+              size="small"
+              onClick={handleMenuClick}
+              sx={{
+                mt: -0.5,
+                mr: -0.5,
+                opacity: 0.7,
+                '&:hover': { opacity: 1 }
+              }}
+            >
               <MoreIcon fontSize="small" />
             </IconButton>
           </Box>
 
-          <Box sx={{ display: 'flex', gap: 1, mb: 1.5, flexWrap: 'wrap' }}>
+          {/* Info row */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
             <Chip
-              label={`${collection.entityUuids.length} entities`}
+              label={`${collection.entityUuids.length} ${collection.entityUuids.length === 1 ? 'entity' : 'entities'}`}
               size="small"
-              color="primary"
-              variant="outlined"
-              sx={{ height: 22 }}
+              sx={{
+                height: 22,
+                backgroundColor: 'rgba(0, 229, 255, 0.15)',
+                color: 'primary.main',
+                fontWeight: 500,
+                fontSize: '0.7rem'
+              }}
             />
-            <Chip
-              label={formatDate(collection.updatedAt)}
-              size="small"
-              sx={{ height: 22 }}
-            />
+            <Typography
+              variant="caption"
+              sx={{ color: 'text.secondary', fontSize: '0.7rem' }}
+            >
+              {formatDate(collection.updatedAt)}
+            </Typography>
           </Box>
 
-          {/* Entity preview avatars */}
-          {entityPreviews.length > 0 && (
-            <Box>
-              <AvatarGroup
-                max={4}
+          {/* Action icons row */}
+          <Box sx={{ display: 'flex', gap: 0.5, mt: 1 }}>
+            <Tooltip title="Open">
+              <IconButton
+                size="small"
+                onClick={(e) => { e.stopPropagation(); onSelect?.(); }}
                 sx={{
-                  justifyContent: 'flex-start',
-                  '& .MuiAvatar-root': {
-                    width: 28,
-                    height: 28,
-                    fontSize: '0.75rem',
-                    border: '2px solid',
-                    borderColor: 'background.paper'
-                  }
+                  backgroundColor: 'rgba(0, 229, 255, 0.1)',
+                  '&:hover': { backgroundColor: 'rgba(0, 229, 255, 0.2)' }
                 }}
               >
-                {entityPreviews.map((entity) => (
-                  <Tooltip
-                    key={entity.uuid}
-                    title={
-                      <Box>
-                        <Typography variant="body2">{entity.name}</Typography>
-                        {entity.uht_code && (
-                          <Typography variant="caption" sx={{ fontFamily: 'monospace', color: 'primary.light' }}>
-                            {entity.uht_code}
-                          </Typography>
-                        )}
-                      </Box>
-                    }
-                  >
-                    {entity.image_url ? (
-                      <Avatar src={entity.image_url} alt={entity.name} />
-                    ) : (
-                      <Avatar>{entity.name[0]}</Avatar>
-                    )}
-                  </Tooltip>
-                ))}
-              </AvatarGroup>
-              {/* UHT codes list */}
-              <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 0.25 }}>
-                {entityPreviews.slice(0, 3).map((entity) => (
-                  entity.uht_code && (
-                    <Typography
-                      key={entity.uuid}
-                      variant="caption"
-                      sx={{
-                        fontFamily: 'monospace',
-                        color: 'primary.main',
-                        fontSize: '0.65rem',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap'
-                      }}
-                    >
-                      {entity.uht_code}
-                    </Typography>
-                  )
-                ))}
-                {entityPreviews.length > 3 && (
-                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
-                    +{entityPreviews.length - 3} more
-                  </Typography>
-                )}
-              </Box>
-            </Box>
-          )}
-        </CardContent>
-
-        <CardActions sx={{ pt: 0, px: 2, pb: 1.5 }}>
-          <Tooltip title="Open collection">
-            <IconButton size="small" onClick={(e) => { e.stopPropagation(); navigate(`/collections/${collection.id}`); }}>
-              <OpenIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-          {collection.entityUuids.length >= 2 && (
-            <Tooltip title="Compare entities">
-              <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleCompare(); }}>
-                <CompareIcon fontSize="small" />
+                <OpenIcon sx={{ fontSize: 16 }} />
               </IconButton>
             </Tooltip>
-          )}
-          <Tooltip title="Share collection">
-            <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleShare(); }}>
-              <ShareIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-        </CardActions>
+            {collection.entityUuids.length >= 2 && (
+              <Tooltip title="Compare">
+                <IconButton
+                  size="small"
+                  onClick={(e) => { e.stopPropagation(); handleCompare(); }}
+                  sx={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                    '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' }
+                  }}
+                >
+                  <CompareIcon sx={{ fontSize: 16 }} />
+                </IconButton>
+              </Tooltip>
+            )}
+            <Tooltip title="Share">
+              <IconButton
+                size="small"
+                onClick={(e) => { e.stopPropagation(); handleShare(); }}
+                sx={{
+                  backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                  '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' }
+                }}
+              >
+                <ShareIcon sx={{ fontSize: 16 }} />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        </CardContent>
       </Card>
 
       {/* Menu */}

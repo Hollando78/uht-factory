@@ -20,7 +20,8 @@ import {
   Analytics as AnalyticsIcon,
   AutoAwesome as MetaClassIcon,
   Build as BuildIcon,
-  FolderSpecial as CollectionIcon
+  FolderSpecial as CollectionIcon,
+  School as SchoolIcon
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
@@ -43,6 +44,12 @@ const navItems: NavItem[] = [
     label: 'Canonical Traits',
     icon: <TraitsIcon />,
     description: 'View the 32 fundamental traits'
+  },
+  {
+    path: '/how-it-works',
+    label: 'How UHT Works',
+    icon: <SchoolIcon />,
+    description: 'Learn about the taxonomy'
   },
   {
     path: '/meta-classes',

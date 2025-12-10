@@ -1,18 +1,26 @@
 import os
+import logging
+import re
 from dotenv import load_dotenv
 
 # Load .env BEFORE any other imports that depend on environment variables
 load_dotenv()
 
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse, HTMLResponse
 from contextlib import asynccontextmanager
 
-from api.routes import classification, entities, traits, auth, preprocessing, graph, images, models, embeddings
+from api.routes import classification, entities, traits, auth, preprocessing, graph, images, models, embeddings, users, collections, seo
 from api.middleware.api_key_auth import api_key_manager
+from api.middleware.meta_injection import MetaTagInjectionMiddleware
 from db.neo4j_client import Neo4jClient
 from db.redis_client import RedisClient
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 # Initialize clients
 neo4j_client = Neo4jClient(
@@ -83,7 +91,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount static files
+# Add meta tag injection middleware (must be after CORS)
+app.add_middleware(MetaTagInjectionMiddleware)
+
+# Mount static files (API static assets like images)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Include routers
@@ -96,9 +107,13 @@ app.include_router(graph.router, prefix="/api/v1/graph", tags=["Graph"])
 app.include_router(images.router, prefix="/api/v1/images", tags=["Images"])
 app.include_router(models.router, prefix="/api/v1/models", tags=["Models"])
 app.include_router(embeddings.router, prefix="/api/v1/embeddings", tags=["Embeddings"])
+app.include_router(users.router, prefix="/api/v1/users", tags=["Users"])
+app.include_router(collections.router, prefix="/api/v1/collections", tags=["Collections"])
+app.include_router(seo.router, prefix="/api/v1", tags=["SEO"])
 
-@app.get("/")
+@app.get("/api")
 async def root():
+    """API information endpoint (moved from / to allow frontend serving)"""
     return {
         "name": "UHT Classification Factory",
         "version": "1.0.0",
@@ -148,3 +163,229 @@ async def health_check():
 async def health_check_root():
     """Root health check endpoint (alias)"""
     return await health_check()
+
+# Serve frontend static assets (JS, CSS, images)
+frontend_dist_path = os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")
+if os.path.exists(frontend_dist_path):
+    import mimetypes
+
+    # Mount static assets subdirectory
+    assets_path = os.path.join(frontend_dist_path, "assets")
+    if os.path.exists(assets_path):
+        app.mount("/assets", StaticFiles(directory=assets_path), name="assets")
+
+    # Serve specific static files (favicon, robots.txt)
+    @app.get("/favicon.svg")
+    async def favicon():
+        return FileResponse(os.path.join(frontend_dist_path, "favicon.svg"))
+
+    @app.get("/robots.txt")
+    async def robots():
+        return FileResponse(os.path.join(frontend_dist_path, "robots.txt"))
+
+    # Catch-all route for SPA - serves index.html for all non-API routes
+    # This must be defined LAST
+    @app.get("/{full_path:path}")
+    async def serve_spa(full_path: str, request: Request):
+        """Serve React SPA with dynamic meta tag injection for entity pages"""
+        import re
+        import json
+
+        # Don't intercept API routes or static file requests
+        if full_path.startswith("api/") or full_path.startswith("docs") or full_path.startswith("redoc"):
+            raise HTTPException(status_code=404, detail="Not found")
+
+        # Read index.html
+        index_path = os.path.join(frontend_dist_path, "index.html")
+        with open(index_path, 'r', encoding='utf-8') as f:
+            html = f.read()
+
+        # Check if this is an entity page
+        entity_match = re.match(r'^entity/([a-f0-9-]+)/?$', full_path)
+        logger.info(f"serve_spa: full_path='{full_path}', entity_match={entity_match is not None}")
+        if entity_match:
+            uuid = entity_match.group(1)
+            logger.info(f"serve_spa: Attempting to inject meta tags for entity {uuid}")
+
+            # Try to inject meta tags for this entity
+            try:
+                neo4j_client = request.app.state.neo4j_client
+                redis_client = request.app.state.redis_client
+
+                # Check Redis cache first
+                cache_key = f"entity_meta:{uuid}"
+                entity = None
+                try:
+                    cached = await redis_client.client.get(cache_key)
+                    if cached:
+                        entity = json.loads(cached)
+                        logger.info(f"serve_spa: Entity found in cache: {entity.get('name')}")
+                except Exception as e:
+                    logger.warning(f"serve_spa: Redis cache read failed: {e}")
+
+                # Query Neo4j if not cached
+                if not entity:
+                    logger.info(f"serve_spa: Entity not in cache, querying Neo4j for {uuid}")
+                    query = """
+                    MATCH (e:Entity {uuid: $uuid})
+                    RETURN e.uuid as uuid,
+                           e.name as name,
+                           e.description as description,
+                           e.uht_code as uht_code,
+                           e.image_url as image_url
+                    LIMIT 1
+                    """
+                    result = await neo4j_client.execute_query(query, uuid=uuid)
+                    if result:
+                        entity = dict(result[0])
+                        logger.info(f"serve_spa: Found entity in Neo4j: {entity.get('name')}")
+                        # Cache for 1 hour
+                        try:
+                            from datetime import timedelta
+                            await redis_client.client.setex(
+                                cache_key,
+                                timedelta(seconds=3600),
+                                json.dumps(entity)
+                            )
+                        except Exception as e:
+                            logger.warning(f"serve_spa: Redis cache write failed: {e}")
+                    else:
+                        logger.warning(f"serve_spa: Entity {uuid} not found in Neo4j")
+
+                # Inject meta tags if entity found
+                if entity:
+                    logger.info(f"serve_spa: Injecting meta tags for {entity.get('name')}")
+                    html = inject_entity_meta_tags(html, entity)
+                    logger.info(f"serve_spa: Meta tags injected successfully")
+                else:
+                    logger.warning(f"serve_spa: No entity data available for {uuid}, serving default HTML")
+
+            except Exception as e:
+                # Log error but continue serving HTML
+                logger.error(f"serve_spa: Error injecting meta tags for {uuid}: {e}", exc_info=True)
+
+        return HTMLResponse(content=html, media_type="text/html")
+
+    def inject_entity_meta_tags(html: str, entity: dict) -> str:
+        """Replace default meta tags with entity-specific ones"""
+        # Escape HTML entities
+        def escape_html(text: str) -> str:
+            if not text:
+                return ""
+            return (text
+                    .replace('&', '&amp;')
+                    .replace('<', '&lt;')
+                    .replace('>', '&gt;')
+                    .replace('"', '&quot;')
+                    .replace("'", '&#39;'))
+
+        name = escape_html(entity.get('name', 'Unknown Entity'))
+        description = escape_html(entity.get('description', '')[:160])
+        uht_code = entity.get('uht_code', '')
+        uuid = entity.get('uuid', '')
+        image_url = entity.get('image_url', '/og-image.png')
+
+        # Ensure image URL is absolute
+        if image_url and not image_url.startswith('http'):
+            image_url = f"https://factory.universalhex.org{image_url}"
+        else:
+            image_url = "https://factory.universalhex.org/og-image.png"
+
+        # Replace default title with entity-specific title (includes hex code now!)
+        html = re.sub(
+            r'<title>.*?</title>',
+            f'<title>{name} ({uht_code}) | UHT Factory</title>',
+            html,
+            count=1,
+            flags=re.DOTALL
+        )
+
+        # Replace default meta description
+        html = re.sub(
+            r'<meta name="description" content=".*?" />',
+            f'<meta name="description" content="{description}" />',
+            html,
+            count=1,
+            flags=re.DOTALL
+        )
+
+        # Replace default meta keywords
+        html = re.sub(
+            r'<meta name="keywords" content=".*?" />',
+            f'<meta name="keywords" content="{name}, UHT code {uht_code}, entity classification, universal hex taxonomy" />',
+            html,
+            count=1,
+            flags=re.DOTALL
+        )
+
+        # Replace Open Graph tags
+        html = re.sub(
+            r'<meta property="og:type" content=".*?" />',
+            f'<meta property="og:type" content="article" />',
+            html,
+            count=1
+        )
+        html = re.sub(
+            r'<meta property="og:url" content=".*?" />',
+            f'<meta property="og:url" content="https://factory.universalhex.org/entity/{uuid}" />',
+            html,
+            count=1
+        )
+        html = re.sub(
+            r'<meta property="og:title" content=".*?" />',
+            f'<meta property="og:title" content="{name} ({uht_code}) | UHT Factory" />',
+            html,
+            count=1
+        )
+        html = re.sub(
+            r'<meta property="og:description" content=".*?" />',
+            f'<meta property="og:description" content="{description}" />',
+            html,
+            count=1,
+            flags=re.DOTALL
+        )
+        html = re.sub(
+            r'<meta property="og:image" content=".*?" />',
+            f'<meta property="og:image" content="{image_url}" />',
+            html,
+            count=1
+        )
+
+        # Replace Twitter Card tags
+        html = re.sub(
+            r'<meta name="twitter:url" content=".*?" />',
+            f'<meta name="twitter:url" content="https://factory.universalhex.org/entity/{uuid}" />',
+            html,
+            count=1
+        )
+        html = re.sub(
+            r'<meta name="twitter:title" content=".*?" />',
+            f'<meta name="twitter:title" content="{name} ({uht_code}) | UHT Factory" />',
+            html,
+            count=1,
+            flags=re.DOTALL
+        )
+        html = re.sub(
+            r'<meta name="twitter:description" content=".*?" />',
+            f'<meta name="twitter:description" content="{description}" />',
+            html,
+            count=1,
+            flags=re.DOTALL
+        )
+        html = re.sub(
+            r'<meta name="twitter:image" content=".*?" />',
+            f'<meta name="twitter:image" content="{image_url}" />',
+            html,
+            count=1
+        )
+
+        # Replace canonical URL
+        html = re.sub(
+            r'<link rel="canonical" href=".*?" />',
+            f'<link rel="canonical" href="https://factory.universalhex.org/entity/{uuid}" />',
+            html,
+            count=1
+        )
+
+        logger.debug(f"Replaced meta tags for entity {uuid} ({name})")
+        return html

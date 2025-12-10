@@ -48,16 +48,18 @@ export default function AddToCollectionButton({
     setNewCollectionName('');
   };
 
-  const handleAddToCollection = (collectionId: string) => {
-    addEntity(collectionId, entityUuid);
+  const handleAddToCollection = async (collectionId: string) => {
+    await addEntity(collectionId, entityUuid);
     handleClose();
   };
 
-  const handleCreateCollection = () => {
+  const handleCreateCollection = async () => {
     if (!newCollectionName.trim()) return;
 
-    const collection = createCollection(newCollectionName.trim());
-    addEntity(collection.id, entityUuid);
+    const collection = await createCollection(newCollectionName.trim());
+    if (collection) {
+      await addEntity(collection.id, entityUuid);
+    }
     handleClose();
   };
 

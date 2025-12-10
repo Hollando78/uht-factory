@@ -23,7 +23,8 @@ import {
   Email as EmailIcon,
   Key as KeyIcon
 } from '@mui/icons-material';
-import { getApiKey, setApiKey, clearApiKey } from '../../services/api';
+import { getApiKey, setApiKey } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 
 interface SettingsDialogProps {
   open: boolean;
@@ -31,6 +32,7 @@ interface SettingsDialogProps {
 }
 
 export default function SettingsDialog({ open, onClose }: SettingsDialogProps) {
+  const { logout: authLogout } = useAuth();
   const [activeTab, setActiveTab] = useState<'status' | 'request' | 'apikey'>('status');
   const [email, setEmail] = useState('');
   const [apiKeyInput, setApiKeyInput] = useState('');
@@ -137,8 +139,8 @@ export default function SettingsDialog({ open, onClose }: SettingsDialogProps) {
     }
   };
 
-  const handleLogout = () => {
-    clearApiKey();
+  const handleLogout = async () => {
+    await authLogout();
     setIsAuthenticated(false);
     setKeyInfo(null);
     setMessage({ type: 'info', text: 'Logged out successfully' });
