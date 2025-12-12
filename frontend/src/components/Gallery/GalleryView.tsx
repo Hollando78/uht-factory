@@ -844,7 +844,26 @@ export default function GalleryView() {
         setGallery(prev => {
           const existingUuids = new Set(prev.map(item => item.uuid));
           const newItems = (data.gallery || []).filter(item => !existingUuids.has(item.uuid));
-          const combined = [...prev, ...newItems];
+          let combined = [...prev, ...newItems];
+
+          // Re-sort combined array to fix any ordering issues from offset drift
+          // (can happen when new entities are created between page loads)
+          const currentSort = sort || sortBy;
+          if (currentSort === 'newest') {
+            combined.sort((a, b) => {
+              const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+              const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+              return dateB - dateA; // DESC
+            });
+          } else if (currentSort === 'most_views') {
+            combined.sort((a, b) => (b.view_count || 0) - (a.view_count || 0));
+          } else if (currentSort === 'name') {
+            combined.sort((a, b) => a.name.localeCompare(b.name));
+          } else if (currentSort === 'uht_code') {
+            combined.sort((a, b) => a.uht_code.localeCompare(b.uht_code));
+          }
+          // 'random' sort is not re-sorted - keep server order
+
           // Update cache with combined data
           galleryCache = {
             data: combined,
@@ -855,6 +874,8 @@ export default function GalleryView() {
           };
           return combined;
         });
+        // Reset card positions to force recalculation with new sort order
+        setCardPositions({});
         setOffset(currentOffset + (data.gallery?.length || 0));
       } else {
         setGallery(data.gallery || []);
