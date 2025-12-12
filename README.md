@@ -1,46 +1,98 @@
-# UHT Classification Factory 🏭
+# UHT Classification Factory
 
-## Universal Hex Taxonomy Classification System
+A full-stack application for classifying entities using the Universal Hex Taxonomy (UHT) - a 32-bit classification system that encodes entity characteristics across Physical, Functional, Abstract, and Social layers into 8-character hex codes.
 
-A high-performance, AI-powered classification system that evaluates entities against 32 canonical traits to generate standardized 8-character hex codes. Built with FastAPI, Neo4j, and Redis for scalable, authenticated classification services.
+**Live Demo**: [factory.universalhex.org](https://factory.universalhex.org)
 
-## 🎯 Concept Overview
+## Features
 
-The UHT Classification Factory implements your vision of a **specialist model architecture** where:
+### Entity Classification
+- **AI-Powered Classification**: 32 specialist LLM evaluators assess entities in parallel
+- **Hex Code Generation**: Results encoded as 8-character hex codes (e.g., `FF8F1A2B`)
+- **Confidence Scoring**: Each trait evaluation includes confidence and reasoning
+- **Batch Processing**: Classify multiple entities concurrently
 
-- **32 Specialist Evaluators**: Each of the 32 traits is evaluated by focused LLM calls
-- **Parallel Processing**: All trait evaluations run concurrently for speed
-- **Binary + Justification**: Each specialist returns 1/0 + confidence + reasoning
-- **Hex Code Generation**: Binary results are parsed into 4 hex-pairs (one per layer)
-- **Graph Database Storage**: Classifications and relationships stored in Neo4j
-- **API Authentication**: Secure access via JWT tokens
-- **Caching**: Redis-based caching for performance
+### Image Gallery
+- **AI-Generated Images**: Automatic image generation for classified entities
+- **Infinite Scroll**: Browse 2,500+ entity images with lazy loading
+- **Multiple Sort Options**: Newest, most views, name, UHT code, random
+- **Layer Filtering**: Filter by dominant layer (Physical, Functional, Abstract, Social)
+- **Semantic Search**: AI-powered natural language search across entities
+- **Text Search**: Fast keyword search on names and descriptions
 
-## 🏗️ Architecture
+### Hex Calculator
+- **Bitwise Operations**: XOR, AND, OR, and ONE_HOT (DIFF) operations on UHT codes
+- **Drag & Drop**: Select entities from gallery or collections
+- **LLM Analysis**: AI explains the meaning of computed trait combinations
+- **Name Generation**: Generate creative names for computed results
+- **Database Matching**: Find existing entities matching computed codes
+- **Save Calculations**: Persist and reload complex calculations
 
-```
-Entity Input → [32 Parallel LLM Evaluators] → Binary Classification → Hex Code
-     ↓                                                                    ↓
-Neo4j Graph Database ←←←←←←←← Redis Cache ←←←←←←←← FastAPI REST API
-```
+### Collections
+- **Custom Collections**: Organize entities into named collections
+- **Drag & Drop Management**: Easy entity organization
+- **Public/Private**: Control collection visibility
+- **Export**: Download collection data
 
-### System Components
+### Entity Details
+- **Trait Breakdown**: Visual display of all 32 traits with confidence
+- **Layer Analysis**: Per-layer hex values and bit counts
+- **Wikidata Integration**: Links to Wikipedia/Wikidata for known entities
+- **Similar Entities**: Find entities with similar UHT codes
+- **View Tracking**: Track entity popularity
 
-- **FastAPI API Server** (Port 8100): REST endpoints for classification
-- **Neo4j Graph Database** (Ports 7474/7687): Entity and trait storage
-- **Redis Cache** (Port 6383): Performance caching layer
-- **LLM Integration**: OpenAI GPT-4, Anthropic Claude, or local Ollama
+### Comparison Tool
+- **Side-by-Side**: Compare two entities trait by trait
+- **Visual Diff**: Highlight shared and unique traits
+- **Hamming Distance**: Quantify similarity between codes
 
-## 🚀 Quick Start
+### Build-a-Code
+- **Pattern Search**: Find entities matching specific bit patterns
+- **Binary Editor**: Manually construct UHT codes
+- **Wildcard Support**: Search with partial patterns (X for any bit)
 
-### 1. Configure Environment
+### User System
+- **JWT Authentication**: Secure token-based auth with auto-refresh
+- **User Registration**: Email verification flow
+- **Personal Collections**: Users own their collections
+- **API Key Management**: Generate keys for programmatic access
+
+## Technology Stack
+
+### Frontend
+- **React 18** with TypeScript
+- **Material-UI (MUI)** component library
+- **Vite** build tool
+- **React Router** for navigation
+
+### Backend
+- **FastAPI** (Python) REST API
+- **Neo4j** graph database for entities and relationships
+- **Redis** for caching and rate limiting
+- **OpenAI/Anthropic** LLM integration
+
+### Infrastructure
+- **Docker Compose** for service orchestration
+- **Nginx** reverse proxy with SSL
+- **PM2** process management
+
+## Quick Start
+
+### Prerequisites
+- Docker and Docker Compose
+- Python 3.11+
+- Node.js 18+
+- OpenAI or Anthropic API key
+
+### 1. Clone and Configure
 
 ```bash
-cd /root/project/uht-factory
+git clone https://github.com/Hollando78/uht-factory.git
+cd uht-factory
 
-# Update .env with your OpenAI API key
-nano .env
-# Set: OPENAI_API_KEY=your-actual-api-key-here
+# Copy and edit environment file
+cp .env.example .env
+# Set your API keys and secrets in .env
 ```
 
 ### 2. Start Services
@@ -49,275 +101,191 @@ nano .env
 # Start Neo4j and Redis
 docker-compose up -d
 
-# Install dependencies and start API
+# Backend
 source venv/bin/activate
+pip install -r requirements.txt
 uvicorn api.main:app --host 0.0.0.0 --port 8100 --reload
+
+# Frontend (new terminal)
+cd frontend
+npm install
+npm run dev
 ```
 
-### 3. Test the System
+### 3. Access the App
 
-```bash
-python scripts/test_classification.py
+- **Frontend**: http://localhost:5173
+- **API Docs**: http://localhost:8100/docs
+- **Neo4j Browser**: http://localhost:7474
+
+## Project Structure
+
+```
+uht-factory/
+├── api/                    # FastAPI backend
+│   ├── main.py            # App initialization, middleware
+│   ├── routes/            # API endpoints
+│   │   ├── classification.py  # Entity classification
+│   │   ├── entities.py        # Entity CRUD
+│   │   ├── images.py          # Gallery and image generation
+│   │   ├── hex_calc.py        # Hex calculator operations
+│   │   ├── collections.py     # User collections
+│   │   ├── users.py           # Authentication
+│   │   └── embeddings.py      # Semantic search
+│   └── middleware/        # Auth, rate limiting
+├── frontend/              # React application
+│   └── src/
+│       ├── components/    # UI components
+│       │   ├── Gallery/       # Image gallery
+│       │   ├── HexCalc/       # Hex calculator
+│       │   ├── Entity/        # Entity details
+│       │   ├── Collections/   # Collection management
+│       │   ├── Comparison/    # Entity comparison
+│       │   └── BuildACode/    # Pattern builder
+│       ├── context/       # React context (auth, mobile)
+│       ├── services/      # API client
+│       └── utils/         # UHT utilities
+├── workers/               # Background processing
+│   └── llm_client.py     # LLM integration
+├── db/                    # Database clients
+│   ├── neo4j_client.py   # Neo4j async client
+│   └── redis_client.py   # Redis caching
+├── models/                # Pydantic models
+└── docker-compose.yml     # Service orchestration
 ```
 
-## 📊 Classification Layers & Traits
+## UHT Classification System
 
-The system evaluates 32 traits across 4 layers:
+### The 32 Traits
 
-### Physical Layer (Bits 1-8) - FF000000
-- **Bit 1**: Physical Object - Discrete, bounded physical entity
-- **Bit 2**: Synthetic - Created/manufactured by humans
-- **Bit 3**: Biological/Biomimetic - Has biological origin or inspiration
-- **Bit 4**: Powered - Immobile or permanently affixed
-- **Bit 5**: Structural - Load-bearing or structural function
-- **Bit 6**: Observable - Detectable by human senses/instruments
-- **Bit 7**: Physical Medium - Composed of physical matter
-- **Bit 8**: Active - Lacks autonomous behavior
+Entities are evaluated against 32 binary traits organized into 4 layers:
 
-### Functional Layer (Bits 9-16) - 00FF0000
-- **Bit 9**: Intentionally Designed - Designed for specific function
-- **Bit 10**: Outputs Effect - Produces signals/energy/effects
-- **Bit 11**: Processes Signals/Logic - Information processing/control
-- **Bit 12**: State-Transforming - Internal change/self-modification
-- **Bit 13**: Human-Interactive - Direct human interaction
-- **Bit 14**: System-Integrated - Part of larger system
-- **Bit 15**: Functionally Autonomous - Independent operation
-- **Bit 16**: System-Essential - Critical system component
+| Layer | Bits | Hex Position | Focus |
+|-------|------|--------------|-------|
+| Physical | 1-8 | `XX------` | Material properties |
+| Functional | 9-16 | `--XX----` | Capabilities and behaviors |
+| Abstract | 17-24 | `----XX--` | Symbolic and conceptual |
+| Social | 25-32 | `------XX` | Social and cultural |
 
-### Abstract Layer (Bits 17-24) - 0000FF00
-- **Bit 17**: Symbolic - Represents ideas through symbols
-- **Bit 18**: Signalling - Conveys information/meaning
-- **Bit 19**: Rule-governed - Follows explicit rules/protocols
-- **Bit 20**: Compositional - Made of meaningful parts
-- **Bit 21**: Normative - Has standards/expectations
-- **Bit 22**: Meta - Refers to itself or its category
-- **Bit 23**: Temporal - Time-dependent properties
-- **Bit 24**: Digital/Virtual - Exists in digital form
+### Example Classifications
 
-### Social Layer (Bits 25-32) - 000000FF
-- **Bit 25**: Social Construct - Exists through social agreement
-- **Bit 26**: Institutionally Defined - Defined by institutions
-- **Bit 27**: Identity-Linked - Tied to personal/group identity
-- **Bit 28**: Regulated - Subject to rules/laws
-- **Bit 29**: Economically Significant - Has economic impact
-- **Bit 30**: Politicised - Involved in political discourse
-- **Bit 31**: Ritualised - Associated with ceremonies/rituals
-- **Bit 32**: Ethically Significant - Raises ethical considerations
+| Entity | UHT Code | Interpretation |
+|--------|----------|----------------|
+| Smartphone | `FF8F1A2B` | Highly physical, functional, some abstract/social |
+| Democracy | `00001AFF` | Purely abstract and social construct |
+| Human | `FFB71AFF` | Full physical, functional, abstract, and social |
 
-## 🔌 API Endpoints
+### Bitwise Operations
+
+- **XOR**: Find traits that differ between entities
+- **AND**: Find traits shared by ALL entities
+- **OR**: Find traits present in ANY entity
+- **ONE_HOT (DIFF)**: Find traits unique to exactly ONE entity
+
+## API Reference
 
 ### Classification
 ```bash
-# Classify single entity
-POST /api/v1/classify/
-{
-  "entity": {
-    "name": "smartphone",
-    "description": "Portable electronic device with computing capabilities"
-  }
-}
-
-# Batch classification
-POST /api/v1/classify/batch
-{
-  "entities": [...],
-  "parallel_workers": 4
-}
-
-# Explain UHT code
-POST /api/v1/classify/explain?entity_name=smartphone&uht_code=FF8F1A2B
+POST /api/v1/classification/classify
+POST /api/v1/classification/batch
+GET  /api/v1/classification/explain/{uuid}
 ```
 
-### Entity Management
+### Entities
 ```bash
-# Get entity by UUID
-GET /api/v1/entities/{uuid}
-
-# Search entities
-GET /api/v1/entities/?uht_pattern=FF&limit=10
-
-# Find similar entities
-GET /api/v1/entities/{uuid}/similar?threshold=28
+GET  /api/v1/entities/{uuid}
+GET  /api/v1/entities/search?q=query
+GET  /api/v1/entities/{uuid}/similar
 ```
 
-### Traits
+### Gallery
 ```bash
-# Get all traits
-GET /api/v1/traits/
+GET  /api/v1/images/gallery?sort_by=newest&limit=50
+POST /api/v1/images/generate/{uuid}
+```
 
-# Get trait by bit position
-GET /api/v1/traits/1
+### Hex Calculator
+```bash
+POST /api/v1/hex-calc/analyze
+POST /api/v1/hex-calc/name
+GET  /api/v1/hex-calc/match/{hex_code}
+```
 
-# Get traits by layer
-GET /api/v1/traits/layer/Physical
+### Collections
+```bash
+GET  /api/v1/collections/
+POST /api/v1/collections/
+POST /api/v1/collections/{id}/entities
 ```
 
 ### Authentication
 ```bash
-# Get JWT token
-POST /api/v1/auth/token
-{
-  "api_key": "your-api-key"
-}
-
-# Use token in headers
-Authorization: Bearer your-jwt-token
+POST /api/v1/users/register
+POST /api/v1/users/login
+POST /api/v1/users/refresh
 ```
 
-## 📝 Example Classification
+Full API documentation available at `/docs` when running the server.
 
-**Input**: `"smartphone"`
+## Environment Variables
 
-**Output**:
-```json
-{
-  "entity": {
-    "uuid": "123e4567-e89b-12d3-a456-426614174000",
-    "name": "smartphone",
-    "uht_code": "FF8F1A2B",
-    "binary_representation": "11111111100011111001101000101011",
-    "layers": {
-      "Physical": "FF",    // All 8 physical traits active
-      "Functional": "8F",  // Most functional traits active
-      "Abstract": "1A",    // Some abstract traits active
-      "Social": "2B"       // Few social traits active
-    }
-  },
-  "processing_time_ms": 2847.5,
-  "cached": false
-}
-```
-
-**Interpretation**:
-- **Physical (FF)**: Strongly physical object
-- **Functional (8F)**: High functionality 
-- **Abstract (1A)**: Some symbolic/digital aspects
-- **Social (2B)**: Limited social construct aspects
-
-## 💾 Neo4j Graph Structure
-
-```cypher
-// Nodes
-(:Entity {uuid, name, uht_code, binary_representation})
-(:Trait {bit, name, layer, description})
-(:Layer {name, index, bit_range})
-
-// Relationships
-(Entity)-[HAS_TRAIT {applicable, confidence, justification}]->(Trait)
-(Trait)-[BELONGS_TO]->(Layer)
-```
-
-### Useful Queries
-```cypher
-// Find entities with specific traits
-MATCH (e:Entity)-[:HAS_TRAIT {applicable: true}]->(t:Trait {bit: 1})
-RETURN e.name, e.uht_code
-
-// Trait usage statistics
-MATCH (t:Trait)<-[r:HAS_TRAIT {applicable: true}]-(e:Entity)
-RETURN t.name, count(e) as usage_count
-ORDER BY usage_count DESC
-```
-
-## 🔧 Configuration
-
-### Environment Variables
 ```bash
 # Database
 NEO4J_URI=bolt://localhost:7687
 NEO4J_USER=neo4j
-NEO4J_PASSWORD=uht-password-2025
+NEO4J_PASSWORD=your-password
 REDIS_URL=redis://localhost:6383
 
-# LLM Provider (openai, anthropic, ollama)
-LLM_PROVIDER=openai
-OPENAI_API_KEY=your-openai-api-key
-ANTHROPIC_API_KEY=your-anthropic-api-key
+# LLM Provider
+LLM_PROVIDER=openai  # or anthropic
+OPENAI_API_KEY=sk-...
+ANTHROPIC_API_KEY=sk-ant-...
 
 # Authentication
-JWT_SECRET=your-jwt-secret-minimum-32-characters
+JWT_SECRET=your-secret-minimum-32-characters
+REFRESH_SECRET=your-refresh-secret
+ACCESS_TOKEN_EXPIRE_MINUTES=60
+
+# Image Generation
+FAL_KEY=your-fal-key  # For image generation
 ```
 
-### Port Reservations
-- **API Server**: 8100
-- **Neo4j HTTP**: 7474
-- **Neo4j Bolt**: 7687  
-- **Redis**: 6383
+## Development
 
-## 🛠️ Development
-
-### Project Structure
-```
-uht-factory/
-├── api/                 # FastAPI application
-│   ├── main.py         # Main app and middleware
-│   └── routes/         # API route handlers
-├── workers/            # LLM integration and processing
-├── models/             # Pydantic data models
-├── db/                 # Database clients (Neo4j, Redis)
-├── scripts/            # Utility scripts
-├── tests/              # Test suite
-└── docker-compose.yml  # Service orchestration
-```
-
-### Testing
+### Running Tests
 ```bash
-# Run test suite
-python scripts/test_classification.py
+# Backend
+pytest
 
-# Manual API testing
-curl -X POST "http://localhost:8100/api/v1/classify/" \
-     -H "Content-Type: application/json" \
-     -d '{"entity": {"name": "bicycle", "description": "Two-wheeled vehicle"}}'
+# Frontend
+cd frontend && npm test
 ```
 
-### Adding New Traits
-1. Update `/root/project/uht-github/canonical_traits/traits_v2.json`
-2. Run `python scripts/import_traits.py` to update database
-3. Restart API server
-
-## 🚦 Status & Monitoring
-
-### Health Check
+### Type Checking
 ```bash
-curl http://localhost:8100/health
+# Frontend
+cd frontend && npx tsc --noEmit
 ```
 
-### API Documentation
-- **Swagger UI**: http://localhost:8100/docs
-- **ReDoc**: http://localhost:8100/redoc
+### Building for Production
+```bash
+# Frontend
+cd frontend && npm run build
 
-### Neo4j Browser
-- **URL**: http://localhost:7474
-- **Credentials**: neo4j / uht-password-2025
+# The build output goes to frontend/dist
+```
 
-## 🎯 Next Steps
+## Contributing
 
-To complete the production-ready system:
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
 
-1. **Add Valid API Key**: Update `.env` with real OpenAI API key
-2. **Authentication**: Implement proper API key management  
-3. **Rate Limiting**: Add request throttling
-4. **Monitoring**: Integrate Prometheus/Grafana
-5. **Testing**: Expand test coverage
-6. **Documentation**: Add OpenAPI documentation
-7. **Deployment**: Configure for production hosting
+## License
 
-## 🏆 Features Implemented
-
-✅ **32 Specialist Trait Evaluators**  
-✅ **Parallel LLM Processing**  
-✅ **Neo4j Graph Database**  
-✅ **Redis Caching Layer**  
-✅ **REST API with Authentication**  
-✅ **Binary → Hex Code Generation**  
-✅ **Entity UUID Management**  
-✅ **Canonical Traits v2.0**  
-✅ **Docker Orchestration**  
-✅ **Health Monitoring**  
+MIT License - see LICENSE file for details.
 
 ---
 
-**Your UHT Classification Factory is operational! 🎉**
-
-The system successfully implements your vision of a scalable, authenticated classification service with specialist models, graph storage, and standardized hex output codes.
+Built with Claude Code
