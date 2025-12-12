@@ -177,6 +177,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     checkSession();
   }, []);
 
+  // Listen for token refresh events from axios interceptor
+  useEffect(() => {
+    const handleTokenRefreshed = (event: CustomEvent<{ accessToken: string }>) => {
+      const { accessToken } = event.detail;
+      dispatch({ type: 'TOKEN_REFRESH', payload: accessToken });
+    };
+
+    const handleTokenRefreshFailed = () => {
+      dispatch({ type: 'LOGOUT' });
+      clearApiKey();
+    };
+
+    window.addEventListener('tokenRefreshed', handleTokenRefreshed as EventListener);
+    window.addEventListener('tokenRefreshFailed', handleTokenRefreshFailed);
+
+    return () => {
+      window.removeEventListener('tokenRefreshed', handleTokenRefreshed as EventListener);
+      window.removeEventListener('tokenRefreshFailed', handleTokenRefreshFailed);
+    };
+  }, []);
+
   const login = useCallback(async (email: string, password: string): Promise<boolean> => {
     dispatch({ type: 'SET_LOADING', payload: true });
     dispatch({ type: 'SET_ERROR', payload: null });
@@ -198,7 +219,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             console.log('Restoring API key from previous session');
             apiKey = storedKey;
           } else {
-            console.log('User has API keys but none stored locally. They need to re-enter or generate a new one.');
+            // User has keys but none stored locally (e.g., cleared cache, new device)
+            // Auto-generate a new API key for convenience
+            console.log('User has API keys but none stored locally. Auto-generating new key...');
+            const keyResponse = await authAPI.generateMyApiKey(tokens.access_token);
+            if (keyResponse.api_key) {
+              apiKey = keyResponse.api_key;
+              console.log('API key auto-generated for returning user!');
+            }
           }
         } else {
           // No API keys exist - auto-generate one

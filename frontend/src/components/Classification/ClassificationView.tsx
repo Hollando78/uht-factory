@@ -31,6 +31,7 @@ import {
 import { useApp } from '../../context/AppContext';
 import { useMobile } from '../../context/MobileContext';
 import API from '../../services/api';
+import SEO from '../common/SEO';
 import type { UHTEntity, EntityPreProcessing, DuplicateCheck } from '../../types/index';
 
 export default function ClassificationView() {
@@ -120,9 +121,16 @@ export default function ClassificationView() {
   };
 
   return (
-    <Box sx={{ height: '100%', overflow: 'auto', p: isCompact ? 1.5 : 3 }}>
-      <Grid container spacing={isCompact ? 2 : 3}>
-        {/* Input Panel */}
+    <>
+      <SEO
+        title="AI Entity Classification"
+        description="Classify any concept, object, or idea using the Universal Hex Taxonomy. Our AI analyzes 32 fundamental traits to generate a unique 8-character hex code for any entity."
+        image="https://factory.universalhex.org/og-classify.png"
+        url="https://factory.universalhex.org/classify"
+      />
+      <Box sx={{ height: '100%', overflow: 'auto', p: isCompact ? 1.5 : 3 }}>
+        <Grid container spacing={isCompact ? 2 : 3}>
+          {/* Input Panel */}
         <Grid size={{ xs: 12, md: 6 }}>
           <Card>
             <CardContent sx={{ p: isCompact ? 2 : 3 }}>
@@ -291,7 +299,8 @@ export default function ClassificationView() {
           )}
         </Grid>
       </Grid>
-    </Box>
+      </Box>
+    </>
   );
 }
 

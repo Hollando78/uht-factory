@@ -13,7 +13,7 @@ from workers.classifier import ClassificationOrchestrator
 from workers.image_client import ImageGenerationOrchestrator
 from db.neo4j_client import Neo4jClient
 from db.redis_client import RedisClient
-from api.middleware.api_key_auth import require_classify
+from api.middleware.api_key_auth import require_classify, optional_api_key_or_public
 from api.dependencies import get_neo4j_client, get_redis_client, get_traits
 
 logger = logging.getLogger(__name__)
@@ -85,12 +85,13 @@ async def classify_entity(
     background_tasks: BackgroundTasks,
     fastapi_request: Request,
     orchestrator: ClassificationOrchestrator = Depends(get_orchestrator),
-    key_data: dict = Depends(require_classify)  # Require API key with classify scope
+    auth_data: dict = Depends(optional_api_key_or_public)  # Allow public access with rate limiting
 ):
     """
     Classify a single entity using the 32 UHT traits.
 
-    **Requires API key with 'classify' scope.**
+    **Public access allowed** - rate limited to 100 classifications/hour per IP.
+    API key users get higher rate limits based on their key configuration.
 
     The classification process:
     1. Checks cache for existing classification

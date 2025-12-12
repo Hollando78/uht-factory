@@ -316,3 +316,93 @@ require_preprocess = require_scope(Scopes.PREPROCESS)
 require_images = require_scope(Scopes.IMAGES)
 require_embeddings = require_scope(Scopes.EMBEDDINGS)
 require_admin = require_scope(Scopes.ADMIN)
+
+
+# Public rate limiting (no API key required)
+PUBLIC_RATE_LIMIT = 100  # requests per hour
+
+
+async def public_rate_limit(request: Request) -> Dict[str, Any]:
+    """
+    Rate limit for public (unauthenticated) access.
+    Uses IP address for rate limiting - 100 requests/hour.
+    Returns a dict with rate limit info.
+    """
+    # Get client IP (handle Cloudflare proxy)
+    client_ip = request.headers.get("CF-Connecting-IP") or \
+                request.headers.get("X-Forwarded-For", "").split(",")[0].strip() or \
+                request.client.host if request.client else "unknown"
+
+    # Check if Redis is available
+    redis_client = getattr(request.app.state, 'redis_client', None)
+
+    if not redis_client:
+        # No Redis - allow request but warn
+        return {"ip": client_ip, "allowed": True, "remaining": PUBLIC_RATE_LIMIT}
+
+    import time
+    window_key = f"public_ratelimit:{client_ip}:{int(time.time()) // 3600}"
+
+    try:
+        current = await redis_client.client.incr(window_key)
+        if current == 1:
+            await redis_client.client.expire(window_key, 3600)
+
+        if current > PUBLIC_RATE_LIMIT:
+            raise HTTPException(
+                status_code=429,
+                detail=f"Rate limit exceeded. Public limit: {PUBLIC_RATE_LIMIT} classifications/hour. "
+                       f"Create an account for higher limits."
+            )
+
+        return {
+            "ip": client_ip,
+            "allowed": True,
+            "remaining": PUBLIC_RATE_LIMIT - current,
+            "limit": PUBLIC_RATE_LIMIT
+        }
+    except HTTPException:
+        raise
+    except Exception:
+        # Allow on Redis errors
+        return {"ip": client_ip, "allowed": True, "remaining": PUBLIC_RATE_LIMIT}
+
+
+async def optional_api_key_or_public(
+    request: Request,
+    api_key: str = Security(API_KEY_HEADER)
+) -> Dict[str, Any]:
+    """
+    Allow either API key auth OR public rate-limited access.
+    - If API key provided: validate it and use its rate limits
+    - If no API key: use public IP-based rate limiting (100/hour)
+    """
+    if api_key:
+        # Validate the API key
+        key_data = await api_key_manager.validate_api_key(api_key)
+
+        if key_data:
+            # Check API key rate limit
+            if not await api_key_manager.check_rate_limit(key_data["key_id"], key_data["rate_limit"]):
+                raise HTTPException(
+                    status_code=429,
+                    detail=f"Rate limit exceeded. Limit: {key_data['rate_limit']} requests/hour"
+                )
+            key_data["auth_type"] = "api_key"
+            return key_data
+        else:
+            # Invalid API key provided - reject
+            raise HTTPException(
+                status_code=401,
+                detail="Invalid or expired API key",
+                headers={"WWW-Authenticate": "ApiKey"}
+            )
+
+    # No API key - use public rate limiting
+    rate_info = await public_rate_limit(request)
+    return {
+        "auth_type": "public",
+        "ip": rate_info["ip"],
+        "remaining": rate_info["remaining"],
+        "scopes": [Scopes.CLASSIFY, Scopes.PREPROCESS]  # Public users get these scopes
+    }

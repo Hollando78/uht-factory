@@ -172,6 +172,7 @@ export default function BinaryGrid({ pattern, onChange, isCompact = false, disab
                         width: cellSize,
                         height: cellSize,
                         display: 'flex',
+                        flexDirection: 'column',
                         alignItems: 'center',
                         justifyContent: 'center',
                         borderRadius: 1,
@@ -188,11 +189,23 @@ export default function BinaryGrid({ pattern, onChange, isCompact = false, disab
                       <Typography
                         sx={{
                           fontWeight: 700,
-                          fontSize: isCompact ? '1rem' : '1.25rem',
-                          fontFamily: 'monospace'
+                          fontSize: isCompact ? '0.85rem' : '1rem',
+                          fontFamily: 'monospace',
+                          lineHeight: 1
                         }}
                       >
                         {char}
+                      </Typography>
+                      <Typography
+                        sx={{
+                          fontSize: isCompact ? '0.5rem' : '0.55rem',
+                          lineHeight: 1,
+                          mt: 0.25,
+                          opacity: 0.8,
+                          textAlign: 'center'
+                        }}
+                      >
+                        {globalIndex + 1}
                       </Typography>
                     </Box>
                   </Tooltip>
@@ -265,6 +278,60 @@ export default function BinaryGrid({ pattern, onChange, isCompact = false, disab
           <Typography variant="caption" color="text.secondary">Must be OFF</Typography>
         </Box>
       </Box>
+
+      {/* Selected Traits Summary */}
+      {(pattern.includes('1') || pattern.includes('0')) && (
+        <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+            Selected Constraints:
+          </Typography>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+            {pattern.split('').map((char, index) => {
+              if (char === 'X') return null;
+              const traitName = TRAIT_NAMES[index + 1];
+              const layerIndex = Math.floor(index / 8);
+              const layerColor = LAYERS[layerIndex].color;
+              return (
+                <Box
+                  key={index}
+                  sx={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 0.5,
+                    px: 1,
+                    py: 0.25,
+                    borderRadius: 1,
+                    bgcolor: char === '1' ? `${layerColor}30` : 'rgba(0,0,0,0.3)',
+                    border: `1px solid ${char === '1' ? layerColor : 'rgba(255,255,255,0.2)'}`,
+                    fontSize: '0.7rem'
+                  }}
+                >
+                  <Typography
+                    component="span"
+                    sx={{
+                      fontFamily: 'monospace',
+                      fontWeight: 700,
+                      color: char === '1' ? layerColor : 'text.disabled',
+                      fontSize: '0.7rem'
+                    }}
+                  >
+                    {char === '1' ? '+' : '−'}
+                  </Typography>
+                  <Typography
+                    component="span"
+                    sx={{
+                      color: char === '1' ? 'text.primary' : 'text.secondary',
+                      fontSize: '0.7rem'
+                    }}
+                  >
+                    {traitName}
+                  </Typography>
+                </Box>
+              );
+            })}
+          </Box>
+        </Box>
+      )}
     </Box>
   );
 }

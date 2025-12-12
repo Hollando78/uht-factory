@@ -206,10 +206,7 @@ export default function PatternSearchResults({
                   primaryTypographyProps={{
                     variant: isCompact ? 'body2' : 'body1',
                     sx: {
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                      maxWidth: 200
+                      fontWeight: 500
                     }
                   }}
                   secondaryTypographyProps={{ component: 'div' }}

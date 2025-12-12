@@ -1,8 +1,9 @@
 from fastapi import APIRouter, HTTPException, Query, Depends
 from typing import Optional, List, Any, Dict, Tuple
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from neo4j.time import DateTime as Neo4jDateTime
 import time
+import uuid
 
 from models.entity import EntitySearch
 from db.neo4j_client import Neo4jClient
@@ -42,6 +43,12 @@ class EntityUpdate(BaseModel):
     description: Optional[str] = None
     additional_context: Optional[str] = None
     nsfw: Optional[bool] = None
+
+
+class TraitFlagRequest(BaseModel):
+    """Request model for flagging an incorrect trait."""
+    suggested_value: bool = Field(..., description="Suggested value for the trait (true/false)")
+    reason: str = Field(..., min_length=10, max_length=500, description="Explanation for why the trait is incorrect")
 
 
 def serialize_entity(entity: Dict[str, Any]) -> Dict[str, Any]:
@@ -384,3 +391,120 @@ async def unflag_entity_nsfw(
 
         entity = dict(record["e"])
         return serialize_entity(entity)
+
+
+@router.post("/{uuid}/traits/{bit}/flag")
+async def flag_trait_incorrect(
+    uuid: str,
+    bit: int,
+    flag: TraitFlagRequest,
+    neo4j: Neo4jClient = Depends(get_neo4j_client)
+):
+    """
+    Flag a trait as incorrectly classified.
+
+    **No authentication required** - public crowdsourcing of corrections.
+
+    This allows anyone to report incorrect trait classifications. Flags are reviewed
+    by administrators before corrections are applied.
+
+    Args:
+        uuid: Entity UUID
+        bit: Trait bit number (1-32)
+        flag: Flag details including suggested value and reason
+
+    Returns:
+        Created flag with flag_id and status
+    """
+    # Validate bit range
+    if bit < 1 or bit > 32:
+        raise HTTPException(status_code=400, detail="Trait bit must be between 1 and 32")
+
+    # Check if entity and trait exist, and get current value
+    check_query = """
+    MATCH (e:Entity {uuid: $uuid})
+    OPTIONAL MATCH (e)-[r:HAS_TRAIT]->(t:Trait {bit: $bit})
+    RETURN e, t, r.applicable as current_value, t.name as trait_name
+    """
+
+    async with neo4j.driver.session() as session:
+        result = await session.run(check_query, uuid=uuid, bit=bit)
+        record = await result.single()
+
+        if not record or not record["e"]:
+            raise HTTPException(status_code=404, detail="Entity not found")
+
+        if not record["t"]:
+            raise HTTPException(status_code=404, detail="Trait not found")
+
+        current_value = record["current_value"]
+        trait_name = record["trait_name"]
+
+        # Check for duplicate pending flags
+        duplicate_check = """
+        MATCH (f:TraitFlag {entity_uuid: $uuid, trait_bit: $bit, status: 'pending'})
+        RETURN count(f) as count
+        """
+        dup_result = await session.run(duplicate_check, uuid=uuid, bit=bit)
+        dup_record = await dup_result.single()
+
+        if dup_record["count"] > 0:
+            raise HTTPException(
+                status_code=409,
+                detail="A pending flag already exists for this entity-trait combination"
+            )
+
+        # Create flag
+        flag_id = str(uuid.uuid4())
+        create_query = """
+        MATCH (e:Entity {uuid: $entity_uuid})
+        MATCH (t:Trait {bit: $trait_bit})
+        CREATE (f:TraitFlag {
+            flag_id: $flag_id,
+            entity_uuid: $entity_uuid,
+            trait_bit: $trait_bit,
+            current_value: $current_value,
+            suggested_value: $suggested_value,
+            reason: $reason,
+            status: 'pending',
+            created_at: datetime()
+        })
+        CREATE (f)-[:FLAGS]->(e)
+        CREATE (f)-[:CONCERNS]->(t)
+        RETURN f, e.name as entity_name, t.name as trait_name
+        """
+
+        create_result = await session.run(
+            create_query,
+            flag_id=flag_id,
+            entity_uuid=uuid,
+            trait_bit=bit,
+            current_value=current_value,
+            suggested_value=flag.suggested_value,
+            reason=flag.reason
+        )
+        create_record = await create_result.single()
+
+        if not create_record:
+            raise HTTPException(status_code=500, detail="Failed to create flag")
+
+        flag_data = dict(create_record["f"])
+        flag_data["entity_name"] = create_record["entity_name"]
+        flag_data["trait_name"] = create_record["trait_name"]
+
+        # Serialize datetime
+        if flag_data.get('created_at'):
+            flag_data['created_at'] = flag_data['created_at'].isoformat() if hasattr(flag_data['created_at'], 'isoformat') else str(flag_data['created_at'])
+
+        return {
+            "flag_id": flag_data["flag_id"],
+            "entity_uuid": flag_data["entity_uuid"],
+            "entity_name": flag_data["entity_name"],
+            "trait_bit": flag_data["trait_bit"],
+            "trait_name": flag_data["trait_name"],
+            "current_value": flag_data["current_value"],
+            "suggested_value": flag_data["suggested_value"],
+            "reason": flag_data["reason"],
+            "status": flag_data["status"],
+            "created_at": flag_data["created_at"]
+        }

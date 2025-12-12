@@ -17,7 +17,16 @@ import {
   CardContent,
   Grid,
   FormControlLabel,
-  Checkbox
+  Checkbox,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Radio,
+  RadioGroup,
+  FormControl,
+  FormLabel
 } from '@mui/material';
 import {
   ArrowBack as BackIcon,
@@ -35,7 +44,9 @@ import {
   Psychology as ClassifyIcon,
   Upload as UploadIcon,
   Hub as EmbeddingIcon,
-  Visibility as ViewsIcon
+  Visibility as ViewsIcon,
+  Flag as FlagIcon,
+  Share as ShareIcon
 } from '@mui/icons-material';
 import { entityAPI, traitsAPI, imageAPI, preprocessAPI, classificationAPI, getApiKey } from '../../services/api';
 import { useMobile } from '../../context/MobileContext';
@@ -187,9 +198,47 @@ const TraitCard: React.FC<{
   layerColor: string;
   expanded: boolean;
   onToggle: () => void;
+  entityUuid: string;
   isMobile?: boolean;
-}> = ({ trait, layerColor, expanded, onToggle, isMobile = false }) => {
+}> = ({ trait, layerColor, expanded, onToggle, entityUuid, isMobile = false }) => {
   const { evaluation } = trait;
+  const [flagDialogOpen, setFlagDialogOpen] = useState(false);
+  const [suggestedValue, setSuggestedValue] = useState<boolean>(!evaluation.applicable);
+  const [flagReason, setFlagReason] = useState('');
+  const [flagLoading, setFlagLoading] = useState(false);
+  const [flagSuccess, setFlagSuccess] = useState(false);
+  const [flagError, setFlagError] = useState<string | null>(null);
+
+  const handleFlagClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent trait expansion toggle
+    setFlagDialogOpen(true);
+    setSuggestedValue(!evaluation.applicable); // Default to opposite of current value
+    setFlagReason('');
+    setFlagSuccess(false);
+    setFlagError(null);
+  };
+
+  const handleSubmitFlag = async () => {
+    if (flagReason.trim().length < 10) {
+      setFlagError('Reason must be at least 10 characters');
+      return;
+    }
+
+    setFlagLoading(true);
+    setFlagError(null);
+
+    try {
+      await entityAPI.flagTrait(entityUuid, trait.bit, suggestedValue, flagReason.trim());
+      setFlagSuccess(true);
+      setTimeout(() => {
+        setFlagDialogOpen(false);
+      }, 2000);
+    } catch (error: any) {
+      setFlagError(error.response?.data?.detail || 'Failed to submit flag');
+    } finally {
+      setFlagLoading(false);
+    }
+  };
 
   return (
     <Paper
@@ -301,6 +350,20 @@ const TraitCard: React.FC<{
           </Tooltip>
         )}
 
+        <Tooltip title="Flag as incorrect">
+          <IconButton
+            size="small"
+            onClick={handleFlagClick}
+            sx={{
+              p: isMobile ? 0.5 : 1,
+              color: 'warning.main',
+              '&:hover': { backgroundColor: 'rgba(255, 152, 0, 0.1)' }
+            }}
+          >
+            <FlagIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+
         <IconButton size="small" sx={{ p: isMobile ? 0.5 : 1 }}>
           {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
         </IconButton>
@@ -334,6 +397,98 @@ const TraitCard: React.FC<{
           )}
         </Box>
       </Collapse>
+
+      {/* Flag Dialog */}
+      <Dialog
+        open={flagDialogOpen}
+        onClose={() => !flagLoading && setFlagDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          Flag Incorrect Trait Classification
+        </DialogTitle>
+        <DialogContent>
+          {flagSuccess ? (
+            <Alert severity="success" sx={{ mt: 2 }}>
+              Thank you! Your flag has been submitted for admin review.
+            </Alert>
+          ) : (
+            <>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Reporting issue for: <strong>{trait.name}</strong> (Bit {trait.bit})
+              </Typography>
+
+              <Box sx={{ mb: 2, p: 2, backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 1 }}>
+                <Typography variant="caption" display="block" color="text.secondary" sx={{ mb: 1 }}>
+                  Current Classification:
+                </Typography>
+                <Chip
+                  label={evaluation.applicable ? 'ON (Applicable)' : 'OFF (Not Applicable)'}
+                  size="small"
+                  sx={{
+                    backgroundColor: evaluation.applicable ? '#4CAF50' : '#f44336',
+                    color: 'white'
+                  }}
+                />
+              </Box>
+
+              <FormControl component="fieldset" sx={{ mb: 2 }}>
+                <FormLabel component="legend">Suggested Value:</FormLabel>
+                <RadioGroup
+                  value={suggestedValue.toString()}
+                  onChange={(e) => setSuggestedValue(e.target.value === 'true')}
+                >
+                  <FormControlLabel
+                    value="true"
+                    control={<Radio />}
+                    label="ON (Should be Applicable)"
+                  />
+                  <FormControlLabel
+                    value="false"
+                    control={<Radio />}
+                    label="OFF (Should Not be Applicable)"
+                  />
+                </RadioGroup>
+              </FormControl>
+
+              <TextField
+                fullWidth
+                multiline
+                rows={4}
+                label="Reason (10-500 characters)"
+                placeholder="Explain why you think this classification is incorrect..."
+                value={flagReason}
+                onChange={(e) => setFlagReason(e.target.value)}
+                error={!!flagError || (flagReason.length > 0 && flagReason.length < 10)}
+                helperText={
+                  flagError ||
+                  `${flagReason.length}/500 characters ${flagReason.length > 0 && flagReason.length < 10 ? '(minimum 10)' : ''}`
+                }
+                disabled={flagLoading}
+                inputProps={{ maxLength: 500 }}
+              />
+            </>
+          )}
+        </DialogContent>
+        <DialogActions>
+          {!flagSuccess && (
+            <>
+              <Button onClick={() => setFlagDialogOpen(false)} disabled={flagLoading}>
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSubmitFlag}
+                variant="contained"
+                disabled={flagLoading || flagReason.trim().length < 10}
+                startIcon={flagLoading ? <CircularProgress size={16} /> : <FlagIcon />}
+              >
+                {flagLoading ? 'Submitting...' : 'Submit Flag'}
+              </Button>
+            </>
+          )}
+        </DialogActions>
+      </Dialog>
     </Paper>
   );
 };
@@ -344,8 +499,9 @@ const LayerSection: React.FC<{
   traits: TraitEvaluation[];
   expandedTraits: Set<number>;
   onToggleTrait: (bit: number) => void;
+  entityUuid: string;
   isMobile?: boolean;
-}> = ({ layer, traits, expandedTraits, onToggleTrait, isMobile = false }) => {
+}> = ({ layer, traits, expandedTraits, onToggleTrait, entityUuid, isMobile = false }) => {
   const [expanded, setExpanded] = useState(true);
   const applicableCount = traits.filter(t => t.evaluation.applicable).length;
 
@@ -409,6 +565,7 @@ const LayerSection: React.FC<{
                 layerColor={layer.color}
                 expanded={expandedTraits.has(trait.bit)}
                 onToggle={() => onToggleTrait(trait.bit)}
+                entityUuid={entityUuid}
                 isMobile={isMobile}
               />
             ))
@@ -780,6 +937,16 @@ export default function EntityDetails() {
     }
   };
 
+  const handleShareToTwitter = () => {
+    if (!entity) return;
+
+    const url = window.location.href;
+    const text = `${entity.name} (${entity.uht_code}) | Universal Hex Taxonomy`;
+    const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+
+    window.open(twitterUrl, '_blank', 'noopener,noreferrer');
+  };
+
   const handleToggleNsfw = async () => {
     if (!entity?.uuid) return;
 
@@ -957,6 +1124,7 @@ export default function EntityDetails() {
       // Then re-classify with the updated info (optional but keeps classification in sync)
       await classificationAPI.classifyEntity({
         entity: {
+          uuid: entity.uuid,  // Pass existing UUID to update instead of creating new
           name: preprocessResult.suggested_name,
           description: preprocessResult.suggested_description
         },
@@ -1289,6 +1457,18 @@ export default function EntityDetails() {
                     </span>
                   </Tooltip>
 
+                  <Divider orientation="vertical" flexItem sx={{ mx: { xs: 0.125, sm: 0.25 }, borderColor: 'rgba(255,255,255,0.15)', height: { xs: 14, sm: 18 }, alignSelf: 'center' }} />
+
+                  <Tooltip title="Share on Twitter">
+                    <IconButton
+                      size="small"
+                      onClick={handleShareToTwitter}
+                      sx={{ p: 0.25 }}
+                    >
+                      <ShareIcon sx={{ fontSize: 18, color: '#1DA1F2' }} />
+                    </IconButton>
+                  </Tooltip>
+
                 </Box>
 
                 {/* Image generation error */}
@@ -1521,6 +1701,7 @@ export default function EntityDetails() {
                 traits={getTraitsByLayer(layer.name)}
                 expandedTraits={expandedTraits}
                 onToggleTrait={toggleTrait}
+                entityUuid={entity.uuid}
                 isMobile={isCompact}
               />
             ))}

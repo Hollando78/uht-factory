@@ -19,8 +19,9 @@ logger = logging.getLogger(__name__)
 # JWT Configuration
 JWT_SECRET = os.getenv("JWT_SECRET", "your-super-secret-key-change-in-production")
 JWT_ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 15
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))  # Default 1 hour
 REFRESH_TOKEN_EXPIRE_DAYS = 7
+COOKIE_SECURE = os.getenv("COOKIE_SECURE", "true").lower() == "true"  # Set to false for HTTP development
 
 # Security scheme
 security = HTTPBearer(auto_error=False)

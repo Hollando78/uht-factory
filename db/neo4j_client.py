@@ -57,7 +57,14 @@ class Neo4jClient:
             "CREATE INDEX user_reset_token IF NOT EXISTS FOR (u:User) ON (u.password_reset_token)",
             # Collections
             "CREATE CONSTRAINT collection_id IF NOT EXISTS FOR (c:Collection) REQUIRE c.id IS UNIQUE",
-            "CREATE INDEX collection_name IF NOT EXISTS FOR (c:Collection) ON (c.name)"
+            "CREATE INDEX collection_name IF NOT EXISTS FOR (c:Collection) ON (c.name)",
+            # Trait Flags (for user-reported incorrect traits)
+            "CREATE CONSTRAINT trait_flag_id IF NOT EXISTS FOR (f:TraitFlag) REQUIRE f.flag_id IS UNIQUE",
+            "CREATE INDEX trait_flag_entity IF NOT EXISTS FOR (f:TraitFlag) ON (f.entity_uuid)",
+            "CREATE INDEX trait_flag_bit IF NOT EXISTS FOR (f:TraitFlag) ON (f.trait_bit)",
+            "CREATE INDEX trait_flag_status IF NOT EXISTS FOR (f:TraitFlag) ON (f.status)",
+            # Correction History (for audit trail)
+            "CREATE INDEX correction_history_date IF NOT EXISTS FOR ()-[h:CORRECTION_HISTORY]->() ON (h.changed_at)"
         ]
 
         async with self.driver.session() as session:
@@ -146,6 +153,7 @@ class Neo4jClient:
             e.wikidata_type = COALESCE($wikidata_type, e.wikidata_type),
             e.wikidata_type_label = COALESCE($wikidata_type_label, e.wikidata_type_label),
             e.sitelinks_count = COALESCE($sitelinks_count, e.sitelinks_count),
+            e.image_url = COALESCE(e.image_url, $image_url),
             e.updated_at = datetime(),
             e.version = COALESCE(e.version, 0) + 1
 
@@ -168,6 +176,7 @@ class Neo4jClient:
         entity_data.setdefault("wikidata_type", None)
         entity_data.setdefault("wikidata_type_label", None)
         entity_data.setdefault("sitelinks_count", None)
+        entity_data.setdefault("image_url", None)
 
         async with self.driver.session() as session:
             # Delete old trait relationships first (if entity exists)

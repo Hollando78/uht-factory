@@ -1,9 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Card,
   CardContent,
-  CardActions,
   Typography,
   Chip,
   Alert,
@@ -11,23 +10,13 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  LinearProgress,
   Tooltip,
   IconButton
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import {
   Psychology as TraitsIcon,
-  Upload as UploadIcon,
-  Image as ImageIcon,
-  Info as InfoIcon,
-  CheckCircle as CheckCircleIcon,
-  CloudUpload as CloudUploadIcon
+  Info as InfoIcon
 } from '@mui/icons-material';
 import { useMobile } from '../../context/MobileContext';
 
@@ -67,8 +56,7 @@ const API_BASE_URL = '';
 // Trait Card Component
 const TraitCard: React.FC<{
   trait: Trait;
-  onUploadImage: (trait: Trait) => void;
-}> = ({ trait, onUploadImage }) => {
+}> = ({ trait }) => {
   return (
     <Card sx={{ 
       height: '100%',
@@ -142,157 +130,7 @@ const TraitCard: React.FC<{
           {trait.expanded_definition}
         </Typography>
       </CardContent>
-
-      <CardActions sx={{ pt: 0, px: 2, pb: 2 }}>
-        <Button
-          variant="outlined"
-          startIcon={<UploadIcon />}
-          onClick={() => onUploadImage(trait)}
-          sx={{
-            borderColor: layerColors[trait.layer],
-            color: layerColors[trait.layer],
-            '&:hover': {
-              borderColor: layerColors[trait.layer],
-              backgroundColor: `${layerColors[trait.layer]}10`
-            }
-          }}
-          fullWidth
-        >
-          Upload Example Image
-        </Button>
-      </CardActions>
     </Card>
-  );
-};
-
-// Image Upload Dialog
-const ImageUploadDialog: React.FC<{
-  trait: Trait | null;
-  open: boolean;
-  onClose: () => void;
-  onUpload: (trait: Trait, file: File) => void;
-}> = ({ trait, open, onClose, onUpload }) => {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-    }
-  };
-
-  const handleUpload = async () => {
-    if (trait && selectedFile) {
-      setUploading(true);
-      try {
-        await onUpload(trait, selectedFile);
-        setSelectedFile(null);
-        onClose();
-      } catch (error) {
-        console.error('Upload failed:', error);
-      } finally {
-        setUploading(false);
-      }
-    }
-  };
-
-  const handleClose = () => {
-    if (!uploading) {
-      setSelectedFile(null);
-      onClose();
-    }
-  };
-
-  if (!trait) return null;
-
-  return (
-    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-      <DialogTitle sx={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        gap: 1,
-        borderBottom: `2px solid ${layerColors[trait.layer]}`
-      }}>
-        <ImageIcon sx={{ color: layerColors[trait.layer] }} />
-        Upload Example for "{trait.name}"
-      </DialogTitle>
-      
-      <DialogContent sx={{ pt: 3 }}>
-        <Typography variant="body2" sx={{ mb: 3, color: 'text.secondary' }}>
-          Upload an image that exemplifies the "{trait.name}" trait. This will help users understand this canonical trait better.
-        </Typography>
-
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          onChange={handleFileSelect}
-          style={{ display: 'none' }}
-        />
-
-        <Button
-          variant="outlined"
-          startIcon={<CloudUploadIcon />}
-          onClick={() => fileInputRef.current?.click()}
-          fullWidth
-          sx={{ mb: 2 }}
-        >
-          Choose Image File
-        </Button>
-
-        {selectedFile && (
-          <Box sx={{ 
-            p: 2, 
-            border: '1px dashed rgba(0, 229, 255, 0.5)',
-            borderRadius: 1,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 2
-          }}>
-            <CheckCircleIcon color="success" />
-            <Box>
-              <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                {selectedFile.name}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-              </Typography>
-            </Box>
-          </Box>
-        )}
-
-        {uploading && (
-          <Box sx={{ mt: 2 }}>
-            <Typography variant="body2" sx={{ mb: 1 }}>
-              Uploading image...
-            </Typography>
-            <LinearProgress />
-          </Box>
-        )}
-      </DialogContent>
-
-      <DialogActions>
-        <Button onClick={handleClose} disabled={uploading}>
-          Cancel
-        </Button>
-        <Button 
-          onClick={handleUpload}
-          disabled={!selectedFile || uploading}
-          variant="contained"
-          sx={{
-            backgroundColor: layerColors[trait.layer],
-            '&:hover': {
-              backgroundColor: layerColors[trait.layer],
-              filter: 'brightness(0.9)'
-            }
-          }}
-        >
-          Upload
-        </Button>
-      </DialogActions>
-    </Dialog>
   );
 };
 
@@ -305,8 +143,6 @@ export default function TraitsView() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [layerFilter, setLayerFilter] = useState<string>('');
-  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
-  const [selectedTrait, setSelectedTrait] = useState<Trait | null>(null);
 
   const fetchTraits = async () => {
     try {
@@ -341,33 +177,9 @@ export default function TraitsView() {
     fetchTraits();
   }, []);
 
-  const filteredTraits = layerFilter 
+  const filteredTraits = layerFilter
     ? traits.filter(trait => trait.layer === layerFilter)
     : traits;
-
-  const handleUploadImage = (trait: Trait) => {
-    setSelectedTrait(trait);
-    setUploadDialogOpen(true);
-  };
-
-  const handleImageUpload = async (trait: Trait, file: File) => {
-    const formData = new FormData();
-    formData.append('image', file);
-    formData.append('trait_bit', trait.bit.toString());
-    formData.append('description', `Example image for ${trait.name} trait`);
-
-    const response = await fetch(`${API_BASE_URL}/api/v1/images/upload-trait-example`, {
-      method: 'POST',
-      body: formData,
-    });
-
-    if (!response.ok) {
-      throw new Error(`Upload failed: ${response.statusText}`);
-    }
-
-    // You might want to show a success message or update UI here
-    console.log('Image uploaded successfully');
-  };
 
   if (error) {
     return (
@@ -485,22 +297,11 @@ export default function TraitsView() {
         <Grid container spacing={isCompact ? 1.5 : 3}>
           {filteredTraits.map((trait) => (
             <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={trait.bit}>
-              <TraitCard
-                trait={trait}
-                onUploadImage={handleUploadImage}
-              />
+              <TraitCard trait={trait} />
             </Grid>
           ))}
         </Grid>
       )}
-
-      {/* Upload Dialog */}
-      <ImageUploadDialog
-        trait={selectedTrait}
-        open={uploadDialogOpen}
-        onClose={() => setUploadDialogOpen(false)}
-        onUpload={handleImageUpload}
-      />
     </Box>
   );
 }

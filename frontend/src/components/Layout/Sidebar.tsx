@@ -6,8 +6,7 @@ import {
   ListItemText,
   Typography,
   Box,
-  Divider,
-  Chip
+  Divider
 } from '@mui/material';
 import {
   Psychology as BrainIcon,
@@ -21,10 +20,11 @@ import {
   AutoAwesome as MetaClassIcon,
   Build as BuildIcon,
   FolderSpecial as CollectionIcon,
-  School as SchoolIcon
+  School as SchoolIcon,
+  Email as EmailIcon,
+  Calculate as CalculatorIcon
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useApp } from '../../context/AppContext';
 import { useMobile } from '../../context/MobileContext';
 
 const SIDEBAR_WIDTH = 240;
@@ -78,6 +78,12 @@ const navItems: NavItem[] = [
     description: 'Compare 2-4 entities side by side'
   },
   {
+    path: '/hex-calc',
+    label: 'Hex Calculator',
+    icon: <CalculatorIcon />,
+    description: 'XOR entities to find new codes'
+  },
+  {
     path: '/build',
     label: 'Build-a-Code',
     icon: <BuildIcon />,
@@ -117,7 +123,6 @@ interface SidebarProps {
 export default function Sidebar({ onNavigate }: SidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { state } = useApp();
   const { isMobile } = useMobile();
 
   // Filter out hidden items and mobile-hidden items when on mobile
@@ -211,50 +216,57 @@ export default function Sidebar({ onNavigate }: SidebarProps) {
 
         <Divider sx={{ borderColor: 'rgba(0, 229, 255, 0.3)', mx: 2 }} />
 
-        {/* Status Section */}
+        {/* Contact Section */}
         <Box sx={{ p: 2 }}>
           <Typography variant="subtitle2" sx={{ color: 'text.secondary', mb: 2 }}>
-            System Status
+            Contact
           </Typography>
 
-          <Box sx={{ mb: 2 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-              <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.8rem' }}>
-                Graph Nodes
-              </Typography>
-              <Chip
-                label={state.graphData.nodes.length}
-                size="small"
-                color="primary"
-                sx={{ fontSize: '0.7rem' }}
-              />
-            </Box>
-
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-              <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.8rem' }}>
-                Selected Entity
-              </Typography>
-              <Chip
-                label={state.selectedEntity ? '1' : '0'}
-                size="small"
-                color={state.selectedEntity ? 'secondary' : 'default'}
-                sx={{ fontSize: '0.7rem' }}
-              />
-            </Box>
+          <Box
+            component="a"
+            href="mailto:info@universalhex.org"
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              mb: 1.5,
+              color: 'text.secondary',
+              textDecoration: 'none',
+              fontSize: '0.8rem',
+              '&:hover': {
+                color: 'primary.main',
+              },
+            }}
+          >
+            <EmailIcon sx={{ fontSize: 18 }} />
+            info@universalhex.org
           </Box>
 
-          {/* Current View Indicator */}
-          <Box>
-            <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.8rem', mb: 1 }}>
-              Current View
-            </Typography>
-            <Chip
-              label={state.currentView}
-              size="small"
-              variant="outlined"
-              color="primary"
-              sx={{ fontSize: '0.7rem', textTransform: 'capitalize' }}
-            />
+          <Box
+            component="a"
+            href="https://twitter.com/universalhex"
+            target="_blank"
+            rel="noopener noreferrer"
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              color: 'text.secondary',
+              textDecoration: 'none',
+              fontSize: '0.8rem',
+              '&:hover': {
+                color: '#1DA1F2',
+              },
+            }}
+          >
+            <Box
+              component="svg"
+              viewBox="0 0 24 24"
+              sx={{ width: 18, height: 18, fill: 'currentColor' }}
+            >
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+            </Box>
+            @universalhex
           </Box>
         </Box>
       </Box>

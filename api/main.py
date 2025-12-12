@@ -12,7 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, HTMLResponse
 from contextlib import asynccontextmanager
 
-from api.routes import classification, entities, traits, auth, preprocessing, graph, images, models, embeddings, users, collections, seo
+from api.routes import classification, entities, traits, auth, preprocessing, graph, images, models, embeddings, users, collections, seo, admin, hex_calc
 from api.middleware.api_key_auth import api_key_manager
 from api.middleware.meta_injection import MetaTagInjectionMiddleware
 from db.neo4j_client import Neo4jClient
@@ -110,6 +110,8 @@ app.include_router(embeddings.router, prefix="/api/v1/embeddings", tags=["Embedd
 app.include_router(users.router, prefix="/api/v1/users", tags=["Users"])
 app.include_router(collections.router, prefix="/api/v1/collections", tags=["Collections"])
 app.include_router(seo.router, prefix="/api/v1", tags=["SEO"])
+app.include_router(admin.router, prefix="/api/v1", tags=["Admin"])
+app.include_router(hex_calc.router, prefix="/api/v1/hex-calc", tags=["Hex Calculator"])
 
 @app.get("/api")
 async def root():
@@ -174,7 +176,7 @@ if os.path.exists(frontend_dist_path):
     if os.path.exists(assets_path):
         app.mount("/assets", StaticFiles(directory=assets_path), name="assets")
 
-    # Serve specific static files (favicon, robots.txt)
+    # Serve specific static files (favicon, robots.txt, og-images)
     @app.get("/favicon.svg")
     async def favicon():
         return FileResponse(os.path.join(frontend_dist_path, "favicon.svg"))
@@ -182,6 +184,14 @@ if os.path.exists(frontend_dist_path):
     @app.get("/robots.txt")
     async def robots():
         return FileResponse(os.path.join(frontend_dist_path, "robots.txt"))
+
+    @app.get("/og-image.png")
+    async def og_image():
+        return FileResponse(os.path.join(frontend_dist_path, "og-image.png"), media_type="image/png")
+
+    @app.get("/og-classify.png")
+    async def og_classify():
+        return FileResponse(os.path.join(frontend_dist_path, "og-classify.png"), media_type="image/png")
 
     # Catch-all route for SPA - serves index.html for all non-API routes
     # This must be defined LAST
@@ -199,6 +209,57 @@ if os.path.exists(frontend_dist_path):
         index_path = os.path.join(frontend_dist_path, "index.html")
         with open(index_path, 'r', encoding='utf-8') as f:
             html = f.read()
+
+        # Static page meta tags for Twitter/social previews
+        PAGE_META = {
+            'classify': {
+                'title': 'AI Entity Classification | UHT Factory',
+                'description': 'Classify any concept, object, or idea using the Universal Hex Taxonomy. Our AI analyzes 32 fundamental traits to generate a unique 8-character hex code.',
+                'image': 'https://factory.universalhex.org/og-classify.png'
+            },
+            'gallery': {
+                'title': 'Entity Gallery | UHT Factory',
+                'description': 'Browse thousands of classified entities with AI-generated images. Explore the Universal Hex Taxonomy visual collection.',
+                'image': 'https://factory.universalhex.org/og-image.png'
+            },
+            'traits': {
+                'title': 'Canonical Traits | UHT Factory',
+                'description': 'Explore the 32 canonical traits of the Universal Hex Taxonomy across Physical, Functional, Abstract, and Social layers.',
+                'image': 'https://factory.universalhex.org/og-image.png'
+            },
+            'how-it-works': {
+                'title': 'How UHT Works | UHT Factory',
+                'description': 'Learn how the Universal Hex Taxonomy classifies concepts using 32 binary traits to create unique 8-character hex codes.',
+                'image': 'https://factory.universalhex.org/og-image.png'
+            },
+            'build': {
+                'title': 'Build-a-Code | UHT Factory',
+                'description': 'Search for entities by trait pattern. Toggle bits to find entities matching specific taxonomic characteristics.',
+                'image': 'https://factory.universalhex.org/og-image.png'
+            },
+            'compare': {
+                'title': 'Entity Comparison | UHT Factory',
+                'description': 'Compare entities side-by-side to see their taxonomic similarities and differences across 32 traits.',
+                'image': 'https://factory.universalhex.org/og-image.png'
+            },
+            'analytics': {
+                'title': 'Trait Analytics | UHT Factory',
+                'description': 'Explore trait co-occurrence patterns, frequency statistics, and taxonomic insights across the entity database.',
+                'image': 'https://factory.universalhex.org/og-image.png'
+            },
+            'hex-calc': {
+                'title': 'Hex Calculator | UHT Factory',
+                'description': 'Perform XOR operations on UHT entity codes. Combine entities to discover new classifications and generate AI names for computed results.',
+                'image': 'https://factory.universalhex.org/og-image.png'
+            }
+        }
+
+        # Check for static page matches and inject meta tags
+        page_key = full_path.rstrip('/')
+        if page_key in PAGE_META:
+            meta = PAGE_META[page_key]
+            html = inject_static_page_meta(html, meta['title'], meta['description'], meta['image'],
+                                           f'https://factory.universalhex.org/{page_key}')
 
         # Check if this is an entity page
         entity_match = re.match(r'^entity/([a-f0-9-]+)/?$', full_path)
@@ -265,6 +326,25 @@ if os.path.exists(frontend_dist_path):
                 logger.error(f"serve_spa: Error injecting meta tags for {uuid}: {e}", exc_info=True)
 
         return HTMLResponse(content=html, media_type="text/html")
+
+    def inject_static_page_meta(html: str, title: str, description: str, image: str, url: str) -> str:
+        """Replace default meta tags with page-specific ones for static pages"""
+        import re
+        # Replace title
+        html = re.sub(r'<title>.*?</title>', f'<title>{title}</title>', html, count=1, flags=re.DOTALL)
+        # Replace OG tags
+        html = re.sub(r'<meta property="og:title" content=".*?" />', f'<meta property="og:title" content="{title}" />', html, count=1)
+        html = re.sub(r'<meta property="og:description" content=".*?" />', f'<meta property="og:description" content="{description}" />', html, count=1, flags=re.DOTALL)
+        html = re.sub(r'<meta property="og:image" content=".*?" />', f'<meta property="og:image" content="{image}" />', html, count=1)
+        html = re.sub(r'<meta property="og:url" content=".*?" />', f'<meta property="og:url" content="{url}" />', html, count=1)
+        # Replace Twitter tags
+        html = re.sub(r'<meta name="twitter:title" content=".*?" />', f'<meta name="twitter:title" content="{title}" />', html, count=1)
+        html = re.sub(r'<meta name="twitter:description" content=".*?" />', f'<meta name="twitter:description" content="{description}" />', html, count=1, flags=re.DOTALL)
+        html = re.sub(r'<meta name="twitter:image" content=".*?" />', f'<meta name="twitter:image" content="{image}" />', html, count=1)
+        html = re.sub(r'<meta name="twitter:url" content=".*?" />', f'<meta name="twitter:url" content="{url}" />', html, count=1)
+        # Replace meta description
+        html = re.sub(r'<meta name="description" content=".*?" />', f'<meta name="description" content="{description}" />', html, count=1, flags=re.DOTALL)
+        return html
 
     def inject_entity_meta_tags(html: str, entity: dict) -> str:
         """Replace default meta tags with entity-specific ones"""

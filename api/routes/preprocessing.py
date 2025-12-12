@@ -11,7 +11,7 @@ from models.entity import (
     DuplicateCheck
 )
 from pydantic import BaseModel
-from api.middleware.api_key_auth import require_preprocess
+from api.middleware.api_key_auth import require_preprocess, optional_api_key_or_public
 
 router = APIRouter()
 
@@ -42,12 +42,12 @@ async def get_neo4j_client():
 async def preprocess_entity(
     entity_name: str,
     llm_client: BaseLLMClient = Depends(get_llm_client),
-    key_data: dict = Depends(require_preprocess)  # Require API key with preprocess scope
+    auth_data: dict = Depends(optional_api_key_or_public)  # Allow public access with rate limiting
 ):
     """
     Pre-process an entity name with AI enhancement suggestions.
 
-    **Requires API key with 'preprocess' scope.**
+    **Public access allowed** - rate limited to 100 requests/hour per IP.
 
     Uses configured LLM provider (OpenRouter free models by default) to:
     1. Suggest an optimal entity name
@@ -186,12 +186,12 @@ async def enhance_entity(
     request: PreprocessRequest,
     llm_client: BaseLLMClient = Depends(get_llm_client),
     neo4j_client: Neo4jClient = Depends(get_neo4j_client),
-    key_data: dict = Depends(require_preprocess)  # Require API key with preprocess scope
+    auth_data: dict = Depends(optional_api_key_or_public)  # Allow public access with rate limiting
 ):
     """
     Combined preprocessing and duplicate checking endpoint.
 
-    **Requires API key with 'preprocess' scope.**
+    **Public access allowed** - rate limited to 100 requests/hour per IP.
 
     Performs both AI enhancement and duplicate detection in a single call
     for optimal user experience.

@@ -102,7 +102,7 @@ class OpenAIClient(BaseLLMClient):
         """Evaluate trait using OpenAI"""
         
         system_prompt = f"""You are a specialist evaluator for the Universal Hex Taxonomy trait: "{trait['name']}".
-        
+
 Trait Definition: {trait['expanded_definition']}
 Layer: {trait['layer']}
 
@@ -113,6 +113,25 @@ Respond with a JSON object containing:
 - "justification": brief explanation (max 100 words)
 
 Be precise and consistent. Consider the trait definition carefully."""
+
+        # Trait-specific clarifications for bit 3 (Biological/Biomimetic)
+        if trait['bit'] == 3:
+            system_prompt += """
+
+IMPORTANT CLARIFICATIONS FOR BIOLOGICAL/BIOMIMETIC TRAIT:
+1. ALWAYS mark as applicable (true) for:
+   - Living organisms (animals, plants, fungi, bacteria, etc.)
+   - Parts of organisms (organs, cells, tissues, species)
+   - Breeds, varieties, or subspecies of organisms
+   - Biological materials (wood, bone, silk, etc.)
+
+2. ALSO mark as applicable for:
+   - Bio-inspired artificial systems (neural networks)
+   - Biomimetic devices (prosthetics, biomimetic robots)
+
+3. Mark as NOT applicable for:
+   - Purely synthetic/mechanical systems
+   - Abstract concepts unrelated to biology"""
 
         user_prompt = f"""Entity: {entity['name']}
 Description: {entity.get('description', 'No description provided')}
@@ -573,6 +592,25 @@ Respond with a JSON object containing:
 
 Be precise and consistent. Consider the trait definition carefully.
 IMPORTANT: Respond ONLY with valid JSON, no other text."""
+
+        # Trait-specific clarifications for bit 3 (Biological/Biomimetic)
+        if trait['bit'] == 3:
+            system_prompt += """
+
+IMPORTANT CLARIFICATIONS FOR BIOLOGICAL/BIOMIMETIC TRAIT:
+1. ALWAYS mark as applicable (true) for:
+   - Living organisms (animals, plants, fungi, bacteria, etc.)
+   - Parts of organisms (organs, cells, tissues, species)
+   - Breeds, varieties, or subspecies of organisms
+   - Biological materials (wood, bone, silk, etc.)
+
+2. ALSO mark as applicable for:
+   - Bio-inspired artificial systems (neural networks)
+   - Biomimetic devices (prosthetics, biomimetic robots)
+
+3. Mark as NOT applicable for:
+   - Purely synthetic/mechanical systems
+   - Abstract concepts unrelated to biology"""
 
         user_prompt = f"""Entity: {entity['name']}
 Description: {entity.get('description', 'No description provided')}

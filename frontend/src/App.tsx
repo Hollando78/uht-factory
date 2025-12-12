@@ -21,6 +21,8 @@ import EntityDetails from './components/Entity/EntityDetails';
 import TraitAnalytics from './components/Analytics/TraitAnalytics';
 import VerifyEmailPage from './components/Auth/VerifyEmailPage';
 import HowItWorksView from './components/HowItWorks/HowItWorksView';
+import { TraitFlagsView } from './components/Admin';
+import { HexCalcView } from './components/HexCalc';
 
 // Dark theme optimized for graph visualization with responsive typography
 const darkTheme = createTheme({
@@ -180,6 +182,7 @@ function AppContent() {
             <Route path="/classify" element={<ClassificationView />} />
             <Route path="/graph" element={<GraphView />} />
             <Route path="/comparison" element={<ComparisonView />} />
+            <Route path="/hex-calc" element={<HexCalcView />} />
             <Route path="/build" element={<BuildACodeView />} />
             <Route path="/collections" element={<CollectionsView />} />
             <Route path="/collections/:id" element={<CollectionsView />} />
@@ -188,6 +191,7 @@ function AppContent() {
             <Route path="/entity/:uuid" element={<EntityDetails />} />
             <Route path="/analytics" element={<TraitAnalytics />} />
             <Route path="/verify-email" element={<VerifyEmailPage />} />
+            <Route path="/admin/trait-flags" element={<TraitFlagsView />} />
           </Routes>
         </Box>
       </Box>

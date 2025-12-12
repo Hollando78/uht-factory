@@ -237,3 +237,155 @@ export function isValidPattern(pattern: string): boolean {
   if (pattern.length !== 32) return false;
   return /^[01Xx]+$/.test(pattern);
 }
+
+// ============================================================================
+// Bitwise Operations for Hex Calculator
+// ============================================================================
+
+export type HexOperation = 'XOR' | 'AND' | 'OR' | 'ONE_HOT';
+
+/**
+ * XOR two 8-character hex UHT codes
+ * Note: >>> 0 converts to unsigned 32-bit integer (JS bitwise ops use signed)
+ */
+export function xorHexCodes(hex1: string, hex2: string): string {
+  const int1 = parseInt(hex1, 16);
+  const int2 = parseInt(hex2, 16);
+  return ((int1 ^ int2) >>> 0).toString(16).toUpperCase().padStart(8, '0');
+}
+
+/**
+ * AND two 8-character hex UHT codes (common traits)
+ * Note: >>> 0 converts to unsigned 32-bit integer (JS bitwise ops use signed)
+ */
+export function andHexCodes(hex1: string, hex2: string): string {
+  const int1 = parseInt(hex1, 16);
+  const int2 = parseInt(hex2, 16);
+  return ((int1 & int2) >>> 0).toString(16).toUpperCase().padStart(8, '0');
+}
+
+/**
+ * OR two 8-character hex UHT codes (union of traits)
+ * Note: >>> 0 converts to unsigned 32-bit integer (JS bitwise ops use signed)
+ */
+export function orHexCodes(hex1: string, hex2: string): string {
+  const int1 = parseInt(hex1, 16);
+  const int2 = parseInt(hex2, 16);
+  return ((int1 | int2) >>> 0).toString(16).toUpperCase().padStart(8, '0');
+}
+
+/**
+ * XOR multiple hex codes together (left to right)
+ */
+export function xorMultipleHexCodes(hexCodes: string[]): string {
+  if (hexCodes.length === 0) return '00000000';
+  if (hexCodes.length === 1) return hexCodes[0].toUpperCase().padStart(8, '0');
+  return hexCodes.reduce((acc, hex) => xorHexCodes(acc, hex));
+}
+
+/**
+ * AND multiple hex codes together (left to right) - common traits
+ */
+export function andMultipleHexCodes(hexCodes: string[]): string {
+  if (hexCodes.length === 0) return '00000000';
+  if (hexCodes.length === 1) return hexCodes[0].toUpperCase().padStart(8, '0');
+  return hexCodes.reduce((acc, hex) => andHexCodes(acc, hex));
+}
+
+/**
+ * OR multiple hex codes together (left to right) - union of traits
+ */
+export function orMultipleHexCodes(hexCodes: string[]): string {
+  if (hexCodes.length === 0) return '00000000';
+  if (hexCodes.length === 1) return hexCodes[0].toUpperCase().padStart(8, '0');
+  return hexCodes.reduce((acc, hex) => orHexCodes(acc, hex));
+}
+
+/**
+ * ONE-HOT detection: result bit = 1 only if EXACTLY ONE entity has that bit
+ * This finds traits that are unique to a single entity (true differences)
+ */
+export function oneHotHexCodes(hexCodes: string[]): string {
+  if (hexCodes.length === 0) return '00000000';
+  if (hexCodes.length === 1) return hexCodes[0].toUpperCase().padStart(8, '0');
+
+  // Convert all to binary
+  const binaries = hexCodes.map(hex => uhtToBinary(hex));
+
+  // For each bit position, count how many have it set
+  let resultBinary = '';
+  for (let i = 0; i < 32; i++) {
+    let count = 0;
+    for (const binary of binaries) {
+      if (binary[i] === '1') count++;
+    }
+    // One-hot: only 1 if exactly one entity has this bit
+    resultBinary += count === 1 ? '1' : '0';
+  }
+
+  return binaryToUht(resultBinary);
+}
+
+/**
+ * Apply operation to multiple hex codes
+ */
+export function applyHexOperation(hexCodes: string[], operation: HexOperation): string {
+  switch (operation) {
+    case 'XOR': return xorMultipleHexCodes(hexCodes);
+    case 'AND': return andMultipleHexCodes(hexCodes);
+    case 'OR': return orMultipleHexCodes(hexCodes);
+    case 'ONE_HOT': return oneHotHexCodes(hexCodes);
+    default: return xorMultipleHexCodes(hexCodes);
+  }
+}
+
+/**
+ * Get detailed diff between two hex codes after XOR
+ * Shows which bits changed, which were added (0->1), and removed (1->0)
+ */
+export function getXorDiff(hex1: string, hex2: string): {
+  resultHex: string;
+  changed: number[];    // Bits that differ (1-indexed)
+  addedFrom2: number[]; // Bits that are ON in hex2 but OFF in hex1
+  addedFrom1: number[]; // Bits that are ON in hex1 but OFF in hex2
+} {
+  const bin1 = uhtToBinary(hex1);
+  const bin2 = uhtToBinary(hex2);
+  const resultHex = xorHexCodes(hex1, hex2);
+  const resultBin = uhtToBinary(resultHex);
+
+  const changed: number[] = [];
+  const addedFrom2: number[] = [];
+  const addedFrom1: number[] = [];
+
+  for (let i = 0; i < 32; i++) {
+    if (resultBin[i] === '1') {
+      changed.push(i + 1);
+      if (bin1[i] === '0' && bin2[i] === '1') {
+        addedFrom2.push(i + 1);
+      } else if (bin1[i] === '1' && bin2[i] === '0') {
+        addedFrom1.push(i + 1);
+      }
+    }
+  }
+
+  return { resultHex, changed, addedFrom2, addedFrom1 };
+}
+
+/**
+ * Get layer summary for a hex code
+ */
+export function getLayerSummary(hex: string): {
+  Physical: { hex: string; count: number };
+  Functional: { hex: string; count: number };
+  Abstract: { hex: string; count: number };
+  Social: { hex: string; count: number };
+} {
+  const counts = getLayerCounts(hex);
+  return {
+    Physical: { hex: getLayerHex(hex, 'Physical'), count: counts[0] },
+    Functional: { hex: getLayerHex(hex, 'Functional'), count: counts[1] },
+    Abstract: { hex: getLayerHex(hex, 'Abstract'), count: counts[2] },
+    Social: { hex: getLayerHex(hex, 'Social'), count: counts[3] }
+  };
+}

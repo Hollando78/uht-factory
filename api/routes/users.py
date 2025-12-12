@@ -29,7 +29,9 @@ from api.middleware.jwt_auth import (
     password_reset_rate_limiter,
     get_client_ip,
     decode_token,
-    REFRESH_TOKEN_EXPIRE_DAYS
+    REFRESH_TOKEN_EXPIRE_DAYS,
+    ACCESS_TOKEN_EXPIRE_MINUTES,
+    COOKIE_SECURE
 )
 from api.dependencies import get_neo4j_client
 from db.neo4j_client import Neo4jClient
@@ -309,7 +311,7 @@ async def login(
         key="refresh_token",
         value=refresh_token,
         httponly=True,
-        secure=True,  # Requires HTTPS
+        secure=COOKIE_SECURE,
         samesite="lax",
         max_age=REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
     )
@@ -317,7 +319,7 @@ async def login(
     return TokenResponse(
         access_token=access_token,
         refresh_token=refresh_token,
-        expires_in=15 * 60  # 15 minutes in seconds
+        expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60
     )
 
 
@@ -407,7 +409,7 @@ async def refresh_tokens(
         key="refresh_token",
         value=new_refresh_token,
         httponly=True,
-        secure=True,
+        secure=COOKIE_SECURE,
         samesite="lax",
         max_age=REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
     )
@@ -415,7 +417,7 @@ async def refresh_tokens(
     return TokenResponse(
         access_token=new_access_token,
         refresh_token=new_refresh_token,
-        expires_in=15 * 60
+        expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60
     )
 
 

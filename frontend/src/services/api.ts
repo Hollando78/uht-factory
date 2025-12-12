@@ -56,6 +56,76 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Token refresh state management
+let isRefreshing = false;
+let refreshSubscribers: Array<(token: string) => void> = [];
+
+const subscribeTokenRefresh = (cb: (token: string) => void) => {
+  refreshSubscribers.push(cb);
+};
+
+const onTokenRefreshed = (token: string) => {
+  refreshSubscribers.forEach((cb) => cb(token));
+  refreshSubscribers = [];
+};
+
+// Response interceptor to handle 401 errors and auto-refresh tokens
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+
+    // Only handle 401 errors for authenticated requests (those with Authorization header)
+    if (
+      error.response?.status === 401 &&
+      originalRequest.headers?.Authorization &&
+      !originalRequest._retry
+    ) {
+      // Mark this request as retried to prevent infinite loops
+      originalRequest._retry = true;
+
+      // If already refreshing, wait for the refresh to complete
+      if (isRefreshing) {
+        return new Promise((resolve) => {
+          subscribeTokenRefresh((token: string) => {
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            resolve(api(originalRequest));
+          });
+        });
+      }
+
+      isRefreshing = true;
+
+      try {
+        // Attempt to refresh the token
+        const response = await api.post('/users/refresh', {});
+        const newAccessToken = response.data.access_token;
+
+        // Notify all waiting requests
+        onTokenRefreshed(newAccessToken);
+
+        // Update the failed request with the new token and retry
+        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+
+        // Dispatch custom event so AuthContext can update its state
+        window.dispatchEvent(
+          new CustomEvent('tokenRefreshed', { detail: { accessToken: newAccessToken } })
+        );
+
+        return api(originalRequest);
+      } catch (refreshError) {
+        // Refresh failed - dispatch logout event
+        window.dispatchEvent(new CustomEvent('tokenRefreshFailed'));
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
+
 // Classification API
 export const classificationAPI = {
   classifyEntity: async (request: ClassificationRequest): Promise<ApiResponse<UHTEntity>> => {
@@ -150,6 +220,20 @@ export const entityAPI = {
   // Unflag NSFW (requires auth)
   unflagNsfw: async (uuid: string): Promise<UHTEntity> => {
     const response = await api.post(`/entities/${uuid}/unflag-nsfw`);
+    return response.data;
+  },
+
+  // Flag a trait as incorrect (no auth required - public crowdsourcing)
+  flagTrait: async (
+    entityUuid: string,
+    traitBit: number,
+    suggestedValue: boolean,
+    reason: string
+  ): Promise<{ flag_id: string; status: string }> => {
+    const response = await api.post(
+      `/entities/${entityUuid}/traits/${traitBit}/flag`,
+      { suggested_value: suggestedValue, reason }
+    );
     return response.data;
   }
 };
@@ -409,6 +493,76 @@ export const collectionsAPI = {
   }
 };
 
+// Admin API (requires JWT authentication)
+export interface TraitFlag {
+  flag_id: string;
+  entity_uuid: string;
+  entity_name: string;
+  trait_bit: number;
+  trait_name: string;
+  current_value: boolean;
+  suggested_value: boolean;
+  reason: string;
+  status: 'pending' | 'approved' | 'rejected';
+  created_at: string;
+  reviewed_at?: string;
+  reviewed_by?: string;
+  resolution_notes?: string;
+}
+
+export interface TraitFlagListResponse {
+  flags: TraitFlag[];
+  total: number;
+  offset: number;
+  limit: number;
+}
+
+export interface ReviewFlagRequest {
+  action: 'approve' | 'reject';
+  trigger_reclassification?: boolean;
+  resolution_notes?: string;
+}
+
+export interface ReviewFlagResponse {
+  flag_id: string;
+  status: string;
+  reviewed_by: string;
+  reclassified: boolean;
+  old_value?: boolean;
+  new_value?: boolean;
+  new_uht_code?: string;
+  confidence?: number;
+  message: string;
+}
+
+export const adminAPI = {
+  listTraitFlags: async (
+    accessToken: string,
+    status: 'pending' | 'approved' | 'rejected' | 'all' = 'pending',
+    limit: number = 100,
+    offset: number = 0
+  ): Promise<TraitFlagListResponse> => {
+    const response = await api.get('/admin/trait-flags', {
+      ...createAuthHeader(accessToken),
+      params: { status, limit, offset }
+    });
+    return response.data;
+  },
+
+  reviewTraitFlag: async (
+    accessToken: string,
+    flagId: string,
+    review: ReviewFlagRequest
+  ): Promise<ReviewFlagResponse> => {
+    const response = await api.post(
+      `/admin/trait-flags/${flagId}/review`,
+      review,
+      createAuthHeader(accessToken)
+    );
+    return response.data;
+  }
+};
+
 export default {
   classification: classificationAPI,
   entities: entityAPI,
@@ -419,5 +573,6 @@ export default {
   graph: graphAPI,
   system: systemAPI,
   auth: authAPI,
-  collections: collectionsAPI
+  collections: collectionsAPI,
+  admin: adminAPI
 };
