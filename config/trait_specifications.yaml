@@ -1,0 +1,1681 @@
+# UHT Trait Specifications
+#
+# This file defines detailed classification guidance for each of the 32 UHT traits.
+# Used by the LLM classifier to ensure consistent, accurate classifications.
+#
+# Structure:
+#   - definition: Core meaning of the trait
+#   - inclusions: Categories that SHOULD have this trait (with examples)
+#   - exclusions: Categories that should NOT have this trait (with examples)
+#   - edge_cases: Specific scenarios with verdicts and reasoning
+#
+# Version: 1.0
+# Last updated: 2024-12-15
+
+# =============================================================================
+# PHYSICAL LAYER (Bits 1-8)
+# =============================================================================
+
+bit_1:
+  name: "Physical Object"
+  layer: "Physical"
+  definition: >
+    A discrete, bounded physical entity that occupies space and has tangible form.
+    It is not a process, idea, field, or distributed phenomenon.
+
+  inclusions:
+    - category: "Tangible manufactured items"
+      examples: ["chair", "car", "phone", "book", "tool"]
+    - category: "Natural physical objects"
+      examples: ["rock", "tree", "mountain", "crystal", "fossil"]
+    - category: "Living organisms as physical entities"
+      examples: ["dog", "human", "plant", "bacterium"]
+    - category: "Body parts and organs"
+      examples: ["heart", "leaf", "bone", "cell"]
+    - category: "Food and consumable products"
+      examples: ["apple", "bread", "medicine tablet", "beverage in container"]
+    - category: "Buildings and structures"
+      examples: ["house", "bridge", "dam", "monument"]
+    - category: "Particles and microscopic objects"
+      examples: ["grain of sand", "dust particle", "molecule (as discrete entity)"]
+
+  exclusions:
+    - category: "Processes and events"
+      examples: ["combustion", "election", "photosynthesis", "war"]
+    - category: "Abstract concepts"
+      examples: ["justice", "love", "mathematics", "democracy"]
+    - category: "Fields and continuous phenomena"
+      examples: ["gravity field", "magnetic field", "temperature gradient"]
+    - category: "Digital/virtual entities without physical form"
+      examples: ["software", "website", "digital file", "algorithm"]
+    - category: "Social constructs without physical instantiation"
+      examples: ["corporation (as legal entity)", "language", "culture"]
+    - category: "Waves and radiation (as phenomena)"
+      examples: ["light wave", "sound wave", "radio signal"]
+
+  edge_cases:
+    - case: "A cloud"
+      verdict: true
+      reason: "While diffuse, a cloud is a bounded collection of physical water droplets"
+    - case: "Fire/flame"
+      verdict: false
+      reason: "Fire is a process (combustion), not a bounded physical object"
+    - case: "A river"
+      verdict: true
+      reason: "Has physical boundaries and tangible water, even though water flows through it"
+    - case: "Electricity"
+      verdict: false
+      reason: "Electricity is a phenomenon/flow of charge, not a discrete object"
+    - case: "A photon"
+      verdict: true
+      reason: "A discrete quantum of light, treated as a particle in physics"
+    - case: "An atom"
+      verdict: true
+      reason: "A discrete, bounded physical entity"
+    - case: "The atmosphere"
+      verdict: false
+      reason: "A continuous, unbounded layer - not a discrete object"
+    - case: "A breath of air"
+      verdict: false
+      reason: "Not a discrete, bounded entity - air disperses immediately"
+
+bit_2:
+  name: "Synthetic"
+  layer: "Physical"
+  definition: >
+    Created, manufactured, constructed, or significantly shaped by human activity
+    or intention. Contrasts with natural formations that emerge without design.
+
+  inclusions:
+    - category: "Manufactured products"
+      examples: ["car", "computer", "furniture", "clothing"]
+    - category: "Processed foods and beverages"
+      examples: ["bread", "cheese", "wine", "pasta", "chocolate"]
+    - category: "Constructed structures"
+      examples: ["building", "bridge", "road", "dam"]
+    - category: "Refined/processed materials"
+      examples: ["steel", "plastic", "paper", "glass", "refined oil"]
+    - category: "Selectively bred organisms"
+      examples: ["domestic dog breeds", "crop varieties", "livestock breeds"]
+    - category: "Genetically modified organisms"
+      examples: ["GMO crops", "engineered bacteria"]
+    - category: "Artworks and crafted items"
+      examples: ["painting", "sculpture", "pottery", "jewelry"]
+    - category: "Written/composed works"
+      examples: ["book", "musical composition", "film"]
+
+  exclusions:
+    - category: "Unmodified natural objects"
+      examples: ["wild animal", "uncut gemstone", "natural forest", "wild river"]
+    - category: "Natural phenomena"
+      examples: ["lightning", "earthquake", "aurora", "volcano"]
+    - category: "Celestial bodies"
+      examples: ["star", "planet", "asteroid", "comet"]
+    - category: "Geological formations"
+      examples: ["mountain", "canyon", "cave (natural)", "natural arch"]
+    - category: "Wild/undomesticated organisms"
+      examples: ["wild wolf", "wild grass species", "natural bacteria"]
+
+  edge_cases:
+    - case: "A garden"
+      verdict: true
+      reason: "Intentionally planted and maintained by humans"
+    - case: "A wild but managed forest"
+      verdict: false
+      reason: "Management doesn't make it synthetic; the forest itself is natural"
+    - case: "Cultured pearls"
+      verdict: true
+      reason: "Human intervention initiates and controls pearl formation"
+    - case: "Natural pearls"
+      verdict: false
+      reason: "Formed entirely through natural biological processes"
+    - case: "Domesticated cat"
+      verdict: true
+      reason: "Selectively bred over generations by humans"
+    - case: "Feral cat (descended from domestic)"
+      verdict: true
+      reason: "Still a product of human selective breeding, even if now wild"
+    - case: "Reclaimed land"
+      verdict: true
+      reason: "Land created or significantly modified by human engineering"
+    - case: "Compost"
+      verdict: true
+      reason: "Intentionally created decomposition environment"
+
+bit_3:
+  name: "Biological/Biomimetic"
+  layer: "Physical"
+  definition: >
+    Has biological origin, is a living organism, is derived from living organisms,
+    or is designed to mimic biological structures/processes.
+
+  inclusions:
+    - category: "Living organisms"
+      examples: ["animal", "plant", "fungus", "bacterium", "virus"]
+    - category: "Parts of organisms"
+      examples: ["organ", "cell", "tissue", "limb", "leaf"]
+    - category: "Breeds, species, and varieties"
+      examples: ["dog breed", "plant cultivar", "bacterial strain"]
+    - category: "Raw biological materials"
+      examples: ["wood", "bone", "silk", "wool", "cotton", "leather"]
+    - category: "Processed biological products"
+      examples: ["bread", "cheese", "wine", "beer", "alcohol", "pasta", "paper"]
+    - category: "Fermented products"
+      examples: ["yogurt", "sauerkraut", "kimchi", "vinegar", "soy sauce"]
+    - category: "Biological extracts and derivatives"
+      examples: ["essential oils", "gelatin", "insulin", "vaccines"]
+    - category: "Biomimetic designs"
+      examples: ["neural network", "velcro (inspired by burrs)", "prosthetic limb"]
+    - category: "Bio-inspired architecture"
+      examples: ["buildings mimicking termite mounds", "swimsuits mimicking shark skin"]
+    - category: "Fossils and preserved biological remains"
+      examples: ["fossil", "amber with insects", "mummy"]
+
+  exclusions:
+    - category: "Purely synthetic materials"
+      examples: ["plastic (petroleum-based)", "synthetic rubber", "nylon"]
+    - category: "Inorganic minerals and metals"
+      examples: ["iron ore", "gold", "quartz crystal", "diamond"]
+    - category: "Mechanical systems without bio-inspiration"
+      examples: ["gear", "lever", "pulley", "traditional engine"]
+    - category: "Abstract concepts"
+      examples: ["mathematics", "philosophy", "economics"]
+    - category: "Geological formations"
+      examples: ["mountain", "volcano", "river (the water system)"]
+
+  edge_cases:
+    - case: "Alcohol/spirits (vodka, whiskey)"
+      verdict: true
+      reason: "Produced through biological fermentation of grains/plants"
+    - case: "Petroleum/crude oil"
+      verdict: false
+      reason: "Although derived from ancient organisms, too far removed to be considered biological"
+    - case: "Coal"
+      verdict: false
+      reason: "Fossilized plant matter, but now a geological/mineral resource"
+    - case: "Bioplastics (from corn starch)"
+      verdict: true
+      reason: "Derived from biological sources"
+    - case: "Synthetic insulin"
+      verdict: true
+      reason: "Biomimetic - replicates biological molecule"
+    - case: "Lab-grown meat"
+      verdict: true
+      reason: "Grown from animal cells - biological origin"
+    - case: "3D-printed organ"
+      verdict: true
+      reason: "Uses biological cells even if manufacturing is artificial"
+    - case: "Artificial sweetener (aspartame)"
+      verdict: false
+      reason: "Chemically synthesized, not derived from biological processes"
+    - case: "Sugar"
+      verdict: true
+      reason: "Extracted from biological sources (sugarcane, beets)"
+
+bit_4:
+  name: "Powered"
+  layer: "Physical"
+  definition: >
+    Requires external energy input (electricity, fuel, batteries) to operate
+    or perform its primary function.
+
+  inclusions:
+    - category: "Electrical devices"
+      examples: ["computer", "lamp", "refrigerator", "phone"]
+    - category: "Battery-operated devices"
+      examples: ["flashlight", "wireless mouse", "electric toothbrush"]
+    - category: "Fuel-powered machinery"
+      examples: ["car", "airplane", "generator", "lawnmower"]
+    - category: "Motorized equipment"
+      examples: ["elevator", "conveyor belt", "power tools"]
+    - category: "Heated/cooled appliances"
+      examples: ["oven", "air conditioner", "heater", "iron"]
+
+  exclusions:
+    - category: "Passive objects"
+      examples: ["chair", "table", "book", "cup"]
+    - category: "Manual tools"
+      examples: ["hammer", "screwdriver", "hand saw", "scissors"]
+    - category: "Gravity/spring-powered items"
+      examples: ["pendulum clock", "wind-up toy", "mousetrap"]
+    - category: "Living organisms"
+      examples: ["human", "horse", "plant"]
+    - category: "Natural objects"
+      examples: ["rock", "water", "wood"]
+    - category: "Human-powered vehicles"
+      examples: ["bicycle", "rowboat", "skateboard"]
+
+  edge_cases:
+    - case: "Solar-powered calculator"
+      verdict: true
+      reason: "Requires external energy (light) to operate"
+    - case: "Wind turbine"
+      verdict: false
+      reason: "Generates power rather than consuming it for operation"
+    - case: "Hybrid car"
+      verdict: true
+      reason: "Requires fuel/electricity to operate"
+    - case: "Electric bicycle"
+      verdict: true
+      reason: "Has powered assist mode requiring battery"
+    - case: "Mechanical watch"
+      verdict: false
+      reason: "Powered by manual winding/spring, not external energy source"
+    - case: "Quartz watch"
+      verdict: true
+      reason: "Requires battery power"
+    - case: "Sailboat"
+      verdict: false
+      reason: "Uses wind - ambient energy, not external power input"
+    - case: "Motorized sailboat"
+      verdict: true
+      reason: "Has engine requiring fuel"
+
+bit_5:
+  name: "Structural"
+  layer: "Physical"
+  definition: >
+    Serves a load-bearing, shape-maintaining, or structural integrity function.
+    Contributes to stability or support of a larger system.
+
+  inclusions:
+    - category: "Building structural elements"
+      examples: ["beam", "column", "foundation", "wall", "roof truss"]
+    - category: "Vehicle frames and chassis"
+      examples: ["car frame", "aircraft fuselage", "bicycle frame"]
+    - category: "Skeletal structures"
+      examples: ["bone", "exoskeleton", "cartilage"]
+    - category: "Support structures"
+      examples: ["shelf bracket", "scaffolding", "tent pole"]
+    - category: "Infrastructure"
+      examples: ["bridge", "dam", "retaining wall", "pier"]
+    - category: "Furniture frames"
+      examples: ["chair frame", "bed frame", "table legs"]
+
+  exclusions:
+    - category: "Decorative elements"
+      examples: ["paint", "wallpaper", "ornament"]
+    - category: "Soft furnishings"
+      examples: ["cushion", "curtain", "carpet"]
+    - category: "Electronic components"
+      examples: ["circuit board", "chip", "wire"]
+    - category: "Fluids and gases"
+      examples: ["water", "air", "oil"]
+    - category: "Abstract concepts"
+      examples: ["organizational structure", "data structure"]
+
+  edge_cases:
+    - case: "Load-bearing wall"
+      verdict: true
+      reason: "Supports weight of structure above"
+    - case: "Partition wall"
+      verdict: false
+      reason: "Divides space but doesn't bear structural load"
+    - case: "Car body panels"
+      verdict: false
+      reason: "Cosmetic/aerodynamic, not load-bearing (in most designs)"
+    - case: "Monocoque car body"
+      verdict: true
+      reason: "Body itself is the structural element"
+    - case: "Tree trunk"
+      verdict: true
+      reason: "Provides structural support for the tree"
+    - case: "Skin"
+      verdict: false
+      reason: "Protective barrier, not load-bearing structure"
+    - case: "Exoskeleton (insect)"
+      verdict: true
+      reason: "Provides structural support for the organism"
+
+bit_6:
+  name: "Observable"
+  layer: "Physical"
+  definition: >
+    Can be directly detected by human senses or scientific instruments.
+    Perceptible without requiring interpretation of abstract data.
+
+  inclusions:
+    - category: "Visible objects"
+      examples: ["any physical object", "light", "color"]
+    - category: "Audible phenomena"
+      examples: ["sound", "music", "speech", "thunder"]
+    - category: "Tactile objects"
+      examples: ["texture", "temperature (felt)", "vibration"]
+    - category: "Olfactory stimuli"
+      examples: ["smell", "fragrance", "odor"]
+    - category: "Instrument-detectable"
+      examples: ["radio waves", "X-rays", "ultrasound", "magnetic fields"]
+    - category: "Microscopic but observable"
+      examples: ["bacteria (with microscope)", "cells", "microorganisms"]
+
+  exclusions:
+    - category: "Abstract concepts"
+      examples: ["justice", "love", "mathematics", "logic"]
+    - category: "Theoretical constructs"
+      examples: ["dark matter (undetected)", "virtual particles", "parallel universes"]
+    - category: "Mental states (directly)"
+      examples: ["thoughts", "emotions (internal)", "consciousness"]
+    - category: "Future/past events"
+      examples: ["tomorrow's weather", "historical events (not recorded)"]
+
+  edge_cases:
+    - case: "Emotions (as expressed)"
+      verdict: true
+      reason: "Facial expressions, body language are observable"
+    - case: "Emotions (internal feeling)"
+      verdict: false
+      reason: "The internal experience itself is not directly observable"
+    - case: "Black hole"
+      verdict: true
+      reason: "Effects are observable (gravitational lensing, accretion disk)"
+    - case: "Neutrino"
+      verdict: true
+      reason: "Detectable with specialized instruments"
+    - case: "Quark (free)"
+      verdict: false
+      reason: "Cannot be directly observed in isolation due to confinement"
+    - case: "Wi-Fi signal"
+      verdict: true
+      reason: "Detectable by instruments (phones, routers)"
+
+bit_7:
+  name: "Physical Medium"
+  layer: "Physical"
+  definition: >
+    Composed of physical matter - has substance and mass.
+    Distinguishes material entities from pure energy, data, or abstract concepts.
+
+  inclusions:
+    - category: "Solid objects"
+      examples: ["rock", "metal", "wood", "plastic"]
+    - category: "Liquids"
+      examples: ["water", "oil", "mercury", "blood"]
+    - category: "Gases"
+      examples: ["air", "helium", "oxygen", "steam"]
+    - category: "Plasma"
+      examples: ["solar plasma", "lightning plasma", "neon sign plasma"]
+    - category: "Living organisms"
+      examples: ["all biological life"]
+    - category: "Subatomic particles with mass"
+      examples: ["electron", "proton", "neutron", "quark"]
+
+  exclusions:
+    - category: "Pure energy"
+      examples: ["photon (massless)", "electromagnetic wave"]
+    - category: "Digital data"
+      examples: ["file", "database", "software", "algorithm"]
+    - category: "Abstract concepts"
+      examples: ["number", "idea", "theory", "emotion"]
+    - category: "Purely virtual entities"
+      examples: ["virtual particle (transient)", "mathematical point"]
+    - category: "Social constructs"
+      examples: ["corporation", "law", "language"]
+
+  edge_cases:
+    - case: "Light/photon"
+      verdict: false
+      reason: "Photons are massless - pure energy quanta"
+    - case: "Electron"
+      verdict: true
+      reason: "Has rest mass - is a matter particle"
+    - case: "Magnetic field"
+      verdict: false
+      reason: "A field, not a material substance"
+    - case: "Plasma"
+      verdict: true
+      reason: "Ionized gas - still matter"
+    - case: "Sound wave"
+      verdict: false
+      reason: "A wave phenomenon in matter, not matter itself"
+    - case: "The medium carrying sound"
+      verdict: true
+      reason: "Air/water/solid carrying the wave is matter"
+    - case: "Vacuum"
+      verdict: false
+      reason: "Absence of matter"
+
+bit_8:
+  name: "Active"
+  layer: "Physical"
+  definition: >
+    Exhibits autonomous behavior, initiates actions, or has internal agency.
+    Can act independently without requiring external stimulus for each action.
+
+  inclusions:
+    - category: "Living organisms"
+      examples: ["animal", "human", "plant (growth)", "bacterium"]
+    - category: "Autonomous machines"
+      examples: ["robot", "self-driving car", "drone", "autonomous vacuum"]
+    - category: "AI systems with agency"
+      examples: ["AI agent", "chatbot", "automated trading system"]
+    - category: "Self-regulating systems"
+      examples: ["thermostat", "autopilot", "pacemaker"]
+    - category: "Active sensors"
+      examples: ["radar", "sonar", "lidar"]
+
+  exclusions:
+    - category: "Passive objects"
+      examples: ["chair", "rock", "book", "painting"]
+    - category: "Reactive-only systems"
+      examples: ["light switch", "doorbell", "pressure plate"]
+    - category: "Tools requiring human operation"
+      examples: ["hammer", "knife", "manual camera"]
+    - category: "Static structures"
+      examples: ["building", "bridge", "wall"]
+    - category: "Stored media"
+      examples: ["recorded video", "written text", "photograph"]
+
+  edge_cases:
+    - case: "Virus (biological)"
+      verdict: false
+      reason: "Cannot act autonomously - requires host cell machinery"
+    - case: "Computer virus"
+      verdict: true
+      reason: "Executes and propagates autonomously once activated"
+    - case: "Seed"
+      verdict: false
+      reason: "Dormant - not actively behaving (but contains potential)"
+    - case: "Germinating seed"
+      verdict: true
+      reason: "Actively growing and responding to environment"
+    - case: "Washing machine (running)"
+      verdict: true
+      reason: "Autonomously executes programmed cycle"
+    - case: "Washing machine (off)"
+      verdict: false
+      reason: "Not currently exhibiting active behavior"
+    - case: "River"
+      verdict: false
+      reason: "Flow is passive response to gravity, not autonomous action"
+    - case: "Fire"
+      verdict: false
+      reason: "Chemical reaction, not autonomous agent"
+
+# =============================================================================
+# FUNCTIONAL LAYER (Bits 9-16)
+# =============================================================================
+
+bit_9:
+  name: "Intentionally Designed"
+  layer: "Functional"
+  definition: >
+    Created or adapted with a deliberate purpose, goal, or intended function.
+    Form reflects intentional design choices.
+
+  inclusions:
+    - category: "Manufactured products"
+      examples: ["all tools", "appliances", "vehicles", "furniture"]
+    - category: "Engineered systems"
+      examples: ["software", "circuits", "machines", "infrastructure"]
+    - category: "Crafted items"
+      examples: ["art", "jewelry", "pottery", "textiles"]
+    - category: "Bred organisms"
+      examples: ["domestic animals", "crop varieties", "ornamental plants"]
+    - category: "Designed spaces"
+      examples: ["buildings", "parks", "gardens", "interiors"]
+    - category: "Composed works"
+      examples: ["music", "literature", "choreography"]
+
+  exclusions:
+    - category: "Natural formations"
+      examples: ["mountain", "river", "crystal", "wild forest"]
+    - category: "Wild organisms"
+      examples: ["wild animals", "wild plants", "natural ecosystems"]
+    - category: "Random occurrences"
+      examples: ["clouds", "waves", "wind patterns"]
+    - category: "Emergent phenomena"
+      examples: ["traffic jams", "crowd behavior", "market prices"]
+
+  edge_cases:
+    - case: "Spider web"
+      verdict: false
+      reason: "Created by instinct, not intentional design (spider has no design intent)"
+    - case: "Beaver dam"
+      verdict: false
+      reason: "Instinctual behavior, not intentional design in human sense"
+    - case: "Bird's nest"
+      verdict: false
+      reason: "Instinctual construction, not deliberate design"
+    - case: "Ant colony structure"
+      verdict: false
+      reason: "Emergent from simple rules, not intentionally designed"
+    - case: "Bonsai tree"
+      verdict: true
+      reason: "Intentionally shaped by human cultivator"
+    - case: "Evolved organism"
+      verdict: false
+      reason: "Evolution is not intentional design"
+    - case: "Genetically engineered organism"
+      verdict: true
+      reason: "Deliberately modified for specific purpose"
+
+bit_10:
+  name: "Outputs Effect"
+  layer: "Functional"
+  definition: >
+    Actively produces or generates measurable outputs such as light, sound,
+    force, heat, motion, or information as part of its operation.
+
+  inclusions:
+    - category: "Light-producing"
+      examples: ["lamp", "screen", "LED", "laser", "sun"]
+    - category: "Sound-producing"
+      examples: ["speaker", "alarm", "musical instrument", "engine"]
+    - category: "Heat-producing"
+      examples: ["heater", "oven", "engine", "radiator"]
+    - category: "Motion-producing"
+      examples: ["motor", "actuator", "pump", "fan"]
+    - category: "Information-outputting"
+      examples: ["display", "printer", "transmitter", "beacon"]
+    - category: "Force-producing"
+      examples: ["hydraulic press", "jack", "spring (releasing)"]
+
+  exclusions:
+    - category: "Passive objects"
+      examples: ["mirror (reflects, doesn't generate)", "lens", "prism"]
+    - category: "Storage media"
+      examples: ["hard drive (stores, output is via reader)", "book"]
+    - category: "Structural elements"
+      examples: ["beam", "wall", "foundation"]
+    - category: "Containers"
+      examples: ["box", "bottle", "bag"]
+    - category: "Conductors/transmitters"
+      examples: ["wire", "pipe", "fiber optic cable"]
+
+  edge_cases:
+    - case: "Battery"
+      verdict: true
+      reason: "Outputs electrical energy"
+    - case: "Capacitor (discharging)"
+      verdict: true
+      reason: "Releases stored energy"
+    - case: "Capacitor (storing)"
+      verdict: false
+      reason: "Receiving input, not outputting"
+    - case: "Mirror"
+      verdict: false
+      reason: "Redirects light, doesn't generate it"
+    - case: "Glow-in-dark material"
+      verdict: true
+      reason: "Emits light (phosphorescence)"
+    - case: "Nerve cell"
+      verdict: true
+      reason: "Outputs electrical signals"
+
+bit_11:
+  name: "Processes Signals/Logic"
+  layer: "Functional"
+  definition: >
+    Interprets, transforms, routes, or computes inputs such as data,
+    signals, or logical operations.
+
+  inclusions:
+    - category: "Computers and processors"
+      examples: ["CPU", "microcontroller", "computer", "calculator"]
+    - category: "Signal processors"
+      examples: ["amplifier", "filter", "modulator", "codec"]
+    - category: "Control systems"
+      examples: ["PLC", "thermostat logic", "autopilot"]
+    - category: "Neural systems"
+      examples: ["brain", "nervous system", "neural network"]
+    - category: "Mechanical computers"
+      examples: ["abacus", "slide rule", "Antikythera mechanism"]
+    - category: "Logic circuits"
+      examples: ["AND gate", "flip-flop", "multiplexer"]
+
+  exclusions:
+    - category: "Simple transducers"
+      examples: ["microphone (converts, doesn't process)", "speaker"]
+    - category: "Storage only"
+      examples: ["memory chip (stores, doesn't process)", "hard drive"]
+    - category: "Passive components"
+      examples: ["resistor", "capacitor", "inductor"]
+    - category: "Transmission media"
+      examples: ["cable", "antenna", "optical fiber"]
+
+  edge_cases:
+    - case: "Transistor"
+      verdict: true
+      reason: "Can perform switching/amplification - basic processing"
+    - case: "Relay"
+      verdict: true
+      reason: "Performs logical switching based on input"
+    - case: "DNA"
+      verdict: true
+      reason: "Encodes and processes genetic information"
+    - case: "Enzyme"
+      verdict: false
+      reason: "Catalyzes reactions but doesn't process information"
+    - case: "Ribosome"
+      verdict: true
+      reason: "Reads mRNA and processes it into protein"
+
+bit_12:
+  name: "State-Transforming"
+  layer: "Functional"
+  definition: >
+    Can change its own internal state, configuration, or condition
+    based on inputs, time, or internal mechanisms.
+
+  inclusions:
+    - category: "Stateful electronics"
+      examples: ["flip-flop", "memory", "register", "counter"]
+    - category: "Adaptive systems"
+      examples: ["learning AI", "adaptive cruise control"]
+    - category: "Phase-changing materials"
+      examples: ["water (ice/liquid/steam)", "shape-memory alloy"]
+    - category: "Rechargeable systems"
+      examples: ["battery", "capacitor", "spring"]
+    - category: "Living organisms"
+      examples: ["growing plant", "aging animal", "differentiating cell"]
+    - category: "Chemical reactions"
+      examples: ["rusting metal", "curing concrete", "developing photograph"]
+
+  exclusions:
+    - category: "Stateless components"
+      examples: ["resistor", "wire", "lens", "mirror"]
+    - category: "Rigid/unchanging objects"
+      examples: ["diamond", "ceramic", "cured epoxy"]
+    - category: "Fixed structures"
+      examples: ["building frame", "bridge (normally)", "monument"]
+
+  edge_cases:
+    - case: "Thermostat"
+      verdict: true
+      reason: "Changes between on/off states based on temperature"
+    - case: "Light switch"
+      verdict: true
+      reason: "Has two discrete states it can transform between"
+    - case: "Rock"
+      verdict: false
+      reason: "While it can weather over time, it doesn't actively transform"
+    - case: "Ice cube (melting)"
+      verdict: true
+      reason: "Undergoing state transformation"
+    - case: "Muscle"
+      verdict: true
+      reason: "Transforms between contracted and relaxed states"
+
+bit_13:
+  name: "Human-Interactive"
+  layer: "Functional"
+  definition: >
+    Designed to be directly used, operated, touched, or engaged with
+    by humans as part of its intended function.
+
+  inclusions:
+    - category: "User interfaces"
+      examples: ["keyboard", "touchscreen", "button", "dial"]
+    - category: "Hand tools"
+      examples: ["hammer", "pen", "scissors", "utensils"]
+    - category: "Furniture"
+      examples: ["chair", "bed", "desk", "sofa"]
+    - category: "Wearables"
+      examples: ["clothing", "watch", "glasses", "jewelry"]
+    - category: "Consumer electronics"
+      examples: ["phone", "TV remote", "game controller"]
+    - category: "Vehicles (operated)"
+      examples: ["car", "bicycle", "wheelchair"]
+    - category: "Consumables"
+      examples: ["food", "beverage", "medicine"]
+
+  exclusions:
+    - category: "Industrial machinery internals"
+      examples: ["turbine blade", "reactor core", "satellite component"]
+    - category: "Infrastructure hidden from users"
+      examples: ["underground pipe", "building foundation", "server rack"]
+    - category: "Wildlife"
+      examples: ["wild animals", "deep-sea creatures"]
+    - category: "Celestial objects"
+      examples: ["star", "planet", "asteroid"]
+    - category: "Microscopic entities"
+      examples: ["bacteria", "virus", "molecule"]
+
+  edge_cases:
+    - case: "ATM"
+      verdict: true
+      reason: "Designed for direct human interaction"
+    - case: "Server computer"
+      verdict: false
+      reason: "Not intended for direct human interaction (accessed remotely)"
+    - case: "Pet animal"
+      verdict: true
+      reason: "Kept for human interaction and companionship"
+    - case: "Farm animal"
+      verdict: true
+      reason: "Handled and managed by humans"
+    - case: "Zoo animal"
+      verdict: false
+      reason: "Observed but not directly interacted with"
+    - case: "Petting zoo animal"
+      verdict: true
+      reason: "Specifically for human touch interaction"
+
+bit_14:
+  name: "System-Integrated"
+  layer: "Functional"
+  definition: >
+    Operates as part of a larger system or network. Its function
+    depends on or is defined by the system it belongs to.
+
+  inclusions:
+    - category: "Network components"
+      examples: ["router", "network card", "server node"]
+    - category: "Modular parts"
+      examples: ["engine in car", "CPU in computer", "organ in body"]
+    - category: "Infrastructure elements"
+      examples: ["power grid transformer", "water main", "rail track"]
+    - category: "Ecosystem members"
+      examples: ["species in ecosystem", "employee in organization"]
+    - category: "Software components"
+      examples: ["library", "API", "microservice", "plugin"]
+    - category: "Standardized parts"
+      examples: ["USB device", "standard screw", "interchangeable battery"]
+
+  exclusions:
+    - category: "Standalone objects"
+      examples: ["rock", "standalone calculator", "paper book"]
+    - category: "Self-contained systems"
+      examples: ["isolated generator", "standalone computer"]
+    - category: "Natural individual organisms"
+      examples: ["wild solitary animal", "independent plant"]
+
+  edge_cases:
+    - case: "Smartphone"
+      verdict: true
+      reason: "Integrates with cellular network, app ecosystem, cloud services"
+    - case: "Old rotary phone"
+      verdict: true
+      reason: "Requires phone network to function"
+    - case: "Standalone calculator"
+      verdict: false
+      reason: "Operates independently, not part of larger system"
+    - case: "Smart home device"
+      verdict: true
+      reason: "Part of home automation network"
+    - case: "Light bulb"
+      verdict: true
+      reason: "Part of electrical system, designed for standard sockets"
+
+bit_15:
+  name: "Functionally Autonomous"
+  layer: "Functional"
+  definition: >
+    Operates independently without requiring continuous external control.
+    Uses internal logic or sensing to adapt to conditions.
+
+  inclusions:
+    - category: "Autonomous vehicles"
+      examples: ["self-driving car", "autonomous drone", "Mars rover"]
+    - category: "Robots with autonomy"
+      examples: ["Roomba", "industrial robot", "surgical robot"]
+    - category: "Self-regulating systems"
+      examples: ["thermostat", "autopilot", "cruise control"]
+    - category: "Living organisms"
+      examples: ["animals", "plants", "microorganisms"]
+    - category: "AI agents"
+      examples: ["chatbot", "trading algorithm", "game AI"]
+    - category: "Automated systems"
+      examples: ["vending machine", "automated factory line"]
+
+  exclusions:
+    - category: "Remote-controlled devices"
+      examples: ["RC car", "drone (manually piloted)", "telepresence robot"]
+    - category: "Manual tools"
+      examples: ["hammer", "screwdriver", "hand saw"]
+    - category: "Passive objects"
+      examples: ["furniture", "containers", "decorations"]
+    - category: "Human-operated machines"
+      examples: ["manual transmission car", "forklift", "crane"]
+
+  edge_cases:
+    - case: "Semi-autonomous car"
+      verdict: true
+      reason: "Has autonomous capabilities even if human can override"
+    - case: "Programmable thermostat"
+      verdict: true
+      reason: "Operates on schedule without intervention"
+    - case: "Timer-based sprinkler"
+      verdict: true
+      reason: "Operates autonomously on schedule"
+    - case: "Motion-activated light"
+      verdict: true
+      reason: "Responds to environment without human control"
+    - case: "Elevator"
+      verdict: true
+      reason: "Operates autonomously based on button presses and logic"
+
+bit_16:
+  name: "System-Essential"
+  layer: "Functional"
+  definition: >
+    Critical to a system's operation - the system would fail, degrade
+    significantly, or lose its identity without this component.
+
+  inclusions:
+    - category: "Vital organs"
+      examples: ["heart", "brain", "liver", "lungs"]
+    - category: "Core components"
+      examples: ["CPU in computer", "engine in car", "foundation of building"]
+    - category: "Critical infrastructure"
+      examples: ["power plant in grid", "central server", "main water supply"]
+    - category: "Keystone species"
+      examples: ["apex predators", "pollinators in ecosystem"]
+    - category: "Essential personnel"
+      examples: ["pilot on plane", "surgeon in operation"]
+
+  exclusions:
+    - category: "Redundant components"
+      examples: ["backup generator", "spare tire", "redundant server"]
+    - category: "Cosmetic elements"
+      examples: ["paint", "decorative trim", "non-functional ornaments"]
+    - category: "Optional features"
+      examples: ["car radio", "phone case", "window curtains"]
+    - category: "Peripheral devices"
+      examples: ["printer", "external speaker", "USB drive"]
+
+  edge_cases:
+    - case: "Kidney (one of two)"
+      verdict: false
+      reason: "System (body) can function with one kidney"
+    - case: "Both kidneys together"
+      verdict: true
+      reason: "At least one is system-essential"
+    - case: "Appendix"
+      verdict: false
+      reason: "Can be removed without system failure"
+    - case: "Steering wheel"
+      verdict: true
+      reason: "Car cannot be safely operated without it"
+    - case: "Headlights"
+      verdict: false
+      reason: "Car functions without them (though unsafe at night)"
+
+# =============================================================================
+# ABSTRACT LAYER (Bits 17-24)
+# =============================================================================
+
+bit_17:
+  name: "Symbolic"
+  layer: "Abstract"
+  definition: >
+    Represents, stands for, or refers to something else through symbols,
+    signs, models, or conventional meaning.
+
+  inclusions:
+    - category: "Written language"
+      examples: ["words", "letters", "characters", "text"]
+    - category: "Mathematical notation"
+      examples: ["numbers", "equations", "formulas", "graphs"]
+    - category: "Visual symbols"
+      examples: ["logos", "icons", "flags", "road signs"]
+    - category: "Representational art"
+      examples: ["portraits", "maps", "diagrams", "blueprints"]
+    - category: "Currency"
+      examples: ["money", "stocks", "cryptocurrency"]
+    - category: "Status symbols"
+      examples: ["trophies", "medals", "crowns", "uniforms"]
+    - category: "Religious symbols"
+      examples: ["cross", "star of David", "om symbol"]
+
+  exclusions:
+    - category: "Literal objects (non-representational)"
+      examples: ["rock (as rock)", "water", "plain material"]
+    - category: "Functional objects without symbolic role"
+      examples: ["generic tool", "plain container", "raw material"]
+    - category: "Natural phenomena"
+      examples: ["lightning", "rain", "wind"]
+
+  edge_cases:
+    - case: "Wedding ring"
+      verdict: true
+      reason: "Symbolizes marriage/commitment beyond its material form"
+    - case: "Plain gold ring"
+      verdict: false
+      reason: "No inherent symbolic meaning - just jewelry"
+    - case: "National flag"
+      verdict: true
+      reason: "Represents the nation symbolically"
+    - case: "Plain colored fabric"
+      verdict: false
+      reason: "No symbolic meaning as plain material"
+    - case: "Photograph"
+      verdict: true
+      reason: "Represents/refers to the photographed subject"
+    - case: "Abstract art"
+      verdict: false
+      reason: "Doesn't represent something else - is itself"
+
+bit_18:
+  name: "Signalling"
+  layer: "Abstract"
+  definition: >
+    Actively transmits, conveys, or encodes information or meaning
+    through intentional signals, language, or media.
+
+  inclusions:
+    - category: "Communication media"
+      examples: ["radio transmission", "television broadcast", "phone call"]
+    - category: "Written communication"
+      examples: ["letter", "email", "text message", "book"]
+    - category: "Visual signals"
+      examples: ["traffic light", "semaphore", "beacon", "warning sign"]
+    - category: "Audio signals"
+      examples: ["alarm", "horn", "bell", "spoken word"]
+    - category: "Data transmission"
+      examples: ["network packet", "encoded message", "QR code"]
+    - category: "Biological signaling"
+      examples: ["pheromones", "nerve impulse", "hormone"]
+
+  exclusions:
+    - category: "Passive information storage"
+      examples: ["book (unread)", "hard drive (not transmitting)"]
+    - category: "Non-communicative objects"
+      examples: ["plain rock", "generic tool", "raw material"]
+    - category: "Unintentional information"
+      examples: ["fingerprint (left unintentionally)", "wear patterns"]
+
+  edge_cases:
+    - case: "DNA"
+      verdict: true
+      reason: "Encodes and transmits genetic information"
+    - case: "Fossil"
+      verdict: false
+      reason: "Contains information but doesn't actively signal"
+    - case: "Smoke signal"
+      verdict: true
+      reason: "Intentionally transmits information"
+    - case: "Smoke from fire"
+      verdict: false
+      reason: "Not intentionally communicating"
+    - case: "Body language"
+      verdict: true
+      reason: "Conveys information (intentionally or not)"
+
+bit_19:
+  name: "Rule-Governed"
+  layer: "Abstract"
+  definition: >
+    Behavior, structure, or function is defined by formal or abstract rules,
+    algorithms, protocols, grammars, or logical systems.
+
+  inclusions:
+    - category: "Languages"
+      examples: ["natural language", "programming language", "formal notation"]
+    - category: "Games"
+      examples: ["chess", "football", "video games", "card games"]
+    - category: "Legal systems"
+      examples: ["laws", "contracts", "regulations", "constitutions"]
+    - category: "Algorithms"
+      examples: ["software", "mathematical procedures", "protocols"]
+    - category: "Formal systems"
+      examples: ["mathematics", "logic", "grammar", "music theory"]
+    - category: "Standards"
+      examples: ["technical standards", "file formats", "protocols"]
+
+  exclusions:
+    - category: "Unstructured natural phenomena"
+      examples: ["clouds", "waves", "random noise"]
+    - category: "Purely physical objects"
+      examples: ["rock", "water", "raw material"]
+    - category: "Instinctual behavior"
+      examples: ["reflexes", "basic animal instincts"]
+
+  edge_cases:
+    - case: "Natural language"
+      verdict: true
+      reason: "Governed by grammatical rules (even if informal)"
+    - case: "Free verse poetry"
+      verdict: true
+      reason: "Still operates within language rules, even if breaking conventions"
+    - case: "Bird song"
+      verdict: false
+      reason: "Instinctual, not following abstract rules"
+    - case: "Trained animal behavior"
+      verdict: true
+      reason: "Follows learned rules/commands"
+    - case: "Crystal structure"
+      verdict: true
+      reason: "Follows precise geometric/chemical rules"
+
+bit_20:
+  name: "Compositional"
+  layer: "Abstract"
+  definition: >
+    Structured in meaningful layers, modules, or hierarchical components.
+    Has an organized internal structure of parts.
+
+  inclusions:
+    - category: "Hierarchical organizations"
+      examples: ["company", "government", "military", "taxonomy"]
+    - category: "Modular systems"
+      examples: ["software architecture", "LEGO structures", "modular buildings"]
+    - category: "Layered structures"
+      examples: ["OSI model", "geological strata", "neural network layers"]
+    - category: "Nested containers"
+      examples: ["folder structure", "outline", "nested lists"]
+    - category: "Composed works"
+      examples: ["symphony", "novel chapters", "multi-course meal"]
+
+  exclusions:
+    - category: "Homogeneous materials"
+      examples: ["pure water", "solid metal block", "single element"]
+    - category: "Simple objects"
+      examples: ["ball bearing", "nail", "plain sheet"]
+    - category: "Unstructured collections"
+      examples: ["pile of sand", "random noise", "chaos"]
+
+  edge_cases:
+    - case: "Cell"
+      verdict: true
+      reason: "Has organelles, membrane, nucleus - hierarchical structure"
+    - case: "Atom"
+      verdict: true
+      reason: "Has nucleus, electron shells - layered structure"
+    - case: "Quark"
+      verdict: false
+      reason: "Fundamental particle - no internal composition"
+    - case: "Plain text file"
+      verdict: false
+      reason: "Flat structure, no meaningful hierarchy"
+    - case: "XML/JSON file"
+      verdict: true
+      reason: "Explicitly nested/hierarchical structure"
+
+bit_21:
+  name: "Normative"
+  layer: "Abstract"
+  definition: >
+    Directs, guides, or constrains behavior, actions, or choices.
+    Has prescriptive or regulatory function.
+
+  inclusions:
+    - category: "Laws and regulations"
+      examples: ["criminal law", "traffic rules", "building codes"]
+    - category: "Ethical systems"
+      examples: ["moral codes", "ethical guidelines", "professional ethics"]
+    - category: "Instructions"
+      examples: ["manual", "recipe", "tutorial", "protocol"]
+    - category: "Standards"
+      examples: ["ISO standards", "best practices", "style guides"]
+    - category: "Social norms"
+      examples: ["etiquette", "customs", "traditions"]
+    - category: "Contractual obligations"
+      examples: ["contract", "agreement", "terms of service"]
+
+  exclusions:
+    - category: "Descriptive information"
+      examples: ["encyclopedia", "news report", "scientific observation"]
+    - category: "Physical objects (without normative function)"
+      examples: ["rock", "water", "generic tool"]
+    - category: "Art (non-prescriptive)"
+      examples: ["abstract painting", "music", "poetry"]
+
+  edge_cases:
+    - case: "Warning sign"
+      verdict: true
+      reason: "Directs behavior - 'do not enter', 'caution'"
+    - case: "Informational sign"
+      verdict: false
+      reason: "Just provides information, doesn't direct action"
+    - case: "Religious text"
+      verdict: true
+      reason: "Contains rules and guidance for behavior"
+    - case: "Novel with moral lessons"
+      verdict: false
+      reason: "Descriptive/narrative, not prescriptive (usually)"
+    - case: "Fable/parable"
+      verdict: true
+      reason: "Explicitly intended to teach behavior"
+
+bit_22:
+  name: "Meta"
+  layer: "Abstract"
+  definition: >
+    Refers to itself, its own category, or the conceptual structures
+    that define it. Involves self-reference or abstraction over abstractions.
+
+  inclusions:
+    - category: "Self-referential statements"
+      examples: ["this sentence", "metadata", "recursive function"]
+    - category: "Meta-analysis"
+      examples: ["review of reviews", "study of studies", "critique of criticism"]
+    - category: "Frameworks about frameworks"
+      examples: ["metamodel", "metacognition", "metaphilosophy"]
+    - category: "Self-describing formats"
+      examples: ["schema", "ontology", "grammar rules for grammar"]
+    - category: "Reflective systems"
+      examples: ["self-aware AI", "introspective thought", "mirror"]
+
+  exclusions:
+    - category: "First-order objects"
+      examples: ["specific book", "individual animal", "particular event"]
+    - category: "Direct descriptions"
+      examples: ["description of a tree", "photo of a person"]
+    - category: "Simple references"
+      examples: ["pointer to data", "link to page"]
+
+  edge_cases:
+    - case: "Dictionary"
+      verdict: true
+      reason: "Language describing language"
+    - case: "Grammar book"
+      verdict: true
+      reason: "Rules about the rules of language"
+    - case: "Novel about writing novels"
+      verdict: true
+      reason: "Fiction about fiction - meta-narrative"
+    - case: "Regular novel"
+      verdict: false
+      reason: "First-order narrative, not self-referential"
+    - case: "Documentary about documentaries"
+      verdict: true
+      reason: "Meta-documentary"
+    - case: "Autobiography"
+      verdict: true
+      reason: "Self-referential - about oneself"
+
+bit_23:
+  name: "Temporal"
+  layer: "Abstract"
+  definition: >
+    Time plays a defining role in the entity's identity, structure, or effect.
+    Has intrinsic temporal ordering, dynamics, or time-dependency.
+
+  inclusions:
+    - category: "Time-based media"
+      examples: ["music", "film", "animation", "podcast"]
+    - category: "Processes"
+      examples: ["cooking", "manufacturing", "chemical reaction"]
+    - category: "Events"
+      examples: ["concert", "meeting", "holiday", "birthday"]
+    - category: "Scheduled activities"
+      examples: ["appointment", "deadline", "timetable"]
+    - category: "Historical entities"
+      examples: ["era", "period", "age", "dynasty"]
+    - category: "Temporal cycles"
+      examples: ["seasons", "circadian rhythm", "business cycle"]
+    - category: "Aging/changing entities"
+      examples: ["wine", "cheese", "antique"]
+
+  exclusions:
+    - category: "Timeless abstractions"
+      examples: ["mathematical truth", "logical principle", "geometric shape"]
+    - category: "Static objects"
+      examples: ["rock", "diamond", "preserved artifact"]
+    - category: "Instantaneous states"
+      examples: ["snapshot", "single frame", "point in time"]
+
+  edge_cases:
+    - case: "Photograph"
+      verdict: false
+      reason: "Captures a moment but is itself static"
+    - case: "Time-lapse video"
+      verdict: true
+      reason: "Temporal structure is essential to its nature"
+    - case: "Clock"
+      verdict: true
+      reason: "Inherently about measuring/displaying time"
+    - case: "Calendar"
+      verdict: true
+      reason: "Organizes and represents time"
+    - case: "Fossil"
+      verdict: false
+      reason: "From the past, but static object now"
+    - case: "Living organism"
+      verdict: true
+      reason: "Life cycle, aging, temporal development"
+
+bit_24:
+  name: "Digital/Virtual"
+  layer: "Abstract"
+  definition: >
+    Exists primarily in digital form, as data, software, or virtual representation.
+    Not primarily a physical object.
+
+  inclusions:
+    - category: "Software"
+      examples: ["application", "operating system", "algorithm", "app"]
+    - category: "Digital media"
+      examples: ["digital image", "MP3", "ebook", "streaming video"]
+    - category: "Virtual environments"
+      examples: ["video game world", "VR space", "metaverse", "simulation"]
+    - category: "Digital data"
+      examples: ["database", "file", "dataset", "digital record"]
+    - category: "Online entities"
+      examples: ["website", "social media account", "email"]
+    - category: "Cryptocurrency"
+      examples: ["Bitcoin", "Ethereum", "NFT"]
+    - category: "Digital tools"
+      examples: ["text editor", "spreadsheet", "CAD software"]
+
+  exclusions:
+    - category: "Physical objects"
+      examples: ["computer hardware", "phone device", "printed book"]
+    - category: "Analog media"
+      examples: ["vinyl record", "film negative", "paper document"]
+    - category: "Physical representations of digital"
+      examples: ["printed photo", "burned CD", "3D print"]
+
+  edge_cases:
+    - case: "E-book reader device"
+      verdict: false
+      reason: "The device is physical; the e-books are digital"
+    - case: "E-book content"
+      verdict: true
+      reason: "The text/content exists digitally"
+    - case: "Hybrid game (board + app)"
+      verdict: false
+      reason: "Has significant physical component"
+    - case: "QR code"
+      verdict: false
+      reason: "Physical representation of digital data"
+    - case: "Hologram"
+      verdict: false
+      reason: "Light-based physical phenomenon, not purely digital"
+    - case: "Digital twin"
+      verdict: true
+      reason: "Virtual representation of physical object"
+
+# =============================================================================
+# SOCIAL LAYER (Bits 25-32)
+# =============================================================================
+
+bit_25:
+  name: "Social Construct"
+  layer: "Social"
+  definition: >
+    Exists by virtue of collective human understanding, agreement, or cultural
+    meaning. Not purely natural or material.
+
+  inclusions:
+    - category: "Institutions"
+      examples: ["marriage", "government", "corporation", "university"]
+    - category: "Social categories"
+      examples: ["nationality", "race (social)", "class", "caste"]
+    - category: "Cultural concepts"
+      examples: ["money", "property", "ownership", "rights"]
+    - category: "Social roles"
+      examples: ["president", "parent", "employee", "citizen"]
+    - category: "Norms and values"
+      examples: ["politeness", "honor", "respect", "taboo"]
+    - category: "Identity constructs"
+      examples: ["gender", "profession", "religion", "nationality"]
+
+  exclusions:
+    - category: "Natural phenomena"
+      examples: ["gravity", "photosynthesis", "weather"]
+    - category: "Physical objects (as objects)"
+      examples: ["rock", "water", "tree"]
+    - category: "Biological facts"
+      examples: ["DNA", "blood type", "anatomy"]
+    - category: "Mathematical truths"
+      examples: ["2+2=4", "pi", "prime numbers"]
+
+  edge_cases:
+    - case: "Money (physical bill)"
+      verdict: true
+      reason: "Value is socially constructed, paper is just medium"
+    - case: "Wedding ring"
+      verdict: true
+      reason: "Meaning (marriage symbol) is social construct"
+    - case: "Border"
+      verdict: true
+      reason: "Political boundaries are social agreements"
+    - case: "Mountain"
+      verdict: false
+      reason: "Physical formation, not social construction"
+    - case: "Mount Rushmore"
+      verdict: true
+      reason: "Meaning and significance are socially constructed"
+    - case: "Weekend"
+      verdict: true
+      reason: "Social/cultural construct, not natural division"
+
+bit_26:
+  name: "Institutionally Defined"
+  layer: "Social"
+  definition: >
+    Definition, classification, or existence depends on formal institutional
+    rules, standards, or official designations.
+
+  inclusions:
+    - category: "Legal categories"
+      examples: ["crime", "property", "contract", "citizenship"]
+    - category: "Official designations"
+      examples: ["protected species", "historical monument", "trademark"]
+    - category: "Standardized categories"
+      examples: ["medical diagnosis", "academic degree", "job title"]
+    - category: "Regulatory classifications"
+      examples: ["food grade", "drug classification", "safety rating"]
+    - category: "Professional certifications"
+      examples: ["licensed doctor", "certified accountant", "bar admission"]
+    - category: "Institutional products"
+      examples: ["currency", "passport", "diploma"]
+
+  exclusions:
+    - category: "Natural categories"
+      examples: ["species (biological)", "element", "star type"]
+    - category: "Informal social concepts"
+      examples: ["friendship", "popularity", "coolness"]
+    - category: "Physical properties"
+      examples: ["color", "weight", "temperature"]
+
+  edge_cases:
+    - case: "Species (biological)"
+      verdict: false
+      reason: "Natural category defined by biology, not institutions"
+    - case: "Endangered species"
+      verdict: true
+      reason: "Designation is institutional (legal protection status)"
+    - case: "Organic food"
+      verdict: true
+      reason: "Requires official certification to use label"
+    - case: "Natural food"
+      verdict: false
+      reason: "Informal term, no official definition"
+    - case: "Disease"
+      verdict: true
+      reason: "Medical definition requires institutional classification"
+    - case: "Feeling sick"
+      verdict: false
+      reason: "Subjective experience, not institutionally defined"
+
+bit_27:
+  name: "Identity-Linked"
+  layer: "Social"
+  definition: >
+    Tied to personal, social, or occupational identity. Associated with
+    roles, titles, status, or group membership.
+
+  inclusions:
+    - category: "Professional roles"
+      examples: ["doctor", "teacher", "engineer", "artist"]
+    - category: "Social titles"
+      examples: ["Mr.", "Dr.", "President", "Professor"]
+    - category: "Group membership"
+      examples: ["citizen", "member", "fan", "alumnus"]
+    - category: "Identity markers"
+      examples: ["uniform", "badge", "diploma", "membership card"]
+    - category: "Personal attributes"
+      examples: ["name", "title", "reputation", "status"]
+    - category: "Cultural identities"
+      examples: ["ethnicity", "religion", "nationality"]
+
+  exclusions:
+    - category: "Generic objects"
+      examples: ["rock", "water", "generic tool"]
+    - category: "Non-role-specific items"
+      examples: ["food", "air", "sunlight"]
+    - category: "Anonymous/generic processes"
+      examples: ["rain", "growth", "decay"]
+
+  edge_cases:
+    - case: "Stethoscope"
+      verdict: true
+      reason: "Strongly associated with doctor identity"
+    - case: "Laptop"
+      verdict: false
+      reason: "Used by many, not identity-specific"
+    - case: "Chef's hat"
+      verdict: true
+      reason: "Signifies chef role/identity"
+    - case: "Generic hat"
+      verdict: false
+      reason: "No identity association"
+    - case: "Wedding dress"
+      verdict: true
+      reason: "Linked to bride identity/role"
+
+bit_28:
+  name: "Regulated"
+  layer: "Social"
+  definition: >
+    Subject to formal or informal rules, laws, standards, norms, or
+    institutional oversight.
+
+  inclusions:
+    - category: "Legally regulated items"
+      examples: ["firearms", "pharmaceuticals", "alcohol", "vehicles"]
+    - category: "Regulated industries"
+      examples: ["banking", "healthcare", "aviation", "food service"]
+    - category: "Licensed activities"
+      examples: ["driving", "medical practice", "broadcasting"]
+    - category: "Standardized products"
+      examples: ["electrical appliances", "building materials", "food products"]
+    - category: "Controlled substances"
+      examples: ["drugs", "chemicals", "radioactive materials"]
+
+  exclusions:
+    - category: "Unregulated natural phenomena"
+      examples: ["weather", "wild ecosystems", "cosmic events"]
+    - category: "Personal private activities"
+      examples: ["thoughts", "private hobbies (unregulated)"]
+    - category: "Informal personal items"
+      examples: ["personal diary", "private collection (unregulated)"]
+
+  edge_cases:
+    - case: "Food"
+      verdict: true
+      reason: "Subject to food safety regulations"
+    - case: "Wild berries (picked)"
+      verdict: false
+      reason: "Not regulated until sold commercially"
+    - case: "Home cooking"
+      verdict: false
+      reason: "Private activity, not regulated"
+    - case: "Restaurant food"
+      verdict: true
+      reason: "Subject to health codes and regulations"
+    - case: "Cryptocurrency"
+      verdict: true
+      reason: "Increasingly subject to financial regulations"
+    - case: "Personal blog"
+      verdict: false
+      reason: "Generally unregulated expression"
+
+bit_29:
+  name: "Economically Significant"
+  layer: "Social"
+  definition: >
+    Has measurable economic value, cost, market impact, or role in
+    economic transactions.
+
+  inclusions:
+    - category: "Commodities"
+      examples: ["oil", "gold", "wheat", "coffee"]
+    - category: "Products and services"
+      examples: ["manufactured goods", "professional services"]
+    - category: "Financial instruments"
+      examples: ["stocks", "bonds", "derivatives", "currency"]
+    - category: "Real estate"
+      examples: ["land", "buildings", "property rights"]
+    - category: "Intellectual property"
+      examples: ["patents", "copyrights", "trademarks"]
+    - category: "Labor"
+      examples: ["jobs", "skills", "expertise"]
+
+  exclusions:
+    - category: "Freely abundant resources"
+      examples: ["air (generally)", "sunlight", "rain"]
+    - category: "Non-marketable items"
+      examples: ["personal memories", "emotions", "relationships"]
+    - category: "Abstract concepts without value"
+      examples: ["mathematical truth", "logical principle"]
+
+  edge_cases:
+    - case: "Clean water"
+      verdict: true
+      reason: "Has market value, can be bought/sold"
+    - case: "Ocean water"
+      verdict: false
+      reason: "Abundant, not economically traded"
+    - case: "Love"
+      verdict: false
+      reason: "Cannot be bought or sold (directly)"
+    - case: "Dating service"
+      verdict: true
+      reason: "The service has economic value"
+    - case: "Volunteer work"
+      verdict: true
+      reason: "Has economic value even if unpaid"
+    - case: "Housework"
+      verdict: true
+      reason: "Has imputed economic value"
+
+bit_30:
+  name: "Politicised"
+  layer: "Social"
+  definition: >
+    Subject to political discourse, debate, policy decisions, or partisan
+    disagreement. Involved in political controversy or governance.
+
+  inclusions:
+    - category: "Policy issues"
+      examples: ["healthcare", "immigration", "taxation", "climate change"]
+    - category: "Political entities"
+      examples: ["political party", "government", "election"]
+    - category: "Contested topics"
+      examples: ["abortion", "gun control", "same-sex marriage"]
+    - category: "Governance structures"
+      examples: ["constitution", "legislation", "regulation"]
+    - category: "Political symbols"
+      examples: ["national flag", "anthem", "political slogan"]
+
+  exclusions:
+    - category: "Apolitical objects"
+      examples: ["rock", "mathematical formula", "natural law"]
+    - category: "Uncontested technical matters"
+      examples: ["electrical standards", "measurement units"]
+    - category: "Personal private matters"
+      examples: ["personal taste", "private hobby"]
+
+  edge_cases:
+    - case: "Mask (during pandemic)"
+      verdict: true
+      reason: "Became politicized during COVID-19"
+    - case: "Mask (theatrical)"
+      verdict: false
+      reason: "Not politically contested"
+    - case: "Vaccine"
+      verdict: true
+      reason: "Subject to political debate"
+    - case: "Bandage"
+      verdict: false
+      reason: "Medical item without political controversy"
+    - case: "Football (American)"
+      verdict: true
+      reason: "Involves political discussions (kneeling, etc.)"
+    - case: "Chess"
+      verdict: false
+      reason: "Generally apolitical game"
+
+bit_31:
+  name: "Ritualised"
+  layer: "Social"
+  definition: >
+    Associated with formal ceremonies, traditions, ritualistic practices,
+    or culturally/spiritually significant observances.
+
+  inclusions:
+    - category: "Religious rituals"
+      examples: ["baptism", "communion", "prayer", "pilgrimage"]
+    - category: "Ceremonial events"
+      examples: ["wedding", "funeral", "graduation", "inauguration"]
+    - category: "Traditional practices"
+      examples: ["holiday traditions", "coming-of-age rituals"]
+    - category: "Ritual objects"
+      examples: ["altar", "incense", "ceremonial clothing", "sacred text"]
+    - category: "Ceremonial foods/drinks"
+      examples: ["communion wine", "wedding cake", "ceremonial tea"]
+    - category: "Cultural celebrations"
+      examples: ["New Year", "harvest festival", "national holiday"]
+
+  exclusions:
+    - category: "Everyday objects"
+      examples: ["regular food", "work tools", "household items"]
+    - category: "Purely functional activities"
+      examples: ["commuting", "routine work", "regular meals"]
+    - category: "Technical processes"
+      examples: ["manufacturing", "data processing", "construction"]
+
+  edge_cases:
+    - case: "Wine (general)"
+      verdict: false
+      reason: "Everyday beverage without inherent ritual"
+    - case: "Communion wine"
+      verdict: true
+      reason: "Used in religious ritual context"
+    - case: "Champagne"
+      verdict: true
+      reason: "Associated with celebrations and toasts"
+    - case: "Beer"
+      verdict: false
+      reason: "Everyday beverage, not inherently ritualistic"
+    - case: "Oktoberfest beer"
+      verdict: true
+      reason: "Part of cultural festival tradition"
+    - case: "Birthday cake"
+      verdict: true
+      reason: "Part of birthday ritual (candles, singing)"
+    - case: "Regular cake"
+      verdict: false
+      reason: "No ritual context"
+
+bit_32:
+  name: "Ethically Significant"
+  layer: "Social"
+  definition: >
+    Raises ethical questions, involves moral considerations, or has
+    implications for right/wrong, harm/benefit, justice/injustice.
+
+  inclusions:
+    - category: "Moral dilemmas"
+      examples: ["trolley problem", "euthanasia", "capital punishment"]
+    - category: "Ethically sensitive products"
+      examples: ["weapons", "surveillance tech", "addictive substances"]
+    - category: "Social justice issues"
+      examples: ["discrimination", "inequality", "human rights"]
+    - category: "Environmental concerns"
+      examples: ["pollution", "deforestation", "endangered species"]
+    - category: "Research ethics"
+      examples: ["animal testing", "human experimentation", "AI ethics"]
+    - category: "Harmful substances"
+      examples: ["tobacco", "alcohol", "drugs", "gambling"]
+
+  exclusions:
+    - category: "Morally neutral objects"
+      examples: ["rock", "water", "geometric shape"]
+    - category: "Uncontroversial tools"
+      examples: ["spoon", "pencil", "calculator"]
+    - category: "Abstract concepts without moral import"
+      examples: ["mathematical theorem", "color", "musical note"]
+
+  edge_cases:
+    - case: "Knife"
+      verdict: false
+      reason: "Tool with many legitimate uses, not inherently ethical issue"
+    - case: "Switchblade"
+      verdict: true
+      reason: "Weapon associations raise ethical/legal concerns"
+    - case: "Alcohol"
+      verdict: true
+      reason: "Addiction, health harms, social problems raise ethical concerns"
+    - case: "Coffee"
+      verdict: false
+      reason: "Minor stimulant, no significant ethical concerns"
+    - case: "Fast fashion"
+      verdict: true
+      reason: "Labor practices, environmental impact raise ethical issues"
+    - case: "Clothing (generic)"
+      verdict: false
+      reason: "No inherent ethical significance"
+    - case: "Meat"
+      verdict: true
+      reason: "Animal welfare, environmental impact are ethical concerns"
+    - case: "Vegetables"
+      verdict: false
+      reason: "Generally no ethical concerns"
+    - case: "AI system"
+      verdict: true
+      reason: "Bias, privacy, autonomy concerns are ethical issues"

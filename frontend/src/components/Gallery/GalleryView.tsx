@@ -42,6 +42,7 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useMobile } from '../../context/MobileContext';
+import { useFloatingCards } from '../../context/FloatingCardsContext';
 import AddToCollectionButton from '../common/AddToCollectionButton';
 import SEO from '../common/SEO';
 
@@ -186,8 +187,9 @@ const DraggableCard: FC<{
   onDoubleClick: (item: GalleryItem) => void;
   onSelect: (uuid: string) => void;
   onOpenEntity: (item: GalleryItem) => void;
+  onPopout: (uuid: string) => void;
   isMobile?: boolean;
-}> = ({ item, position, onPositionChange, onDoubleClick, onSelect, onOpenEntity, isMobile = false }) => {
+}> = ({ item, position, onPositionChange, onDoubleClick, onSelect, onOpenEntity, onPopout, isMobile = false }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
@@ -326,29 +328,55 @@ const DraggableCard: FC<{
             size="small"
           />
         </Box>
-        {/* Bottom-right: Open entity */}
-        <IconButton
-          size="small"
-          onClick={(e) => {
-            e.stopPropagation();
-            onOpenEntity(item);
-          }}
-          onMouseDown={(e) => e.stopPropagation()}
+        {/* Bottom-right: Open entity and popout buttons */}
+        <Box
           sx={{
             position: 'absolute',
             bottom: 4,
             right: 4,
-            p: 0.5,
-            backgroundColor: 'rgba(0,0,0,0.6)',
-            color: 'white',
-            '&:hover': {
-              backgroundColor: layerColors[item.dominant_layer] || layerColors.Unknown
-            }
+            display: 'flex',
+            gap: 0.5
           }}
-          title="Open entity definition"
         >
-          <OpenInNewIcon sx={{ fontSize: isMobile ? '0.7rem' : '0.85rem' }} />
-        </IconButton>
+          <IconButton
+            size="small"
+            onClick={(e) => {
+              e.stopPropagation();
+              onPopout(item.uuid);
+            }}
+            onMouseDown={(e) => e.stopPropagation()}
+            sx={{
+              p: 0.5,
+              backgroundColor: 'rgba(0,0,0,0.6)',
+              color: 'white',
+              '&:hover': {
+                backgroundColor: '#00e5ff'
+              }
+            }}
+            title="Pop out as floating card"
+          >
+            <OpenInNewIcon sx={{ fontSize: isMobile ? '0.7rem' : '0.85rem', transform: 'rotate(-90deg)' }} />
+          </IconButton>
+          <IconButton
+            size="small"
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenEntity(item);
+            }}
+            onMouseDown={(e) => e.stopPropagation()}
+            sx={{
+              p: 0.5,
+              backgroundColor: 'rgba(0,0,0,0.6)',
+              color: 'white',
+              '&:hover': {
+                backgroundColor: layerColors[item.dominant_layer] || layerColors.Unknown
+              }
+            }}
+            title="Open entity definition"
+          >
+            <OpenInNewIcon sx={{ fontSize: isMobile ? '0.7rem' : '0.85rem' }} />
+          </IconButton>
+        </Box>
       </Box>
       <CardContent sx={{
         height: position.height * 0.3,
@@ -535,6 +563,7 @@ const ImagePreviewDialog: React.FC<{
 export default function GalleryView() {
   const navigate = useNavigate();
   const { isMobile, isTablet } = useMobile();
+  const { addFloatingCard } = useFloatingCards();
   const isCompact = isMobile || isTablet;
 
   // Load persisted filters
@@ -874,8 +903,6 @@ export default function GalleryView() {
           };
           return combined;
         });
-        // Reset card positions to force recalculation with new sort order
-        setCardPositions({});
         setOffset(currentOffset + (data.gallery?.length || 0));
       } else {
         setGallery(data.gallery || []);
@@ -1400,6 +1427,7 @@ export default function GalleryView() {
                   onDoubleClick={handleDoubleClick}
                   onSelect={handleCardSelect}
                   onOpenEntity={handleOpenEntity}
+                  onPopout={addFloatingCard}
                   isMobile={isCompact}
                 />
               )

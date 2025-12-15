@@ -26,7 +26,9 @@ import {
   Radio,
   RadioGroup,
   FormControl,
-  FormLabel
+  FormLabel,
+  Tabs,
+  Tab
 } from '@mui/material';
 import {
   ArrowBack as BackIcon,
@@ -46,12 +48,16 @@ import {
   Hub as EmbeddingIcon,
   Visibility as ViewsIcon,
   Flag as FlagIcon,
-  Share as ShareIcon
+  Share as ShareIcon,
+  OpenInNew as PopoutIcon,
+  History as HistoryIcon
 } from '@mui/icons-material';
 import { entityAPI, traitsAPI, imageAPI, preprocessAPI, classificationAPI, getApiKey } from '../../services/api';
 import { useMobile } from '../../context/MobileContext';
+import { useFloatingCards } from '../../context/FloatingCardsContext';
 import AddToCollectionButton from '../common/AddToCollectionButton';
 import SEO from '../common/SEO';
+import EntityHistoryTab from './EntityHistoryTab';
 import type { Trait } from '../../types';
 
 // Layer configuration
@@ -832,6 +838,7 @@ export default function EntityDetails() {
   const { uuid } = useParams<{ uuid: string }>();
   const navigate = useNavigate();
   const { isMobile, isTablet } = useMobile();
+  const { addFloatingCard, isFloating } = useFloatingCards();
   const isCompact = isMobile || isTablet;
 
   const [entity, setEntity] = useState<EntityData | null>(null);
@@ -840,6 +847,7 @@ export default function EntityDetails() {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [expandedTraits, setExpandedTraits] = useState<Set<number>>(new Set());
+  const [activeTab, setActiveTab] = useState(0);
   const [imageError, setImageError] = useState(false);
   const [generatingImage, setGeneratingImage] = useState(false);
   const [imageGenError, setImageGenError] = useState<string | null>(null);
@@ -1290,13 +1298,52 @@ export default function EntityDetails() {
           <Typography variant={isCompact ? 'h6' : 'h5'} sx={{ flex: 1 }}>
             Entity Details
           </Typography>
+          <Tooltip title={isFloating(entity.uuid) ? "Already floating" : "Pop out as floating card"}>
+            <span>
+              <IconButton
+                onClick={() => addFloatingCard(entity.uuid)}
+                disabled={isFloating(entity.uuid)}
+                sx={{
+                  color: isFloating(entity.uuid) ? 'text.disabled' : 'primary.main'
+                }}
+              >
+                <PopoutIcon sx={{ transform: 'rotate(-90deg)' }} />
+              </IconButton>
+            </span>
+          </Tooltip>
           <IconButton onClick={() => fetchEntity(true)}>
             <RefreshIcon />
           </IconButton>
         </Box>
+
+        {/* Tabs */}
+        <Tabs
+          value={activeTab}
+          onChange={(_, newValue) => setActiveTab(newValue)}
+          sx={{ mt: 1 }}
+        >
+          <Tab
+            icon={<TraitIcon />}
+            iconPosition="start"
+            label="Details"
+            sx={{ minHeight: 48, textTransform: 'none' }}
+          />
+          <Tab
+            icon={<HistoryIcon />}
+            iconPosition="start"
+            label="History"
+            sx={{ minHeight: 48, textTransform: 'none' }}
+          />
+        </Tabs>
       </Paper>
 
-      {/* Content */}
+      {/* History Tab */}
+      {activeTab === 1 && (
+        <EntityHistoryTab entityUuid={entity.uuid} />
+      )}
+
+      {/* Details Tab Content */}
+      {activeTab === 0 && (
       <Box sx={{ p: isCompact ? 1.5 : 3, maxWidth: 1400, mx: 'auto' }}>
         <Grid container spacing={isCompact ? 2 : 3}>
           {/* Left Column - Entity Info */}
@@ -1708,6 +1755,7 @@ export default function EntityDetails() {
           </Grid>
         </Grid>
       </Box>
+      )}
     </Box>
   );
 }

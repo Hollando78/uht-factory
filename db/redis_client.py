@@ -125,10 +125,29 @@ class RedisClient:
                 "keyspace_hits": info.get("keyspace_hits", 0),
                 "keyspace_misses": info.get("keyspace_misses", 0),
                 "hit_rate": (
-                    info.get("keyspace_hits", 0) / 
+                    info.get("keyspace_hits", 0) /
                     max(1, info.get("keyspace_hits", 0) + info.get("keyspace_misses", 0))
                 )
             }
         except Exception as e:
             logger.error(f"Metrics error: {e}")
             return {}
+
+    async def get(self, key: str) -> Optional[str]:
+        """Generic get - retrieve value by key"""
+        if not self.client:
+            await self.connect()
+        try:
+            return await self.client.get(key)
+        except Exception as e:
+            logger.error(f"Cache get error for key {key}: {e}")
+            return None
+
+    async def setex(self, key: str, ttl: int, value: str):
+        """Generic setex - set value with expiration"""
+        if not self.client:
+            await self.connect()
+        try:
+            await self.client.setex(key, timedelta(seconds=ttl), value)
+        except Exception as e:
+            logger.error(f"Cache setex error for key {key}: {e}")

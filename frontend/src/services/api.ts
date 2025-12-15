@@ -9,7 +9,9 @@ import type {
   ImageGenerationResponse,
   EntityEmbedding,
   ComparisonMetrics,
-  ApiResponse
+  ApiResponse,
+  EntityVersion,
+  EntityHistoryResponse
 } from '../types/index';
 
 // Use relative path when accessed via production domain (nginx proxies to backend)
@@ -234,6 +236,19 @@ export const entityAPI = {
       `/entities/${entityUuid}/traits/${traitBit}/flag`,
       { suggested_value: suggestedValue, reason }
     );
+    return response.data;
+  },
+
+  // Version history endpoints
+  getHistory: async (uuid: string, limit: number = 50, offset: number = 0): Promise<EntityHistoryResponse> => {
+    const response = await api.get(`/entities/${uuid}/history`, {
+      params: { limit, offset }
+    });
+    return response.data;
+  },
+
+  getVersion: async (uuid: string, version: number): Promise<EntityVersion> => {
+    const response = await api.get(`/entities/${uuid}/history/${version}`);
     return response.data;
   }
 };
@@ -563,6 +578,97 @@ export const adminAPI = {
   }
 };
 
+// Embedding Explorer API
+export interface ProjectionPoint {
+  uuid: string;
+  name: string;
+  uht_code: string;
+  x: number;
+  y: number;
+  image_url?: string;
+}
+
+export interface ProjectionStats {
+  total_entities: number;
+  with_umap: number;
+  with_tsne: number;
+  with_embedding: number;
+}
+
+export interface CorrelationSample {
+  entity1_uuid: string;
+  entity1_name: string;
+  entity2_uuid: string;
+  entity2_name: string;
+  embedding_similarity: number;
+  uht_similarity: number;
+}
+
+export interface Neighbor {
+  uuid: string;
+  name: string;
+  uht_code: string;
+  image_url?: string;
+  similarity?: number;
+  hamming_distance?: number;
+}
+
+export interface NeighborComparison {
+  entity_uuid: string;
+  entity_name: string;
+  embedding_neighbors: Neighbor[];
+  hamming_neighbors: Neighbor[];
+  overlap_count: number;
+  jaccard_similarity: number;
+}
+
+export interface Outlier {
+  entity1_uuid: string;
+  entity1_name: string;
+  entity1_uht_code: string;
+  entity2_uuid: string;
+  entity2_name: string;
+  entity2_uht_code: string;
+  embedding_similarity: number;
+  uht_similarity: number;
+  disagreement: number;
+  type: 'semantic_similar_structural_different' | 'structural_similar_semantic_different';
+}
+
+export const explorerAPI = {
+  getProjections: async (type: 'umap' | 'tsne' = 'umap'): Promise<{ points: ProjectionPoint[]; count: number }> => {
+    const response = await api.get('/explorer/projections', { params: { type } });
+    return response.data;
+  },
+
+  getProjectionStats: async (): Promise<ProjectionStats> => {
+    const response = await api.get('/explorer/projections/stats');
+    return response.data;
+  },
+
+  getCorrelations: async (sampleSize: number = 5000): Promise<{
+    samples: CorrelationSample[];
+    correlation: number;
+    sample_size: number;
+  }> => {
+    const response = await api.get('/explorer/correlations', { params: { sample_size: sampleSize } });
+    return response.data;
+  },
+
+  getNeighbors: async (uuid: string, k: number = 20): Promise<NeighborComparison> => {
+    const response = await api.get(`/explorer/neighbors/${uuid}`, { params: { k } });
+    return response.data;
+  },
+
+  getOutliers: async (threshold: number = 0.3, limit: number = 50): Promise<{
+    semantic_only: Outlier[];
+    structural_only: Outlier[];
+  }> => {
+    const response = await api.get('/explorer/outliers', { params: { threshold, limit } });
+    return response.data;
+  }
+};
+
 export default {
   classification: classificationAPI,
   entities: entityAPI,
@@ -574,5 +680,6 @@ export default {
   system: systemAPI,
   auth: authAPI,
   collections: collectionsAPI,
-  admin: adminAPI
+  admin: adminAPI,
+  explorer: explorerAPI
 };

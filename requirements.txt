@@ -26,6 +26,12 @@ flower==2.0.1
 httpx==0.27.0
 uuid6==2024.1.12
 python-dateutil==2.9.0
+PyYAML>=6.0
+
+# Dimension Reduction & ML
+umap-learn==0.5.5
+scikit-learn>=1.4.0
+numpy>=1.24.0
 
 # Testing
 pytest==8.1.1
@@ -35,4 +41,4 @@ pytest-cov==4.1.0
 # Development
 black==24.2.0
 flake8==7.0.0
-mypy==1.9.0httpx>=0.25.0
+mypy==1.9.0

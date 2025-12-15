@@ -294,32 +294,44 @@ async def update_entity(
     **Requires API key with 'classify' scope.**
 
     Only provided fields will be updated. Null fields are ignored.
+    Creates a version snapshot to track the change.
     """
+    # Capture previous state for version delta
+    previous_state = await neo4j.get_entity_state_for_versioning(uuid)
+    if not previous_state:
+        raise HTTPException(status_code=404, detail="Entity not found")
+
     # Build dynamic SET clause for only provided fields
     set_clauses = []
     params = {"uuid": uuid}
+    changed_fields = []
 
     if update.name is not None:
         set_clauses.append("e.name = $name")
         params["name"] = update.name
+        changed_fields.append("name")
 
     if update.description is not None:
         set_clauses.append("e.description = $description")
         params["description"] = update.description
+        changed_fields.append("description")
 
     if update.additional_context is not None:
         set_clauses.append("e.additional_context = $additional_context")
         params["additional_context"] = update.additional_context
+        changed_fields.append("additional_context")
 
     if update.nsfw is not None:
         set_clauses.append("e.nsfw = $nsfw")
         params["nsfw"] = update.nsfw
+        changed_fields.append("nsfw")
 
     if not set_clauses:
         raise HTTPException(status_code=400, detail="No fields to update")
 
-    # Always update the updated_at timestamp
+    # Always update the updated_at timestamp and increment version
     set_clauses.append("e.updated_at = datetime()")
+    set_clauses.append("e.version = COALESCE(e.version, 1) + 1")
 
     query = f"""
     MATCH (e:Entity {{uuid: $uuid}})
@@ -335,7 +347,18 @@ async def update_entity(
             raise HTTPException(status_code=404, detail="Entity not found")
 
         entity = dict(record["e"])
-        return serialize_entity(entity)
+
+    # Create version snapshot
+    change_summary = f"Updated {', '.join(changed_fields)}"
+    await neo4j.create_entity_version(
+        entity_uuid=uuid,
+        change_type="metadata_edit",
+        change_summary=change_summary,
+        changed_by=key_data.get("key_id", "api"),
+        previous_state=previous_state
+    )
+
+    return serialize_entity(entity)
 
 
 @router.post("/{uuid}/flag-nsfw")
@@ -347,10 +370,20 @@ async def flag_entity_nsfw(
     Flag an entity as NSFW.
 
     **No authentication required** - anyone can flag content.
+    Creates a version snapshot to track the change.
     """
+    # Capture previous state
+    previous_state = await neo4j.get_entity_state_for_versioning(uuid)
+    if not previous_state:
+        raise HTTPException(status_code=404, detail="Entity not found")
+
+    # Skip if already NSFW
+    if previous_state.get("nsfw"):
+        return serialize_entity(previous_state)
+
     query = """
     MATCH (e:Entity {uuid: $uuid})
-    SET e.nsfw = true, e.updated_at = datetime()
+    SET e.nsfw = true, e.updated_at = datetime(), e.version = COALESCE(e.version, 1) + 1
     RETURN e
     """
 
@@ -362,7 +395,17 @@ async def flag_entity_nsfw(
             raise HTTPException(status_code=404, detail="Entity not found")
 
         entity = dict(record["e"])
-        return serialize_entity(entity)
+
+    # Create version snapshot
+    await neo4j.create_entity_version(
+        entity_uuid=uuid,
+        change_type="nsfw_toggle",
+        change_summary="Flagged as NSFW",
+        changed_by="public",
+        previous_state=previous_state
+    )
+
+    return serialize_entity(entity)
 
 
 @router.post("/{uuid}/unflag-nsfw")
@@ -375,10 +418,20 @@ async def unflag_entity_nsfw(
     Remove NSFW flag from an entity.
 
     **Requires API key with 'classify' scope.**
+    Creates a version snapshot to track the change.
     """
+    # Capture previous state
+    previous_state = await neo4j.get_entity_state_for_versioning(uuid)
+    if not previous_state:
+        raise HTTPException(status_code=404, detail="Entity not found")
+
+    # Skip if already not NSFW
+    if not previous_state.get("nsfw"):
+        return serialize_entity(previous_state)
+
     query = """
     MATCH (e:Entity {uuid: $uuid})
-    SET e.nsfw = false, e.updated_at = datetime()
+    SET e.nsfw = false, e.updated_at = datetime(), e.version = COALESCE(e.version, 1) + 1
     RETURN e
     """
 
@@ -390,7 +443,17 @@ async def unflag_entity_nsfw(
             raise HTTPException(status_code=404, detail="Entity not found")
 
         entity = dict(record["e"])
-        return serialize_entity(entity)
+
+    # Create version snapshot
+    await neo4j.create_entity_version(
+        entity_uuid=uuid,
+        change_type="nsfw_toggle",
+        change_summary="Removed NSFW flag",
+        changed_by=key_data.get("key_id", "api"),
+        previous_state=previous_state
+    )
+
+    return serialize_entity(entity)
 
 
 @router.post("/{uuid}/traits/{bit}/flag")
@@ -508,3 +571,42 @@ async def flag_trait_incorrect(
             "status": flag_data["status"],
             "created_at": flag_data["created_at"]
         }
+
+
+# ==================== Version History Endpoints ====================
+
+@router.get("/{uuid}/history")
+async def get_entity_history(
+    uuid: str,
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+    neo4j: Neo4jClient = Depends(get_neo4j_client)
+):
+    """
+    Get version history for an entity.
+
+    Returns list of version snapshots, newest first.
+    """
+    history = await neo4j.get_entity_history(uuid, limit=limit, offset=offset)
+
+    if history["entity_name"] is None:
+        raise HTTPException(status_code=404, detail="Entity not found")
+
+    return history
+
+
+@router.get("/{uuid}/history/{version}")
+async def get_entity_version(
+    uuid: str,
+    version: int,
+    neo4j: Neo4jClient = Depends(get_neo4j_client)
+):
+    """
+    Get a specific version snapshot.
+    """
+    version_data = await neo4j.get_entity_version(uuid, version)
+
+    if not version_data:
+        raise HTTPException(status_code=404, detail="Version not found")
+
+    return version_data

@@ -4,13 +4,149 @@ import time
 from typing import Dict, Any, List, Optional
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field, asdict
+from pathlib import Path
 import logging
 import json
 import re
 from datetime import datetime
 import httpx
+import yaml
 
 logger = logging.getLogger(__name__)
+
+
+class TraitSpecificationLoader:
+    """Loads and caches trait specifications from YAML config."""
+
+    _instance: Optional['TraitSpecificationLoader'] = None
+    _specs: Optional[Dict[int, Dict[str, Any]]] = None
+    _loaded_at: Optional[float] = None
+
+    # Cache for 1 hour (in production, config rarely changes)
+    CACHE_TTL_SECONDS = 3600
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
+    @classmethod
+    def get_config_path(cls) -> Path:
+        """Get path to trait specifications config file."""
+        # Try relative to workers directory first
+        workers_dir = Path(__file__).parent
+        config_path = workers_dir.parent / "config" / "trait_specifications.yaml"
+
+        if config_path.exists():
+            return config_path
+
+        # Fallback to project root
+        project_root = workers_dir.parent
+        config_path = project_root / "config" / "trait_specifications.yaml"
+
+        return config_path
+
+    @classmethod
+    def load_specifications(cls, force_reload: bool = False) -> Dict[int, Dict[str, Any]]:
+        """Load trait specifications from YAML config.
+
+        Returns:
+            Dict mapping bit number (1-32) to trait specification
+        """
+        now = time.time()
+
+        # Return cached if valid
+        if (not force_reload and
+            cls._specs is not None and
+            cls._loaded_at is not None and
+            (now - cls._loaded_at) < cls.CACHE_TTL_SECONDS):
+            return cls._specs
+
+        config_path = cls.get_config_path()
+
+        if not config_path.exists():
+            logger.warning(f"Trait specifications file not found: {config_path}")
+            return {}
+
+        try:
+            with open(config_path, 'r') as f:
+                raw_specs = yaml.safe_load(f)
+
+            # Parse into dict keyed by bit number
+            specs = {}
+            for key, value in raw_specs.items():
+                if key.startswith('bit_'):
+                    try:
+                        bit_num = int(key.split('_')[1])
+                        specs[bit_num] = value
+                    except (ValueError, IndexError):
+                        logger.warning(f"Invalid trait key: {key}")
+
+            cls._specs = specs
+            cls._loaded_at = now
+
+            logger.info(f"Loaded {len(specs)} trait specifications from {config_path}")
+            return specs
+
+        except Exception as e:
+            logger.error(f"Failed to load trait specifications: {e}")
+            return cls._specs or {}
+
+    @classmethod
+    def get_trait_spec(cls, bit_number: int) -> Optional[Dict[str, Any]]:
+        """Get specification for a specific trait bit."""
+        specs = cls.load_specifications()
+        return specs.get(bit_number)
+
+    @classmethod
+    def generate_trait_prompt(cls, bit_number: int) -> str:
+        """Generate detailed classification prompt for a trait.
+
+        Returns a string with inclusions, exclusions, and edge cases
+        formatted for LLM consumption.
+        """
+        spec = cls.get_trait_spec(bit_number)
+
+        if not spec:
+            return ""
+
+        prompt_parts = []
+        prompt_parts.append(f"\n\nDETAILED CLASSIFICATION GUIDANCE FOR '{spec.get('name', 'Unknown')}' TRAIT:")
+
+        # Definition (expanded)
+        if 'definition' in spec:
+            prompt_parts.append(f"\nCore Definition: {spec['definition'].strip()}")
+
+        # Inclusions
+        if 'inclusions' in spec and spec['inclusions']:
+            prompt_parts.append("\n\nMark as APPLICABLE (true) for:")
+            for inclusion in spec['inclusions']:
+                category = inclusion.get('category', '')
+                examples = inclusion.get('examples', [])
+                examples_str = ', '.join(examples[:10])  # Include up to 10 examples
+                prompt_parts.append(f"  • {category}: {examples_str}")
+
+        # Exclusions
+        if 'exclusions' in spec and spec['exclusions']:
+            prompt_parts.append("\n\nMark as NOT APPLICABLE (false) for:")
+            for exclusion in spec['exclusions']:
+                category = exclusion.get('category', '')
+                examples = exclusion.get('examples', [])
+                examples_str = ', '.join(examples[:10])  # Include up to 10 examples
+                prompt_parts.append(f"  • {category}: {examples_str}")
+
+        # Edge cases (select most relevant ones)
+        if 'edge_cases' in spec and spec['edge_cases']:
+            prompt_parts.append("\n\nEdge Cases (for reference):")
+            # Include up to 4 edge cases to keep prompt reasonable
+            for edge_case in spec['edge_cases'][:4]:
+                case = edge_case.get('case', '')
+                verdict = edge_case.get('verdict', False)
+                reason = edge_case.get('reason', '')
+                verdict_str = "TRUE" if verdict else "FALSE"
+                prompt_parts.append(f"  • {case} → {verdict_str}: {reason}")
+
+        return '\n'.join(prompt_parts)
 
 
 @dataclass
@@ -114,24 +250,10 @@ Respond with a JSON object containing:
 
 Be precise and consistent. Consider the trait definition carefully."""
 
-        # Trait-specific clarifications for bit 3 (Biological/Biomimetic)
-        if trait['bit'] == 3:
-            system_prompt += """
-
-IMPORTANT CLARIFICATIONS FOR BIOLOGICAL/BIOMIMETIC TRAIT:
-1. ALWAYS mark as applicable (true) for:
-   - Living organisms (animals, plants, fungi, bacteria, etc.)
-   - Parts of organisms (organs, cells, tissues, species)
-   - Breeds, varieties, or subspecies of organisms
-   - Biological materials (wood, bone, silk, etc.)
-
-2. ALSO mark as applicable for:
-   - Bio-inspired artificial systems (neural networks)
-   - Biomimetic devices (prosthetics, biomimetic robots)
-
-3. Mark as NOT applicable for:
-   - Purely synthetic/mechanical systems
-   - Abstract concepts unrelated to biology"""
+        # Add detailed trait-specific guidance from config
+        trait_guidance = TraitSpecificationLoader.generate_trait_prompt(trait['bit'])
+        if trait_guidance:
+            system_prompt += trait_guidance
 
         user_prompt = f"""Entity: {entity['name']}
 Description: {entity.get('description', 'No description provided')}
@@ -593,24 +715,10 @@ Respond with a JSON object containing:
 Be precise and consistent. Consider the trait definition carefully.
 IMPORTANT: Respond ONLY with valid JSON, no other text."""
 
-        # Trait-specific clarifications for bit 3 (Biological/Biomimetic)
-        if trait['bit'] == 3:
-            system_prompt += """
-
-IMPORTANT CLARIFICATIONS FOR BIOLOGICAL/BIOMIMETIC TRAIT:
-1. ALWAYS mark as applicable (true) for:
-   - Living organisms (animals, plants, fungi, bacteria, etc.)
-   - Parts of organisms (organs, cells, tissues, species)
-   - Breeds, varieties, or subspecies of organisms
-   - Biological materials (wood, bone, silk, etc.)
-
-2. ALSO mark as applicable for:
-   - Bio-inspired artificial systems (neural networks)
-   - Biomimetic devices (prosthetics, biomimetic robots)
-
-3. Mark as NOT applicable for:
-   - Purely synthetic/mechanical systems
-   - Abstract concepts unrelated to biology"""
+        # Add detailed trait-specific guidance from config
+        trait_guidance = TraitSpecificationLoader.generate_trait_prompt(trait['bit'])
+        if trait_guidance:
+            system_prompt += trait_guidance
 
         user_prompt = f"""Entity: {entity['name']}
 Description: {entity.get('description', 'No description provided')}

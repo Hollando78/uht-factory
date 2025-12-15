@@ -120,3 +120,60 @@ class DuplicateCheck(BaseModel):
     exists: bool
     similarity: float = Field(ge=0.0, le=1.0)
     existing_entity: Optional[Dict[str, Any]] = None
+
+
+# Version History Models
+
+class TraitSnapshot(BaseModel):
+    """Snapshot of a single trait evaluation"""
+    bit: int
+    name: str
+    applicable: bool
+    confidence: float
+    justification: str
+
+
+class EntityVersionSnapshot(BaseModel):
+    """Complete snapshot of entity state at a specific version"""
+    version_id: str
+    entity_uuid: str
+    version_number: int
+
+    # Full entity state snapshot
+    name: str
+    description: Optional[str] = None
+    uht_code: str
+    binary_representation: str
+    nsfw: bool = False
+    image_url: Optional[str] = None
+    trait_snapshot: List[TraitSnapshot] = Field(default_factory=list)
+
+    # Change metadata
+    change_type: str = Field(
+        ...,
+        description="Type of change: created, reclassified, metadata_edit, nsfw_toggle, image_change, trait_correction"
+    )
+    change_summary: str = Field(..., description="Human-readable description of the change")
+    changed_by: Optional[str] = Field(None, description="User ID or 'system'")
+    changed_at: datetime
+
+    # Delta from previous version
+    changed_fields: List[str] = Field(default_factory=list, description="List of fields that changed")
+    previous_values: Optional[Dict[str, Any]] = Field(None, description="Previous values of changed fields")
+
+
+class EntityHistoryResponse(BaseModel):
+    """Response for entity history endpoint"""
+    entity_uuid: str
+    entity_name: str
+    current_version: int
+    total_versions: int
+    versions: List[EntityVersionSnapshot]
+
+
+class EntityUpdate(BaseModel):
+    """Request for updating entity metadata"""
+    name: Optional[str] = Field(None, min_length=1, max_length=500)
+    description: Optional[str] = Field(None, max_length=5000)
+    additional_context: Optional[str] = Field(None, max_length=2000)
+    nsfw: Optional[bool] = None

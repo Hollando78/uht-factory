@@ -24,36 +24,24 @@ COST_PER_1M_TOKENS = 0.02  # $0.02 per 1M tokens for text-embedding-3-small
 
 def build_embedding_text(
     entity_name: str,
-    description: str = "",
-    applicable_traits: List[str] = None
+    description: str = ""
 ) -> str:
     """
     Build the text to embed for an entity.
 
-    Rich context format includes:
-    - Entity name
-    - Description
-    - Applicable trait names from UHT classification
+    Pure semantic embedding using only name and description.
+    Traits are intentionally excluded to avoid artificial correlation
+    with UHT similarity - we want embeddings to capture genuine
+    semantic meaning, independent of structural classification.
 
     Example output:
-        Smartphone: A portable electronic device combining computing...
-
-        Applicable traits: Physical Object, Manufactured/Artificial, Tool/Instrument
+        Hammer: A handheld tool with a heavy head attached to a handle,
+        used for driving nails, shaping materials, or breaking objects.
     """
-    parts = []
-
-    # Name and description
     if description:
-        parts.append(f"{entity_name}: {description}")
+        return f"{entity_name}: {description}"
     else:
-        parts.append(entity_name)
-
-    # Add applicable traits if available
-    if applicable_traits:
-        trait_list = ", ".join(applicable_traits)
-        parts.append(f"\nApplicable traits: {trait_list}")
-
-    return "".join(parts)
+        return entity_name
 
 
 def estimate_tokens(text: str) -> int:
@@ -270,12 +258,6 @@ class EmbeddingOrchestrator:
         entity_name = entity.get("name", "Unknown")
         description = entity.get("description", "")
 
-        # Extract applicable trait names from trait_evaluations
-        applicable_traits = []
-        for trait_eval in entity.get("trait_evaluations", []):
-            if trait_eval.get("applicable"):
-                applicable_traits.append(trait_eval.get("trait_name", ""))
-
         # Check cache first
         if use_cache and self.redis_client and entity_uuid:
             cached = await self._get_cached_embedding(entity_uuid)
@@ -291,7 +273,7 @@ class EmbeddingOrchestrator:
                 }
 
         # Build embedding text with rich context
-        text = build_embedding_text(entity_name, description, applicable_traits)
+        text = build_embedding_text(entity_name, description)
 
         # Generate embedding
         result = await self.client.generate_embedding(text, entity_name)
@@ -322,18 +304,12 @@ class EmbeddingOrchestrator:
         Returns:
             List of embedding results (same order as input)
         """
-        # Build texts for all entities
+        # Build texts for all entities (name + description only, no traits)
         texts = []
         for entity in entities:
-            applicable_traits = []
-            for trait_eval in entity.get("trait_evaluations", []):
-                if trait_eval.get("applicable"):
-                    applicable_traits.append(trait_eval.get("trait_name", ""))
-
             text = build_embedding_text(
                 entity.get("name", "Unknown"),
-                entity.get("description", ""),
-                applicable_traits
+                entity.get("description", "")
             )
             texts.append(text)
 

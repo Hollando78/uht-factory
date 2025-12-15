@@ -47,6 +47,50 @@ export interface TraitEvaluation {
   model_used: string;
 }
 
+// Entity Version History types
+export type VersionChangeType =
+  | 'created'
+  | 'reclassified'
+  | 'metadata_edit'
+  | 'nsfw_toggle'
+  | 'image_change'
+  | 'trait_correction';
+
+export interface TraitSnapshot {
+  bit: number;
+  name: string;
+  applicable: boolean;
+  confidence: number;
+  justification: string;
+}
+
+export interface EntityVersion {
+  version_id: string;
+  entity_uuid: string;
+  version_number: number;
+  name: string;
+  description?: string;
+  uht_code: string;
+  binary_representation: string;
+  nsfw: boolean;
+  image_url?: string;
+  trait_snapshot: TraitSnapshot[];
+  change_type: VersionChangeType;
+  change_summary: string;
+  changed_by?: string;
+  changed_at: string;
+  changed_fields: string[];
+  previous_values?: Record<string, unknown>;
+}
+
+export interface EntityHistoryResponse {
+  entity_uuid: string;
+  entity_name: string;
+  current_version: number;
+  total_versions: number;
+  versions: EntityVersion[];
+}
+
 export interface Trait {
   bit: number;
   name: string;

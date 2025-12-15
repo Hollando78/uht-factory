@@ -308,6 +308,21 @@ async def review_trait_flag(
                 flag_id=flag_id
             )
 
+            # Increment entity version
+            await session.run(
+                "MATCH (e:Entity {uuid: $uuid}) SET e.version = COALESCE(e.version, 1) + 1",
+                uuid=flag_data["entity_uuid"]
+            )
+
+            # Create version snapshot for the trait correction
+            await neo4j.create_entity_version(
+                entity_uuid=flag_data["entity_uuid"],
+                change_type="trait_correction",
+                change_summary=f"Trait {trait_data['name']} corrected: {old_applicable} → {evaluation['applicable']}",
+                changed_by=user_id,
+                previous_state=None  # Previous state was captured via CORRECTION_HISTORY
+            )
+
             return {
                 "flag_id": flag_id,
                 "status": new_status,

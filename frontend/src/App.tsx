@@ -6,6 +6,8 @@ import { AppProvider } from './context/AppContext';
 import { MobileProvider, useMobile } from './context/MobileContext';
 import { CollectionProvider } from './context/CollectionContext';
 import { AuthProvider } from './context/AuthContext';
+import { FloatingCardsProvider } from './context/FloatingCardsContext';
+import { FloatingCardContainer } from './components/FloatingCards';
 import Header from './components/Layout/Header';
 import Sidebar from './components/Layout/Sidebar';
 import TraitsView from './components/Traits/TraitsView';
@@ -23,6 +25,7 @@ import VerifyEmailPage from './components/Auth/VerifyEmailPage';
 import HowItWorksView from './components/HowItWorks/HowItWorksView';
 import { TraitFlagsView } from './components/Admin';
 import { HexCalcView } from './components/HexCalc';
+import { EmbeddingExplorerView } from './components/Explorer';
 
 // Dark theme optimized for graph visualization with responsive typography
 const darkTheme = createTheme({
@@ -190,6 +193,7 @@ function AppContent() {
             <Route path="/gallery" element={<GalleryView />} />
             <Route path="/entity/:uuid" element={<EntityDetails />} />
             <Route path="/analytics" element={<TraitAnalytics />} />
+            <Route path="/explorer" element={<EmbeddingExplorerView />} />
             <Route path="/verify-email" element={<VerifyEmailPage />} />
             <Route path="/admin/trait-flags" element={<TraitFlagsView />} />
           </Routes>
@@ -209,7 +213,10 @@ function App() {
             <CollectionProvider>
               <Router>
                 <MobileProvider>
-                  <AppContent />
+                  <FloatingCardsProvider>
+                    <AppContent />
+                    <FloatingCardContainer />
+                  </FloatingCardsProvider>
                 </MobileProvider>
               </Router>
             </CollectionProvider>

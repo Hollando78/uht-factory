@@ -77,7 +77,12 @@ async def generate_entity_image(
         
         # Update entity with image URL in Neo4j
         if result["success"] and result["image_url"]:
-            await update_entity_image(neo4j_client, request.entity_uuid, result["image_url"])
+            await update_entity_image(
+                neo4j_client,
+                request.entity_uuid,
+                result["image_url"],
+                changed_by=key_data.get("key_id", "api")
+            )
         
         return ImageGenerationResponse(
             success=result["success"],
@@ -408,8 +413,13 @@ async def delete_entity_image(
                 pass  # Continue even if file deletion fails
         
         # Remove image URL from entity
-        await update_entity_image(neo4j_client, entity_uuid, None)
-        
+        await update_entity_image(
+            neo4j_client,
+            entity_uuid,
+            None,
+            changed_by=key_data.get("key_id", "admin")
+        )
+
         return {
             "entity_uuid": entity_uuid,
             "message": "Image deleted successfully"
@@ -533,7 +543,12 @@ async def upload_entity_image(
         image_url = f"/static/images/{unique_filename}"
 
         # Update entity in Neo4j
-        await update_entity_image(neo4j_client, entity_uuid, image_url)
+        await update_entity_image(
+            neo4j_client,
+            entity_uuid,
+            image_url,
+            changed_by=key_data.get("key_id", "api")
+        )
 
         return {
             "success": True,
@@ -566,24 +581,47 @@ async def get_entity_by_uuid(neo4j_client: Neo4jClient, entity_uuid: str) -> Opt
     result = await neo4j_client.execute_query(query, uuid=entity_uuid)
     return result[0] if result else None
 
-async def update_entity_image(neo4j_client: Neo4jClient, entity_uuid: str, image_url: Optional[str]):
-    """Update entity's image URL in Neo4j"""
+async def update_entity_image(
+    neo4j_client: Neo4jClient,
+    entity_uuid: str,
+    image_url: Optional[str],
+    changed_by: str = "system",
+    create_version: bool = True
+):
+    """Update entity's image URL in Neo4j and create version snapshot"""
+    # Capture previous state for version delta
+    previous_state = await neo4j_client.get_entity_state_for_versioning(entity_uuid) if create_version else None
+
     if image_url:
         query = """
         MATCH (e:Entity {uuid: $uuid})
         SET e.image_url = $image_url,
-            e.updated_at = datetime()
+            e.updated_at = datetime(),
+            e.version = COALESCE(e.version, 1) + 1
         RETURN e
         """
         await neo4j_client.execute_query(query, uuid=entity_uuid, image_url=image_url)
+        change_summary = "Generated AI image" if "/static/generated/" in image_url else "Updated image"
     else:
         query = """
         MATCH (e:Entity {uuid: $uuid})
         REMOVE e.image_url
-        SET e.updated_at = datetime()
+        SET e.updated_at = datetime(),
+            e.version = COALESCE(e.version, 1) + 1
         RETURN e
         """
         await neo4j_client.execute_query(query, uuid=entity_uuid)
+        change_summary = "Removed image"
+
+    # Create version snapshot
+    if create_version:
+        await neo4j_client.create_entity_version(
+            entity_uuid=entity_uuid,
+            change_type="image_change",
+            change_summary=change_summary,
+            changed_by=changed_by,
+            previous_state=previous_state
+        )
 
 def calculate_dominant_layer_from_code(uht_code: str) -> str:
     """Calculate dominant layer from UHT code"""
@@ -630,7 +668,12 @@ async def process_batch_images(
         for i, result in enumerate(results):
             if isinstance(result, dict) and result.get("success") and result.get("image_url"):
                 entity_uuid = entity_uuids[i]
-                await update_entity_image(neo4j_client, entity_uuid, result["image_url"])
+                await update_entity_image(
+                    neo4j_client,
+                    entity_uuid,
+                    result["image_url"],
+                    changed_by="batch_generation"
+                )
         
         # Log completion
         successful_count = sum(1 for r in results if isinstance(r, dict) and r.get("success"))

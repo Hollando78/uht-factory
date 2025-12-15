@@ -22,7 +22,8 @@ import {
   FolderSpecial as CollectionIcon,
   School as SchoolIcon,
   Email as EmailIcon,
-  Calculate as CalculatorIcon
+  Calculate as CalculatorIcon,
+  ScatterPlot as ExplorerIcon
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useMobile } from '../../context/MobileContext';
@@ -112,6 +113,13 @@ const navItems: NavItem[] = [
     label: 'Trait Analytics',
     icon: <AnalyticsIcon />,
     description: 'Statistics & co-occurrence',
+    hideOnMobile: true
+  },
+  {
+    path: '/explorer',
+    label: 'Embedding Explorer',
+    icon: <ExplorerIcon />,
+    description: 'Embeddings vs UHT codes',
     hideOnMobile: true
   }
 ];

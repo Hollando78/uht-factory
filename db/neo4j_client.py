@@ -64,7 +64,12 @@ class Neo4jClient:
             "CREATE INDEX trait_flag_bit IF NOT EXISTS FOR (f:TraitFlag) ON (f.trait_bit)",
             "CREATE INDEX trait_flag_status IF NOT EXISTS FOR (f:TraitFlag) ON (f.status)",
             # Correction History (for audit trail)
-            "CREATE INDEX correction_history_date IF NOT EXISTS FOR ()-[h:CORRECTION_HISTORY]->() ON (h.changed_at)"
+            "CREATE INDEX correction_history_date IF NOT EXISTS FOR ()-[h:CORRECTION_HISTORY]->() ON (h.changed_at)",
+            # Entity Version History
+            "CREATE CONSTRAINT entity_version_id IF NOT EXISTS FOR (v:EntityVersion) REQUIRE v.version_id IS UNIQUE",
+            "CREATE INDEX entity_version_entity IF NOT EXISTS FOR (v:EntityVersion) ON (v.entity_uuid)",
+            "CREATE INDEX entity_version_number IF NOT EXISTS FOR (v:EntityVersion) ON (v.entity_uuid, v.version_number)",
+            "CREATE INDEX entity_version_date IF NOT EXISTS FOR (v:EntityVersion) ON (v.changed_at)"
         ]
 
         async with self.driver.session() as session:
@@ -1303,3 +1308,524 @@ class Neo4jClient:
                         key[date_key] = key[date_key].isoformat() if hasattr(key[date_key], 'isoformat') else str(key[date_key])
                 keys.append(key)
             return keys
+
+    # ==================== Projection Methods (Embedding Explorer) ====================
+
+    async def store_entity_projection(
+        self,
+        uuid: str,
+        umap_x: float,
+        umap_y: float,
+        tsne_x: float = None,
+        tsne_y: float = None
+    ) -> bool:
+        """
+        Store 2D projection coordinates on an entity node.
+
+        Args:
+            uuid: Entity UUID
+            umap_x: UMAP x coordinate
+            umap_y: UMAP y coordinate
+            tsne_x: t-SNE x coordinate (optional)
+            tsne_y: t-SNE y coordinate (optional)
+
+        Returns:
+            True if successful
+        """
+        query = """
+        MATCH (e:Entity {uuid: $uuid})
+        SET e.umap_x = $umap_x,
+            e.umap_y = $umap_y,
+            e.tsne_x = $tsne_x,
+            e.tsne_y = $tsne_y,
+            e.projection_updated = datetime()
+        RETURN e.uuid as uuid
+        """
+
+        async with self.driver.session() as session:
+            result = await session.run(
+                query,
+                uuid=uuid,
+                umap_x=umap_x,
+                umap_y=umap_y,
+                tsne_x=tsne_x,
+                tsne_y=tsne_y
+            )
+            record = await result.single()
+            return record is not None
+
+    async def batch_store_projections(
+        self,
+        projections: List[Dict[str, Any]]
+    ) -> int:
+        """
+        Store projections for multiple entities in batch.
+
+        Args:
+            projections: List of dicts with uuid, umap_x, umap_y, tsne_x, tsne_y
+
+        Returns:
+            Number of entities updated
+        """
+        query = """
+        UNWIND $projections as proj
+        MATCH (e:Entity {uuid: proj.uuid})
+        SET e.umap_x = proj.umap_x,
+            e.umap_y = proj.umap_y,
+            e.tsne_x = proj.tsne_x,
+            e.tsne_y = proj.tsne_y,
+            e.projection_updated = datetime()
+        RETURN count(e) as updated
+        """
+
+        async with self.driver.session() as session:
+            result = await session.run(query, projections=projections)
+            record = await result.single()
+            return record["updated"] if record else 0
+
+    async def get_all_projections(
+        self,
+        projection_type: str = "umap"
+    ) -> List[Dict[str, Any]]:
+        """
+        Get all entities with projection coordinates for visualization.
+
+        Args:
+            projection_type: "umap" or "tsne"
+
+        Returns:
+            List of entities with 2D coordinates and metadata
+        """
+        x_field = "umap_x" if projection_type == "umap" else "tsne_x"
+        y_field = "umap_y" if projection_type == "umap" else "tsne_y"
+
+        query = f"""
+        MATCH (e:Entity)
+        WHERE e.{x_field} IS NOT NULL AND e.{y_field} IS NOT NULL
+        RETURN e.uuid as uuid,
+               e.name as name,
+               e.uht_code as uht_code,
+               e.{x_field} as x,
+               e.{y_field} as y,
+               e.image_url as image_url
+        """
+
+        async with self.driver.session() as session:
+            result = await session.run(query)
+            entities = []
+            async for record in result:
+                entities.append({
+                    "uuid": record["uuid"],
+                    "name": record["name"],
+                    "uht_code": record["uht_code"],
+                    "x": record["x"],
+                    "y": record["y"],
+                    "image_url": record["image_url"]
+                })
+            return entities
+
+    async def get_projection_stats(self) -> Dict[str, Any]:
+        """Get statistics about projection coverage."""
+        query = """
+        MATCH (e:Entity)
+        RETURN
+            count(e) as total,
+            count(CASE WHEN e.umap_x IS NOT NULL THEN 1 END) as with_umap,
+            count(CASE WHEN e.tsne_x IS NOT NULL THEN 1 END) as with_tsne,
+            count(CASE WHEN e.embedding IS NOT NULL THEN 1 END) as with_embedding
+        """
+
+        async with self.driver.session() as session:
+            result = await session.run(query)
+            record = await result.single()
+            if record:
+                return {
+                    "total_entities": record["total"],
+                    "with_umap": record["with_umap"],
+                    "with_tsne": record["with_tsne"],
+                    "with_embedding": record["with_embedding"]
+                }
+            return {"total_entities": 0, "with_umap": 0, "with_tsne": 0, "with_embedding": 0}
+
+    async def find_neighbors_by_hamming(
+        self,
+        uuid: str,
+        limit: int = 20
+    ) -> List[Dict[str, Any]]:
+        """
+        Find K nearest neighbors by Hamming distance on UHT code.
+
+        Args:
+            uuid: Entity UUID to find neighbors for
+            limit: Number of neighbors to return
+
+        Returns:
+            List of neighbors with similarity scores
+        """
+        query = """
+        MATCH (target:Entity {uuid: $uuid})
+        MATCH (e:Entity)
+        WHERE e.uuid <> $uuid AND e.binary_representation IS NOT NULL
+        WITH target, e,
+             reduce(s = 0, i IN range(0, 31) |
+                 s + CASE
+                     WHEN substring(target.binary_representation, i, 1) = substring(e.binary_representation, i, 1)
+                     THEN 1 ELSE 0 END
+             ) as matching_bits
+        WITH e, matching_bits, 32 - matching_bits as hamming_distance,
+             toFloat(matching_bits) / 32.0 as similarity
+        ORDER BY hamming_distance ASC
+        LIMIT $limit
+        RETURN e.uuid as uuid,
+               e.name as name,
+               e.uht_code as uht_code,
+               e.image_url as image_url,
+               hamming_distance,
+               similarity
+        """
+
+        async with self.driver.session() as session:
+            result = await session.run(query, uuid=uuid, limit=limit)
+            neighbors = []
+            async for record in result:
+                neighbors.append({
+                    "uuid": record["uuid"],
+                    "name": record["name"],
+                    "uht_code": record["uht_code"],
+                    "image_url": record["image_url"],
+                    "hamming_distance": record["hamming_distance"],
+                    "similarity": round(record["similarity"], 4)
+                })
+            return neighbors
+
+    async def get_entities_with_embeddings_for_projection(self) -> List[Dict[str, Any]]:
+        """
+        Get all entities with embeddings for computing projections.
+
+        Returns:
+            List of entities with UUID, UHT code, and embedding
+        """
+        query = """
+        MATCH (e:Entity)
+        WHERE e.embedding IS NOT NULL
+        RETURN e.uuid as uuid,
+               e.uht_code as uht_code,
+               e.embedding as embedding
+        """
+
+        async with self.driver.session() as session:
+            result = await session.run(query)
+            entities = []
+            async for record in result:
+                entities.append({
+                    "uuid": record["uuid"],
+                    "uht_code": record["uht_code"],
+                    "embedding": list(record["embedding"])
+                })
+            return entities
+
+    # ==================== Entity Version History ====================
+
+    async def create_entity_version(
+        self,
+        entity_uuid: str,
+        change_type: str,
+        change_summary: str,
+        changed_by: Optional[str] = None,
+        previous_state: Optional[Dict[str, Any]] = None
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Create a version snapshot for an entity.
+
+        Args:
+            entity_uuid: UUID of the entity
+            change_type: Type of change (created, reclassified, metadata_edit, nsfw_toggle, image_change, trait_correction)
+            change_summary: Human-readable description of the change
+            changed_by: User ID or 'system'
+            previous_state: Optional previous state for computing delta
+
+        Returns:
+            Created version snapshot data
+        """
+        import json
+        import uuid as uuid_lib
+
+        # First, get current entity state with traits
+        entity_query = """
+        MATCH (e:Entity {uuid: $entity_uuid})
+        OPTIONAL MATCH (e)-[r:HAS_TRAIT]->(t:Trait)
+        RETURN e,
+               collect({
+                   bit: t.bit,
+                   name: t.name,
+                   applicable: r.applicable,
+                   confidence: r.confidence,
+                   justification: r.justification
+               }) as traits
+        """
+
+        async with self.driver.session() as session:
+            result = await session.run(entity_query, entity_uuid=entity_uuid)
+            record = await result.single()
+
+            if not record:
+                logger.warning(f"Entity {entity_uuid} not found for version creation")
+                return None
+
+            entity = dict(record["e"])
+            traits = [t for t in record["traits"] if t.get("bit") is not None]
+
+            # Compute delta if previous state provided
+            changed_fields = []
+            previous_values = {}
+
+            if previous_state:
+                fields_to_compare = ['name', 'description', 'uht_code', 'binary_representation', 'nsfw', 'image_url']
+                for field in fields_to_compare:
+                    old_val = previous_state.get(field)
+                    new_val = entity.get(field)
+                    if old_val != new_val:
+                        changed_fields.append(field)
+                        previous_values[field] = old_val
+
+                # Compare traits
+                old_traits = previous_state.get('traits', [])
+                if old_traits:
+                    old_trait_map = {t.get('bit'): t for t in old_traits if t.get('bit')}
+                    for trait in traits:
+                        old_trait = old_trait_map.get(trait['bit'])
+                        if old_trait and old_trait.get('applicable') != trait.get('applicable'):
+                            if 'traits' not in changed_fields:
+                                changed_fields.append('traits')
+                            break
+
+            # Get current version number from entity
+            current_version = entity.get('version', 1)
+
+            # Create version node
+            version_id = str(uuid_lib.uuid4())
+            trait_snapshot_json = json.dumps(traits)
+            changed_fields_list = changed_fields if changed_fields else []
+            previous_values_json = json.dumps(previous_values) if previous_values else None
+
+            create_version_query = """
+            MATCH (e:Entity {uuid: $entity_uuid})
+            CREATE (v:EntityVersion {
+                version_id: $version_id,
+                entity_uuid: $entity_uuid,
+                version_number: $version_number,
+                name: e.name,
+                description: e.description,
+                uht_code: e.uht_code,
+                binary_representation: e.binary_representation,
+                nsfw: COALESCE(e.nsfw, false),
+                image_url: e.image_url,
+                trait_snapshot: $trait_snapshot,
+                change_type: $change_type,
+                change_summary: $change_summary,
+                changed_by: $changed_by,
+                changed_at: datetime(),
+                changed_fields: $changed_fields,
+                previous_values: $previous_values
+            })
+            CREATE (e)-[:HAS_VERSION]->(v)
+            RETURN v
+            """
+
+            result = await session.run(
+                create_version_query,
+                entity_uuid=entity_uuid,
+                version_id=version_id,
+                version_number=current_version,
+                trait_snapshot=trait_snapshot_json,
+                change_type=change_type,
+                change_summary=change_summary,
+                changed_by=changed_by,
+                changed_fields=changed_fields_list,
+                previous_values=previous_values_json
+            )
+
+            record = await result.single()
+            if record:
+                version = dict(record["v"])
+                # Parse JSON fields back
+                if version.get("trait_snapshot"):
+                    version["trait_snapshot"] = json.loads(version["trait_snapshot"])
+                if version.get("previous_values"):
+                    version["previous_values"] = json.loads(version["previous_values"])
+                # Convert datetime
+                if version.get("changed_at"):
+                    version["changed_at"] = version["changed_at"].isoformat() if hasattr(version["changed_at"], 'isoformat') else str(version["changed_at"])
+                return version
+
+            return None
+
+    async def get_entity_history(
+        self,
+        entity_uuid: str,
+        limit: int = 50,
+        offset: int = 0
+    ) -> Dict[str, Any]:
+        """
+        Get version history for an entity.
+
+        Args:
+            entity_uuid: UUID of the entity
+            limit: Maximum number of versions to return
+            offset: Offset for pagination
+
+        Returns:
+            Dict with entity info and list of version snapshots
+        """
+        import json
+
+        # Get entity info and count versions
+        info_query = """
+        MATCH (e:Entity {uuid: $entity_uuid})
+        OPTIONAL MATCH (e)-[:HAS_VERSION]->(v:EntityVersion)
+        RETURN e.name as entity_name,
+               e.version as current_version,
+               count(v) as total_versions
+        """
+
+        versions_query = """
+        MATCH (e:Entity {uuid: $entity_uuid})-[:HAS_VERSION]->(v:EntityVersion)
+        RETURN v
+        ORDER BY v.version_number DESC
+        SKIP $offset
+        LIMIT $limit
+        """
+
+        async with self.driver.session() as session:
+            # Get entity info
+            info_result = await session.run(info_query, entity_uuid=entity_uuid)
+            info_record = await info_result.single()
+
+            if not info_record:
+                return {
+                    "entity_uuid": entity_uuid,
+                    "entity_name": None,
+                    "current_version": 0,
+                    "total_versions": 0,
+                    "versions": []
+                }
+
+            # Get versions
+            versions_result = await session.run(
+                versions_query,
+                entity_uuid=entity_uuid,
+                limit=limit,
+                offset=offset
+            )
+
+            versions = []
+            async for record in versions_result:
+                version = dict(record["v"])
+                # Parse JSON fields
+                if version.get("trait_snapshot"):
+                    try:
+                        version["trait_snapshot"] = json.loads(version["trait_snapshot"])
+                    except json.JSONDecodeError:
+                        version["trait_snapshot"] = []
+                if version.get("previous_values"):
+                    try:
+                        version["previous_values"] = json.loads(version["previous_values"])
+                    except json.JSONDecodeError:
+                        version["previous_values"] = None
+                # Convert datetime
+                if version.get("changed_at"):
+                    version["changed_at"] = version["changed_at"].isoformat() if hasattr(version["changed_at"], 'isoformat') else str(version["changed_at"])
+                versions.append(version)
+
+            return {
+                "entity_uuid": entity_uuid,
+                "entity_name": info_record["entity_name"],
+                "current_version": info_record["current_version"] or 1,
+                "total_versions": info_record["total_versions"],
+                "versions": versions
+            }
+
+    async def get_entity_version(
+        self,
+        entity_uuid: str,
+        version_number: int
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Get a specific version snapshot for an entity.
+
+        Args:
+            entity_uuid: UUID of the entity
+            version_number: Version number to retrieve
+
+        Returns:
+            Version snapshot data or None if not found
+        """
+        import json
+
+        query = """
+        MATCH (e:Entity {uuid: $entity_uuid})-[:HAS_VERSION]->(v:EntityVersion {version_number: $version_number})
+        RETURN v
+        """
+
+        async with self.driver.session() as session:
+            result = await session.run(
+                query,
+                entity_uuid=entity_uuid,
+                version_number=version_number
+            )
+            record = await result.single()
+
+            if record:
+                version = dict(record["v"])
+                # Parse JSON fields
+                if version.get("trait_snapshot"):
+                    try:
+                        version["trait_snapshot"] = json.loads(version["trait_snapshot"])
+                    except json.JSONDecodeError:
+                        version["trait_snapshot"] = []
+                if version.get("previous_values"):
+                    try:
+                        version["previous_values"] = json.loads(version["previous_values"])
+                    except json.JSONDecodeError:
+                        version["previous_values"] = None
+                # Convert datetime
+                if version.get("changed_at"):
+                    version["changed_at"] = version["changed_at"].isoformat() if hasattr(version["changed_at"], 'isoformat') else str(version["changed_at"])
+                return version
+
+            return None
+
+    async def get_entity_state_for_versioning(self, entity_uuid: str) -> Optional[Dict[str, Any]]:
+        """
+        Get current entity state for use in version delta computation.
+
+        Args:
+            entity_uuid: UUID of the entity
+
+        Returns:
+            Current entity state including traits
+        """
+        query = """
+        MATCH (e:Entity {uuid: $entity_uuid})
+        OPTIONAL MATCH (e)-[r:HAS_TRAIT]->(t:Trait)
+        RETURN e,
+               collect({
+                   bit: t.bit,
+                   name: t.name,
+                   applicable: r.applicable,
+                   confidence: r.confidence,
+                   justification: r.justification
+               }) as traits
+        """
+
+        async with self.driver.session() as session:
+            result = await session.run(query, entity_uuid=entity_uuid)
+            record = await result.single()
+
+            if record:
+                entity = dict(record["e"])
+                traits = [t for t in record["traits"] if t.get("bit") is not None]
+                entity["traits"] = traits
+                return entity
+
+            return None

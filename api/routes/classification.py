@@ -98,18 +98,45 @@ async def classify_entity(
     2. If not cached, evaluates all 32 traits in parallel
     3. Generates 8-character hex UHT code
     4. Stores result in Neo4j and cache
-    5. Optionally queues AI image/embedding generation in background
+    5. Creates version snapshot for history tracking
+    6. Optionally queues AI image/embedding generation in background
     """
     try:
+        # Get shared Neo4j client
+        neo4j = await get_neo4j_client(fastapi_request)
+
         # Convert entity input to dict
         entity_dict = request.entity.dict()
         entity_dict["use_cache"] = request.use_cache
 
+        # Check if entity already exists (for reclassification)
+        is_reclassification = False
+        previous_state = None
+        if entity_dict.get("uuid"):
+            previous_state = await neo4j.get_entity_state_for_versioning(entity_dict["uuid"])
+            is_reclassification = previous_state is not None
+
         # Process classification
         result = await orchestrator.process_entity(entity_dict)
 
-        # Get shared Neo4j client
-        neo4j = await get_neo4j_client(fastapi_request)
+        # Skip version creation if result is from cache
+        if not result.get("cached", False) and result.get("uuid"):
+            # Create version snapshot
+            change_type = "reclassified" if is_reclassification else "created"
+            change_summary = "Reclassified entity" if is_reclassification else "Created new entity"
+
+            # Determine changed_by
+            changed_by = "public"
+            if auth_data and auth_data.get("authenticated"):
+                changed_by = auth_data.get("key_id", "api")
+
+            await neo4j.create_entity_version(
+                entity_uuid=result["uuid"],
+                change_type=change_type,
+                change_summary=change_summary,
+                changed_by=changed_by,
+                previous_state=previous_state
+            )
 
         # Generate image synchronously (user is waiting to see it)
         if request.generate_image and result.get("uuid"):
@@ -129,8 +156,18 @@ async def classify_entity(
             except Exception as img_err:
                 logger.error(f"Image generation error: {img_err}")
 
-        # Queue embedding generation in background (not immediately visible)
-        if request.generate_embedding and result.get("uuid"):
+        # Auto-detect description changes and regenerate embedding if needed
+        # Embeddings are based on name + description, so must update when description changes
+        description_changed = False
+        if previous_state and result.get("description"):
+            old_desc = previous_state.get("description", "")
+            new_desc = result.get("description", "")
+            description_changed = old_desc != new_desc
+            if description_changed:
+                logger.info(f"Description changed for {result.get('name')}, auto-regenerating embedding")
+
+        # Queue embedding generation if explicitly requested OR if description changed
+        if (request.generate_embedding or description_changed) and result.get("uuid"):
             background_tasks.add_task(generate_embedding_background, result.copy(), neo4j)
             logger.info(f"Queued background embedding generation for: {result.get('name')}")
 
