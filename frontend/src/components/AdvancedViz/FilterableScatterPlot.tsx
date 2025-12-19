@@ -55,175 +55,35 @@ import {
   type SelectionDescription,
   type SubsetProjectionResponse
 } from '../../services/api';
+import type { Trait } from '../../types';
+
+// Import utilities from extracted module
+import {
+  LAYER_COLORS,
+  getLabelFontSize,
+  getLabelOpacity,
+  getDominantLayer,
+  getTraitCount,
+  traitCountToColor,
+  hammingDistance,
+  distanceToColor,
+  hasTraitBit,
+  getLayerForTrait,
+  pointInPolygon,
+  seededRandom
+} from './utils/scatterPlotUtils';
+import type { ColorMode } from './types';
 
 // Create a blob URL for the gif.js worker to avoid server path issues
 const gifWorkerBlob = new Blob([gifWorkerScript], { type: 'application/javascript' });
 const gifWorkerUrl = URL.createObjectURL(gifWorkerBlob);
-import type { Trait } from '../../types';
-
-
-// Adaptive font size based on zoom level and cluster size
-function getLabelFontSize(scale: number, clusterSize: number, maxSize: number): number {
-  const baseFontSize = 11;
-  const scaleFactor = Math.sqrt(scale);
-  // Larger clusters get slightly larger text
-  const sizeFactor = 1 + (clusterSize / maxSize) * 0.3;
-  return Math.max(10, Math.min(18, baseFontSize * scaleFactor * sizeFactor));
-}
-
-// Get label opacity based on cluster size (larger = more visible)
-function getLabelOpacity(clusterSize: number, maxSize: number): number {
-  const minOpacity = 0.6;
-  const maxOpacity = 1.0;
-  const sizeRatio = clusterSize / maxSize;
-  return minOpacity + sizeRatio * (maxOpacity - minOpacity);
-}
 
 interface Props {
   projectionType: 'umap' | 'tsne' | 'uht' | 'uht_umap';
   onEntitySelect: (uuid: string) => void;
 }
 
-type ColorMode = 'layer' | 'trait_count' | 'none';
-
-const LAYER_COLORS = {
-  Physical: '#FF6B35',   // Orange
-  Functional: '#00E5FF', // Cyan
-  Abstract: '#9C27B0',   // Purple
-  Social: '#4CAF50'      // Green
-};
-
-function getDominantLayer(uhtCode: string): keyof typeof LAYER_COLORS {
-  if (!uhtCode || uhtCode.length !== 8) return 'Physical';
-
-  const layers = {
-    Physical: 0,
-    Functional: 0,
-    Abstract: 0,
-    Social: 0
-  };
-
-  try {
-    const physical = parseInt(uhtCode.slice(0, 2), 16);
-    const functional = parseInt(uhtCode.slice(2, 4), 16);
-    const abstract = parseInt(uhtCode.slice(4, 6), 16);
-    const social = parseInt(uhtCode.slice(6, 8), 16);
-
-    layers.Physical = physical.toString(2).split('1').length - 1;
-    layers.Functional = functional.toString(2).split('1').length - 1;
-    layers.Abstract = abstract.toString(2).split('1').length - 1;
-    layers.Social = social.toString(2).split('1').length - 1;
-  } catch {
-    return 'Physical';
-  }
-
-  return Object.entries(layers).reduce((a, b) => b[1] > a[1] ? b : a)[0] as keyof typeof LAYER_COLORS;
-}
-
-function getTraitCount(uhtCode: string): number {
-  try {
-    const num = parseInt(uhtCode, 16);
-    return num.toString(2).split('1').length - 1;
-  } catch {
-    return 0;
-  }
-}
-
-function traitCountToColor(count: number): string {
-  // 0-8: blue, 8-16: green, 16-24: yellow, 24-32: red
-  const normalized = Math.min(count / 32, 1);
-  if (normalized < 0.25) {
-    return `hsl(200, 80%, ${50 + normalized * 100}%)`;
-  } else if (normalized < 0.5) {
-    return `hsl(${200 - (normalized - 0.25) * 400}, 80%, 60%)`;
-  } else if (normalized < 0.75) {
-    return `hsl(${100 - (normalized - 0.5) * 200}, 80%, 55%)`;
-  } else {
-    return `hsl(${50 - (normalized - 0.75) * 200}, 80%, 50%)`;
-  }
-}
-
-// Calculate Hamming distance between two UHT codes (0-32)
-function hammingDistance(code1: string, code2: string): number {
-  try {
-    const num1 = parseInt(code1, 16);
-    const num2 = parseInt(code2, 16);
-    const xor = num1 ^ num2;
-    // Count set bits (differing positions)
-    return xor.toString(2).split('1').length - 1;
-  } catch {
-    return 32; // Max distance on error
-  }
-}
-
-// Color based on Hamming distance: 0 (identical) = red, 16 = yellow, 32 (opposite) = blue
-function distanceToColor(distance: number): string {
-  // Normalize 0-32 to 0-1
-  const normalized = Math.min(distance / 32, 1);
-  // Red (0) -> Yellow (0.5) -> Blue (1)
-  if (normalized <= 0.5) {
-    // Red to Yellow: hue 0 -> 60
-    const hue = normalized * 120; // 0 -> 60
-    return `hsl(${hue}, 90%, 50%)`;
-  } else {
-    // Yellow to Blue: hue 60 -> 240
-    const hue = 60 + (normalized - 0.5) * 360; // 60 -> 240
-    return `hsl(${hue}, 90%, 50%)`;
-  }
-}
-
-// Check if a specific bit (trait) is set in a UHT code
-// Trait index is 1-32, where 1-8 are Physical, 9-16 Functional, 17-24 Abstract, 25-32 Social
-function hasTraitBit(uhtCode: string, traitIndex: number): boolean {
-  try {
-    const num = parseInt(uhtCode, 16);
-    // Convert 1-based trait index to 0-based bit position (MSB first)
-    // Trait 1 is bit 31, Trait 32 is bit 0
-    const bitPosition = 32 - traitIndex;
-    return ((num >> bitPosition) & 1) === 1;
-  } catch {
-    return false;
-  }
-}
-
-// Get layer name for a trait index
-function getLayerForTrait(traitIndex: number): string {
-  if (traitIndex <= 8) return 'Physical';
-  if (traitIndex <= 16) return 'Functional';
-  if (traitIndex <= 24) return 'Abstract';
-  return 'Social';
-}
-
-// Point-in-polygon test using ray casting algorithm
-function pointInPolygon(x: number, y: number, polygon: Array<{x: number, y: number}>): boolean {
-  if (polygon.length < 3) return false;
-
-  let inside = false;
-  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-    const xi = polygon[i].x, yi = polygon[i].y;
-    const xj = polygon[j].x, yj = polygon[j].y;
-
-    const intersect = ((yi > y) !== (yj > y)) &&
-      (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
-    if (intersect) inside = !inside;
-  }
-
-  return inside;
-}
-
-// Seeded random for consistent jitter per entity
-function seededRandom(seed: string): number {
-  let hash = 0;
-  for (let i = 0; i < seed.length; i++) {
-    const char = seed.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash;
-  }
-  const x = Math.sin(hash) * 10000;
-  return x - Math.floor(x);
-}
-
-export default function ProjectionScatterPlot({ projectionType, onEntitySelect }: Props) {
+export default function FilterableScatterPlot({ projectionType, onEntitySelect }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [points, setPoints] = useState<ProjectionPoint[]>([]);
