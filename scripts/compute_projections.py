@@ -1,15 +1,22 @@
 #!/usr/bin/env python3
 """
-Compute UMAP and t-SNE projections for entity embeddings.
+Compute UMAP, t-SNE, and UHT-based projections for entity embeddings.
 
 This script loads all entity embeddings from Neo4j, computes 2D projections
-using UMAP and/or t-SNE, and stores the coordinates back in the database.
+using UMAP, t-SNE, and/or UHT-based methods, and stores the coordinates back in the database.
+
+Supported methods:
+  - umap: UMAP on embedding vectors (semantic similarity)
+  - tsne: t-SNE on embedding vectors (semantic similarity)
+  - uht_umap: UMAP on UHT code bit vectors (structural similarity)
+  - uht_pacmap: PaCMAP on UHT code bit vectors (structural similarity)
+  - all: All of the above
 
 Usage:
-    python scripts/compute_projections.py [--method umap|tsne|both] [--batch-size 500]
+    python scripts/compute_projections.py [--method umap|tsne|uht_umap|uht_pacmap|all] [--batch-size 500]
 
 Options:
-    --method        Projection method: umap, tsne, or both (default: both)
+    --method        Projection method (default: all)
     --batch-size    Entities to store per database batch (default: 500)
     --dry-run       Show what would be done without computing/storing
 """
@@ -40,8 +47,17 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+def uht_code_to_binary(uht_code: str) -> np.ndarray:
+    """Convert 8-char hex UHT code to 32-bit binary vector."""
+    try:
+        num = int(uht_code, 16)
+        return np.array([int(b) for b in bin(num)[2:].zfill(32)], dtype=np.float32)
+    except (ValueError, TypeError):
+        return np.zeros(32, dtype=np.float32)
+
+
 async def main(
-    method: str = "both",
+    method: str = "all",
     batch_size: int = 500,
     dry_run: bool = False
 ):
@@ -62,6 +78,7 @@ async def main(
     logger.info(f"  With embeddings: {stats['with_embedding']}")
     logger.info(f"  With UMAP projections: {stats['with_umap']}")
     logger.info(f"  With t-SNE projections: {stats['with_tsne']}")
+    logger.info(f"  With UHT-UMAP projections: {stats.get('with_uht_umap', 0)}")
 
     if stats['with_embedding'] == 0:
         logger.warning("No entities have embeddings. Run batch_generate_embeddings.py first.")
@@ -72,6 +89,12 @@ async def main(
         logger.info("DRY RUN - No projections will be computed")
         await neo4j.close()
         return
+
+    # Determine which methods to run
+    do_umap = method in ('umap', 'both', 'all')
+    do_tsne = method in ('tsne', 'both', 'all')
+    do_uht_umap = method in ('uht_umap', 'all')
+    do_uht_pacmap = method in ('uht_pacmap', 'all')
 
     # Load all entities with embeddings
     logger.info("Loading entities with embeddings from database...")
@@ -90,16 +113,23 @@ async def main(
     embeddings = np.array([e['embedding'] for e in entities], dtype=np.float32)
     logger.info(f"Embeddings shape: {embeddings.shape}")
 
+    # Extract UHT codes as binary vectors for UHT-based projections
+    uht_codes = [e.get('uht_code', '00000000') for e in entities]
+    uht_vectors = np.array([uht_code_to_binary(code) for code in uht_codes], dtype=np.float32)
+    logger.info(f"UHT vectors shape: {uht_vectors.shape}")
+
     # Initialize projection worker
     worker = ProjectionWorker()
 
     # Compute projections
     umap_projection = None
     tsne_projection = None
+    uht_umap_projection = None
+    uht_pacmap_projection = None
 
-    if method in ("umap", "both"):
+    if do_umap:
         logger.info("\n" + "=" * 50)
-        logger.info("Computing UMAP projection...")
+        logger.info("Computing UMAP projection (on embeddings)...")
         logger.info("=" * 50)
         umap_start = datetime.now()
         umap_projection = worker.compute_umap(embeddings)
@@ -109,9 +139,9 @@ async def main(
         logger.info(f"UMAP bounds: x=[{umap_projection[:, 0].min():.3f}, {umap_projection[:, 0].max():.3f}], "
                    f"y=[{umap_projection[:, 1].min():.3f}, {umap_projection[:, 1].max():.3f}]")
 
-    if method in ("tsne", "both"):
+    if do_tsne:
         logger.info("\n" + "=" * 50)
-        logger.info("Computing t-SNE projection...")
+        logger.info("Computing t-SNE projection (on embeddings)...")
         logger.info("=" * 50)
         tsne_start = datetime.now()
         tsne_projection = worker.compute_tsne(embeddings)
@@ -120,6 +150,30 @@ async def main(
         logger.info(f"t-SNE completed in {tsne_time:.1f}s")
         logger.info(f"t-SNE bounds: x=[{tsne_projection[:, 0].min():.3f}, {tsne_projection[:, 0].max():.3f}], "
                    f"y=[{tsne_projection[:, 1].min():.3f}, {tsne_projection[:, 1].max():.3f}]")
+
+    if do_uht_umap:
+        logger.info("\n" + "=" * 50)
+        logger.info("Computing UHT-UMAP projection (on UHT code vectors)...")
+        logger.info("=" * 50)
+        uht_umap_start = datetime.now()
+        uht_umap_projection = worker.compute_umap(uht_vectors, metric='hamming')
+        uht_umap_projection = worker.normalize_projection(uht_umap_projection)
+        uht_umap_time = (datetime.now() - uht_umap_start).total_seconds()
+        logger.info(f"UHT-UMAP completed in {uht_umap_time:.1f}s")
+        logger.info(f"UHT-UMAP bounds: x=[{uht_umap_projection[:, 0].min():.3f}, {uht_umap_projection[:, 0].max():.3f}], "
+                   f"y=[{uht_umap_projection[:, 1].min():.3f}, {uht_umap_projection[:, 1].max():.3f}]")
+
+    if do_uht_pacmap:
+        logger.info("\n" + "=" * 50)
+        logger.info("Computing UHT-PaCMAP projection (on UHT code vectors)...")
+        logger.info("=" * 50)
+        uht_pacmap_start = datetime.now()
+        uht_pacmap_projection = worker.compute_pacmap(uht_vectors)
+        uht_pacmap_projection = worker.normalize_projection(uht_pacmap_projection)
+        uht_pacmap_time = (datetime.now() - uht_pacmap_start).total_seconds()
+        logger.info(f"UHT-PaCMAP completed in {uht_pacmap_time:.1f}s")
+        logger.info(f"UHT-PaCMAP bounds: x=[{uht_pacmap_projection[:, 0].min():.3f}, {uht_pacmap_projection[:, 0].max():.3f}], "
+                   f"y=[{uht_pacmap_projection[:, 1].min():.3f}, {uht_pacmap_projection[:, 1].max():.3f}]")
 
     # Store projections in batches
     logger.info("\n" + "=" * 50)
@@ -150,6 +204,20 @@ async def main(
                 proj["tsne_x"] = None
                 proj["tsne_y"] = None
 
+            if uht_umap_projection is not None:
+                proj["uht_umap_x"] = float(uht_umap_projection[idx, 0])
+                proj["uht_umap_y"] = float(uht_umap_projection[idx, 1])
+            else:
+                proj["uht_umap_x"] = None
+                proj["uht_umap_y"] = None
+
+            if uht_pacmap_projection is not None:
+                proj["uht_pacmap_x"] = float(uht_pacmap_projection[idx, 0])
+                proj["uht_pacmap_y"] = float(uht_pacmap_projection[idx, 1])
+            else:
+                proj["uht_pacmap_x"] = None
+                proj["uht_pacmap_y"] = None
+
             batch_projections.append(proj)
 
         stored = await neo4j.batch_store_projections(batch_projections)
@@ -171,6 +239,10 @@ async def main(
         logger.info(f"UMAP projections: {len(umap_projection)}")
     if tsne_projection is not None:
         logger.info(f"t-SNE projections: {len(tsne_projection)}")
+    if uht_umap_projection is not None:
+        logger.info(f"UHT-UMAP projections: {len(uht_umap_projection)}")
+    if uht_pacmap_projection is not None:
+        logger.info(f"UHT-PaCMAP projections: {len(uht_pacmap_projection)}")
     logger.info(f"Stored in database: {total_stored}")
 
     # Final stats
@@ -178,20 +250,21 @@ async def main(
     logger.info(f"\nFinal projection coverage:")
     logger.info(f"  With UMAP: {final_stats['with_umap']} / {final_stats['total_entities']}")
     logger.info(f"  With t-SNE: {final_stats['with_tsne']} / {final_stats['total_entities']}")
+    logger.info(f"  With UHT-UMAP: {final_stats.get('with_uht_umap', 0)} / {final_stats['total_entities']}")
 
     await neo4j.close()
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Compute UMAP/t-SNE projections for entity embeddings"
+        description="Compute projections for entity embeddings and UHT codes"
     )
     parser.add_argument(
         "--method",
         type=str,
-        choices=["umap", "tsne", "both"],
-        default="both",
-        help="Projection method: umap, tsne, or both (default: both)"
+        choices=["umap", "tsne", "both", "uht_umap", "uht_pacmap", "all"],
+        default="all",
+        help="Projection method (default: all)"
     )
     parser.add_argument(
         "--batch-size",

@@ -15,9 +15,9 @@ echo "Explorer refresh started: $(date)" >> $LOG_FILE
 echo "[1/3] Generating embeddings..." >> $LOG_FILE
 python3 scripts/batch_generate_embeddings.py >> $LOG_FILE 2>&1
 
-# Step 2: Recompute UMAP/t-SNE projections
-echo "[2/3] Computing projections..." >> $LOG_FILE
-python3 scripts/compute_projections.py >> $LOG_FILE 2>&1
+# Step 2: Recompute all projections (UMAP, t-SNE, UHT-UMAP, UHT-PaCMAP)
+echo "[2/3] Computing all projections..." >> $LOG_FILE
+python3 scripts/compute_projections.py --method all >> $LOG_FILE 2>&1
 
 # Step 3: Regenerate cluster labels
 echo "[3/3] Computing cluster labels..." >> $LOG_FILE

@@ -1362,7 +1362,8 @@ class Neo4jClient:
         Store projections for multiple entities in batch.
 
         Args:
-            projections: List of dicts with uuid, umap_x, umap_y, tsne_x, tsne_y
+            projections: List of dicts with uuid and projection coordinates
+                         (umap_x/y, tsne_x/y, uht_umap_x/y, uht_pacmap_x/y)
 
         Returns:
             Number of entities updated
@@ -1374,6 +1375,10 @@ class Neo4jClient:
             e.umap_y = proj.umap_y,
             e.tsne_x = proj.tsne_x,
             e.tsne_y = proj.tsne_y,
+            e.uht_umap_x = proj.uht_umap_x,
+            e.uht_umap_y = proj.uht_umap_y,
+            e.uht_pacmap_x = proj.uht_pacmap_x,
+            e.uht_pacmap_y = proj.uht_pacmap_y,
             e.projection_updated = datetime()
         RETURN count(e) as updated
         """
