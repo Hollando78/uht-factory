@@ -22,6 +22,7 @@ import { useApp } from '../../context/AppContext';
 import API from '../../services/api';
 import GraphSearchBar from './GraphSearchBar';
 import type { SimilarityMetric } from './GraphSearchBar';
+import { createEntitySprite, createSimpleNode, clearSpriteCache } from './EntityCardSprite';
 
 const API_BASE_URL = '';
 
@@ -360,11 +361,28 @@ export default function GraphView() {
 
   // Clear graph and reset
   const handleClear = useCallback(() => {
+    clearSpriteCache(); // Clear sprite cache when resetting
     setGraphData({ nodes: [], links: [] });
     setCenterEntityUuid(null);
     setCenterEntityName('');
     setExpandedNodes(new Set());
     setSelectedNode(null);
+  }, []);
+
+  // Custom node rendering - use cards for entities, spheres for traits
+  const renderNodeThreeObject = useCallback((node: any) => {
+    if (node.type === 'entity') {
+      return createEntitySprite({
+        id: node.id,
+        name: node.name,
+        uht_code: node.uht_code,
+        image_url: node.image_url,
+        layer_dominance: node.layer_dominance,
+        trait_count: node.trait_count,
+        is_center: node.is_center
+      });
+    }
+    return createSimpleNode(node);
   }, []);
 
   // Node click handler
@@ -472,11 +490,8 @@ export default function GraphView() {
             ref={fgRef}
             graphData={graphData}
             nodeLabel={(node: any) => node.type === 'entity' ? `${node.name}\n${node.uht_code}` : node.name}
-            nodeColor="color"
-            nodeVal="val"
-            nodeOpacity={0.9}
-            nodeResolution={12}
-            nodeRelSize={6}
+            nodeThreeObject={renderNodeThreeObject}
+            nodeThreeObjectExtend={false}
             onNodeClick={handleNodeClick}
             onNodeHover={setHoveredNode}
             linkOpacity={0.8}
