@@ -26,6 +26,7 @@ import HowItWorksView from './components/HowItWorks/HowItWorksView';
 import { TraitFlagsView } from './components/Admin';
 import { HexCalcView } from './components/HexCalc';
 import { EmbeddingExplorerView } from './components/Explorer';
+import { AdvancedVizView } from './components/AdvancedViz';
 
 // Dark theme optimized for graph visualization with responsive typography
 const darkTheme = createTheme({
@@ -194,6 +195,7 @@ function AppContent() {
             <Route path="/entity/:uuid" element={<EntityDetails />} />
             <Route path="/analytics" element={<TraitAnalytics />} />
             <Route path="/explorer" element={<EmbeddingExplorerView />} />
+            <Route path="/advanced-viz" element={<AdvancedVizView />} />
             <Route path="/verify-email" element={<VerifyEmailPage />} />
             <Route path="/admin/trait-flags" element={<TraitFlagsView />} />
           </Routes>

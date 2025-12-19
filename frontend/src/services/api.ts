@@ -635,9 +635,30 @@ export interface Outlier {
   type: 'semantic_similar_structural_different' | 'structural_similar_semantic_different';
 }
 
+export interface ClusterLabel {
+  cluster_id: number;
+  centroid_x: number;
+  centroid_y: number;
+  label: string;
+  count: number;
+  size: number;  // Same as count, used for adaptive sizing
+  dominant_layer: string;
+}
+
+export type ClusterResolution = 'level1' | 'level2' | 'level3' | 'level4' | 'level5' | 'level6' | 'level7';
+
+export interface ClusterResponse {
+  method: string;
+  resolution: ClusterResolution;
+  total_points: number;
+  clustered_points: number;
+  noise_points: number;
+  clusters: ClusterLabel[];
+}
+
 export const explorerAPI = {
-  getProjections: async (type: 'umap' | 'tsne' = 'umap'): Promise<{ points: ProjectionPoint[]; count: number }> => {
-    const response = await api.get('/explorer/projections', { params: { type } });
+  getProjections: async (method: 'umap' | 'tsne' | 'uht_umap' = 'umap'): Promise<{ points: ProjectionPoint[]; count: number }> => {
+    const response = await api.get('/explorer/projections', { params: { method } });
     return response.data;
   },
 
@@ -666,8 +687,113 @@ export const explorerAPI = {
   }> => {
     const response = await api.get('/explorer/outliers', { params: { threshold, limit } });
     return response.data;
+  },
+
+  getClusters: async (
+    method: 'umap' | 'tsne' | 'uht' | 'uht_umap' = 'umap',
+    resolution: ClusterResolution = 'level4'
+  ): Promise<ClusterResponse> => {
+    const response = await api.get('/explorer/clusters', { params: { method, resolution } });
+    return response.data;
+  },
+
+  computeClusters: async (method: 'umap' | 'tsne' = 'umap'): Promise<{ status: string; message: string }> => {
+    const response = await api.post('/explorer/clusters/compute', null, { params: { method } });
+    return response.data;
+  },
+
+  // LLM-enhanced tour and insights
+  generateTour: async (params: {
+    tour_type: 'random_walk' | 'theme' | 'contrast' | 'complexity' | 'layer_journey';
+    theme?: string;
+    start_uuid?: string;
+    num_stops?: number;
+    projection?: 'umap' | 'tsne' | 'uht_umap';
+  }): Promise<TourResponse> => {
+    const response = await api.post('/explorer/generate-tour', params);
+    return response.data;
+  },
+
+  describeSelection: async (uuids: string[]): Promise<SelectionDescription> => {
+    const response = await api.post('/explorer/describe-selection', { uuids });
+    return response.data;
+  },
+
+  explainSimilarity: async (referenceUuid: string, sampleUuids: string[]): Promise<SimilarityExplanation> => {
+    const response = await api.post('/explorer/explain-similarity', {
+      reference_uuid: referenceUuid,
+      sample_uuids: sampleUuids
+    });
+    return response.data;
+  },
+
+  computeSubsetProjection: async (
+    uuids: string[],
+    method: 'umap' | 'tsne' | 'pacmap' = 'umap'
+  ): Promise<SubsetProjectionResponse> => {
+    const response = await api.post('/explorer/subset-projection', { uuids, method });
+    return response.data;
   }
 };
+
+// Tour and insight types
+export interface TourStop {
+  uuid: string;
+  name: string;
+  uht_code: string;
+  x: number;
+  y: number;
+  narration: string;
+  image_url?: string;
+}
+
+export interface TourResponse {
+  tour_type: string;
+  theme?: string;
+  stops: TourStop[];
+  introduction: string;
+  conclusion: string;
+}
+
+export interface SelectionDescription {
+  description: string;
+  common_traits: string[];
+  suggested_label: string;
+  entity_count: number;
+}
+
+export interface SimilarityExplanation {
+  reference_name: string;
+  reference_code: string;
+  explanation: string;
+  pattern_summary: string;
+}
+
+export interface SubsetProjectionPoint {
+  uuid: string;
+  name: string;
+  uht_code: string;
+  x: number;
+  y: number;
+  image_url?: string;
+}
+
+export interface SubsetCluster {
+  cluster_id: number;
+  centroid_x: number;
+  centroid_y: number;
+  label: string;
+  size: number;
+  dominant_layer: string;
+}
+
+export interface SubsetProjectionResponse {
+  method: string;
+  entity_count: number;
+  points: SubsetProjectionPoint[];
+  clusters: SubsetCluster[];
+  computation_time_ms: number;
+}
 
 export default {
   classification: classificationAPI,

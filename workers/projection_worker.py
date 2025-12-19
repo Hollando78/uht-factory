@@ -122,6 +122,54 @@ class ProjectionWorker:
 
         return projection
 
+    def compute_pacmap(
+        self,
+        embeddings: np.ndarray,
+        n_neighbors: int = 10,
+        mn_ratio: float = 0.5,
+        fp_ratio: float = 2.0,
+        random_state: int = 42
+    ) -> np.ndarray:
+        """
+        Compute PaCMAP projection from embeddings to 2D.
+
+        PaCMAP (Pairwise Controlled Manifold Approximation) preserves both
+        local and global structure better than UMAP for certain datasets.
+
+        Args:
+            embeddings: (N, 1536) array of embeddings
+            n_neighbors: Number of neighbors for local structure
+            mn_ratio: Mid-near pairs ratio
+            fp_ratio: Further pairs ratio
+            random_state: For reproducibility
+
+        Returns:
+            (N, 2) array of 2D coordinates
+        """
+        import pacmap
+
+        logger.info(f"Computing PaCMAP projection for {len(embeddings)} embeddings...")
+        start_time = datetime.now()
+
+        # Adjust n_neighbors for small datasets
+        n_neighbors = min(n_neighbors, len(embeddings) - 1)
+
+        reducer = pacmap.PaCMAP(
+            n_components=2,
+            n_neighbors=n_neighbors,
+            MN_ratio=mn_ratio,
+            FP_ratio=fp_ratio,
+            random_state=random_state,
+            verbose=False
+        )
+
+        projection = reducer.fit_transform(embeddings)
+
+        elapsed = (datetime.now() - start_time).total_seconds()
+        logger.info(f"PaCMAP completed in {elapsed:.1f}s")
+
+        return projection
+
     def normalize_projection(self, projection: np.ndarray) -> np.ndarray:
         """
         Normalize projection to [-1, 1] range for consistent visualization.
