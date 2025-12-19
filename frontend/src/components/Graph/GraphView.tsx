@@ -190,6 +190,7 @@ export default function GraphView() {
   const [centerEntityName, setCenterEntityName] = useState<string>('');
   const [similarityMetric, setSimilarityMetric] = useState<SimilarityMetric>('embedding');
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
+  const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -314,22 +315,37 @@ export default function GraphView() {
         return;
       }
 
-      // Merge new nodes and links
+      // Position new nodes in a sphere around the source node
+      const sourceX = (node as any).x || 0;
+      const sourceY = (node as any).y || 0;
+      const sourceZ = (node as any).z || 0;
+      const spreadRadius = 40;
+
+      // Merge new nodes with initial positions near source
       setGraphData(prev => ({
         nodes: [
           ...prev.nodes,
-          ...response.new_nodes.map((n: any) => ({
-            id: n.id,
-            name: n.name,
-            type: 'entity',
-            uht_code: n.uht_code,
-            color: n.color,
-            val: n.val,
-            layer_dominance: n.layer_dominance,
-            trait_count: n.trait_count,
-            is_center: false,
-            image_url: n.image_url
-          }))
+          ...response.new_nodes.map((n: any, i: number) => {
+            // Distribute in a sphere around source node
+            const phi = Math.acos(-1 + (2 * i) / response.new_nodes.length);
+            const theta = Math.sqrt(response.new_nodes.length * Math.PI) * phi;
+            return {
+              id: n.id,
+              name: n.name,
+              type: 'entity',
+              uht_code: n.uht_code,
+              color: n.color,
+              val: n.val,
+              layer_dominance: n.layer_dominance,
+              trait_count: n.trait_count,
+              is_center: false,
+              image_url: n.image_url,
+              // Initial position near source (force sim will adjust)
+              x: sourceX + spreadRadius * Math.cos(theta) * Math.sin(phi),
+              y: sourceY + spreadRadius * Math.sin(theta) * Math.sin(phi),
+              z: sourceZ + spreadRadius * Math.cos(phi)
+            };
+          })
         ],
         links: [
           ...prev.links,
@@ -338,6 +354,13 @@ export default function GraphView() {
       }));
 
       setExpandedNodes(prev => new Set([...prev, node.id]));
+
+      // Zoom out slightly to show new nodes
+      setTimeout(() => {
+        if (fgRef.current) {
+          fgRef.current.zoomToFit(800, 50);
+        }
+      }, 300);
 
     } catch (err) {
       console.error('Failed to expand:', err);
@@ -367,6 +390,7 @@ export default function GraphView() {
     setCenterEntityName('');
     setExpandedNodes(new Set());
     setSelectedNode(null);
+    setFocusedNodeId(null);
   }, []);
 
   // Custom node rendering - use cards for entities, spheres for traits
@@ -379,11 +403,12 @@ export default function GraphView() {
         image_url: node.image_url,
         layer_dominance: node.layer_dominance,
         trait_count: node.trait_count,
-        is_center: node.is_center
+        is_center: node.is_center,
+        is_focused: node.id === focusedNodeId
       });
     }
     return createSimpleNode(node);
-  }, []);
+  }, [focusedNodeId]);
 
   // Double-click detection
   const lastClickRef = useRef<{ nodeId: string; time: number } | null>(null);
@@ -401,14 +426,34 @@ export default function GraphView() {
       // Double-click: focus camera and expand
       lastClickRef.current = null;
 
-      // Focus camera on node
+      // Set this node as focused (for highlighting)
+      setFocusedNodeId(node.id);
+
+      // Focus camera on node - position camera in front of node
       if (fgRef.current) {
-        const distance = 80;
-        const distRatio = 1 + distance / Math.hypot(node.x || 0, node.y || 0, node.z || 0);
+        const nodePos = { x: node.x || 0, y: node.y || 0, z: node.z || 0 };
+        const distance = 60;
+
+        // Get current camera position to determine viewing direction
+        const currentPos = fgRef.current.cameraPosition();
+
+        // Calculate direction from node to current camera
+        const dx = currentPos.x - nodePos.x;
+        const dy = currentPos.y - nodePos.y;
+        const dz = currentPos.z - nodePos.z;
+        const dist = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
+
+        // New camera position: same direction, fixed distance
+        const newCamPos = {
+          x: nodePos.x + (dx / dist) * distance,
+          y: nodePos.y + (dy / dist) * distance,
+          z: nodePos.z + (dz / dist) * distance
+        };
+
         fgRef.current.cameraPosition(
-          { x: (node.x || 0) * distRatio, y: (node.y || 0) * distRatio, z: (node.z || 0) * distRatio },
-          { x: node.x || 0, y: node.y || 0, z: node.z || 0 },
-          1000 // animation duration
+          newCamPos,
+          nodePos,
+          800 // animation duration
         );
       }
 

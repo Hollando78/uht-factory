@@ -15,6 +15,7 @@ interface EntityNodeData {
   layer_dominance?: string;
   trait_count?: number;
   is_center?: boolean;
+  is_focused?: boolean;
 }
 
 // Cache for loaded images
@@ -100,19 +101,37 @@ function renderCardToCanvas(
   const borderRadius = 8;
   ctx.beginPath();
   ctx.roundRect(0, 0, cardWidth, cardHeight, borderRadius);
-  ctx.fillStyle = entity.is_center
-    ? 'rgba(0, 229, 255, 0.15)'
-    : 'rgba(26, 26, 26, 0.95)';
+
+  // Different background for center vs focused
+  if (entity.is_center) {
+    ctx.fillStyle = 'rgba(0, 229, 255, 0.15)';
+  } else if (entity.is_focused) {
+    ctx.fillStyle = 'rgba(255, 193, 7, 0.15)'; // Amber/gold for focused
+  } else {
+    ctx.fillStyle = 'rgba(26, 26, 26, 0.95)';
+  }
   ctx.fill();
 
-  // Border
-  ctx.strokeStyle = entity.is_center
-    ? 'rgba(0, 229, 255, 0.8)'
-    : isHovered
-      ? 'rgba(255, 255, 255, 0.5)'
-      : 'rgba(255, 255, 255, 0.2)';
-  ctx.lineWidth = entity.is_center ? 2 : 1;
+  // Border - cyan for center, gold for focused
+  if (entity.is_center) {
+    ctx.strokeStyle = 'rgba(0, 229, 255, 0.8)';
+    ctx.lineWidth = 2;
+  } else if (entity.is_focused) {
+    ctx.strokeStyle = 'rgba(255, 193, 7, 0.9)'; // Gold border for focused
+    ctx.lineWidth = 2;
+  } else {
+    ctx.strokeStyle = isHovered ? 'rgba(255, 255, 255, 0.5)' : 'rgba(255, 255, 255, 0.2)';
+    ctx.lineWidth = 1;
+  }
   ctx.stroke();
+
+  // Add glow effect for focused nodes
+  if (entity.is_focused && !entity.is_center) {
+    ctx.shadowColor = 'rgba(255, 193, 7, 0.5)';
+    ctx.shadowBlur = 10;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+  }
 
   // Image section (left side)
   const imgSize = 60;
@@ -206,12 +225,17 @@ function renderCardToCanvas(
     ctx.fillText(traitText, textX, chipY + 20);
   }
 
-  // Center indicator
+  // Center/Focus indicator
   if (entity.is_center) {
     ctx.fillStyle = '#00E5FF';
     ctx.font = 'bold 8px Arial';
     ctx.textAlign = 'right';
     ctx.fillText('CENTER', cardWidth - 8, cardHeight - 12);
+  } else if (entity.is_focused) {
+    ctx.fillStyle = '#FFC107';
+    ctx.font = 'bold 8px Arial';
+    ctx.textAlign = 'right';
+    ctx.fillText('FOCUS', cardWidth - 8, cardHeight - 12);
   }
 
   return canvas;
@@ -219,8 +243,8 @@ function renderCardToCanvas(
 
 // Create Three.js sprite from entity data
 export function createEntitySprite(entity: EntityNodeData): THREE.Sprite {
-  // Check cache first
-  const cacheKey = `${entity.id}-${entity.is_center}`;
+  // Check cache first - include focus state in cache key
+  const cacheKey = `${entity.id}-${entity.is_center}-${entity.is_focused}`;
   if (spriteCache.has(cacheKey)) {
     return spriteCache.get(cacheKey)!.clone();
   }
