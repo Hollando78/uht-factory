@@ -385,16 +385,47 @@ export default function GraphView() {
     return createSimpleNode(node);
   }, []);
 
-  // Node click handler
+  // Double-click detection
+  const lastClickRef = useRef<{ nodeId: string; time: number } | null>(null);
+  const DOUBLE_CLICK_THRESHOLD = 300; // ms
+
+  // Node click handler with double-click detection
   const handleNodeClick = useCallback((node: any) => {
-    if (node.type === 'entity') {
+    if (node.type !== 'entity') return;
+
+    const now = Date.now();
+    const lastClick = lastClickRef.current;
+
+    // Check for double-click
+    if (lastClick && lastClick.nodeId === node.id && (now - lastClick.time) < DOUBLE_CLICK_THRESHOLD) {
+      // Double-click: focus camera and expand
+      lastClickRef.current = null;
+
+      // Focus camera on node
+      if (fgRef.current) {
+        const distance = 80;
+        const distRatio = 1 + distance / Math.hypot(node.x || 0, node.y || 0, node.z || 0);
+        fgRef.current.cameraPosition(
+          { x: (node.x || 0) * distRatio, y: (node.y || 0) * distRatio, z: (node.z || 0) * distRatio },
+          { x: node.x || 0, y: node.y || 0, z: node.z || 0 },
+          1000 // animation duration
+        );
+      }
+
+      // Expand neighbors if not already expanded
+      if (!expandedNodes.has(node.id)) {
+        handleExpand(node);
+      }
+    } else {
+      // Single click: select node
+      lastClickRef.current = { nodeId: node.id, time: now };
       setSelectedNode(node);
       // Load full entity details
       API.entities.getEntity(node.id).then(entity => {
         actions.setSelectedEntity(entity);
       }).catch(console.error);
     }
-  }, [actions]);
+  }, [actions, expandedNodes, handleExpand]);
 
   // Mouse tracking for tooltip
   useEffect(() => {
