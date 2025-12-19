@@ -9,13 +9,15 @@ import {
   Typography,
   Avatar,
   Paper,
-  Tooltip
+  Tooltip,
+  IconButton
 } from '@mui/material';
 import {
   Psychology as SemanticIcon,
   Code as StructuralIcon,
   MergeType as HybridIcon,
-  Search as SearchIcon
+  Search as SearchIcon,
+  DeleteSweep as ClearHistoryIcon
 } from '@mui/icons-material';
 import { entityAPI } from '../../services/api';
 
@@ -113,6 +115,17 @@ export default function GraphSearchBar({
       onMetricChange(newMetric);
     }
   }, [onMetricChange]);
+
+  // Clear recent searches
+  const handleClearHistory = useCallback(() => {
+    setRecentSearches([]);
+    setOptions([]);
+    try {
+      localStorage.removeItem('graphRecentSearches');
+    } catch {
+      // Ignore localStorage errors
+    }
+  }, []);
 
   return (
     <Paper
@@ -237,6 +250,23 @@ export default function GraphSearchBar({
             </Tooltip>
           </ToggleButton>
         </ToggleButtonGroup>
+
+        {/* Clear History Button */}
+        {recentSearches.length > 0 && (
+          <Tooltip title="Clear search history">
+            <IconButton
+              size="small"
+              onClick={handleClearHistory}
+              sx={{
+                ml: 1,
+                color: 'text.secondary',
+                '&:hover': { color: 'error.main' }
+              }}
+            >
+              <ClearHistoryIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        )}
       </Box>
     </Paper>
   );
