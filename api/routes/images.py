@@ -1,10 +1,12 @@
-from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks, UploadFile, File, Form
-from fastapi.responses import FileResponse
+from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks, UploadFile, File, Form, Query
+from fastapi.responses import FileResponse, Response
 from typing import Dict, Any, List, Optional
 import os
 import json
 import uuid
 import shutil
+import hashlib
+import httpx
 from datetime import datetime
 
 from workers.image_client import ImageGenerationOrchestrator
@@ -351,6 +353,91 @@ async def get_image_gallery(
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Gallery retrieval failed: {str(e)}")
+
+@router.get("/proxy")
+async def proxy_image(
+    url: str = Query(..., description="External image URL to proxy")
+):
+    """
+    Proxy external images to bypass CORS restrictions.
+
+    Caches images locally to reduce external requests.
+    Only allows image content types.
+    """
+    try:
+        # Validate URL
+        if not url.startswith(('http://', 'https://')):
+            raise HTTPException(status_code=400, detail="Invalid URL")
+
+        # Only allow known image domains for security
+        allowed_domains = [
+            'commons.wikimedia.org',
+            'upload.wikimedia.org',
+            'www.wikidata.org',
+            'i.imgur.com',
+            'images.unsplash.com'
+        ]
+
+        from urllib.parse import urlparse
+        parsed = urlparse(url)
+        if parsed.netloc not in allowed_domains:
+            raise HTTPException(status_code=403, detail="Domain not allowed")
+
+        # Check cache first
+        cache_dir = "static/images/cache"
+        os.makedirs(cache_dir, exist_ok=True)
+
+        url_hash = hashlib.md5(url.encode()).hexdigest()
+        cache_path = os.path.join(cache_dir, f"{url_hash}.img")
+        cache_meta = os.path.join(cache_dir, f"{url_hash}.meta")
+
+        if os.path.exists(cache_path) and os.path.exists(cache_meta):
+            # Return cached image
+            with open(cache_meta, 'r') as f:
+                content_type = f.read().strip()
+            with open(cache_path, 'rb') as f:
+                content = f.read()
+            return Response(
+                content=content,
+                media_type=content_type,
+                headers={"Cache-Control": "public, max-age=86400"}
+            )
+
+        # Fetch the image with redirect following
+        async with httpx.AsyncClient(follow_redirects=True, timeout=10.0) as client:
+            response = await client.get(url, headers={
+                "User-Agent": "UHT-Factory/1.0 (https://factory.universalhex.org)"
+            })
+
+            if response.status_code != 200:
+                raise HTTPException(status_code=502, detail=f"Failed to fetch image: {response.status_code}")
+
+            content_type = response.headers.get('content-type', '')
+            if not content_type.startswith('image/'):
+                raise HTTPException(status_code=400, detail="URL does not point to an image")
+
+            content = response.content
+
+            # Cache the image (max 5MB)
+            if len(content) < 5 * 1024 * 1024:
+                with open(cache_path, 'wb') as f:
+                    f.write(content)
+                with open(cache_meta, 'w') as f:
+                    f.write(content_type)
+
+            return Response(
+                content=content,
+                media_type=content_type,
+                headers={"Cache-Control": "public, max-age=86400"}
+            )
+
+    except HTTPException:
+        raise
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=504, detail="Image fetch timed out")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Proxy error: {str(e)}")
+
 
 @router.post("/entity/{entity_uuid}/view")
 async def track_entity_view(

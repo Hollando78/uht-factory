@@ -23,23 +23,57 @@ const imageCache = new Map<string, HTMLImageElement>();
 // Cache for created sprites to avoid recreation
 const spriteCache = new Map<string, THREE.Sprite>();
 
+// Domains that need proxying due to CORS
+const PROXY_DOMAINS = [
+  'commons.wikimedia.org',
+  'upload.wikimedia.org',
+  'www.wikidata.org'
+];
+
+// Get proxied URL for external images
+function getProxiedUrl(url: string): string {
+  if (!url) return url;
+
+  // Local URLs don't need proxying
+  if (url.startsWith('/') || url.startsWith('data:')) {
+    return url;
+  }
+
+  try {
+    const parsed = new URL(url);
+    if (PROXY_DOMAINS.includes(parsed.hostname)) {
+      return `/api/v1/images/proxy?url=${encodeURIComponent(url)}`;
+    }
+  } catch {
+    // Invalid URL, return as-is
+  }
+
+  return url;
+}
+
 // Load image with caching
 async function loadImage(url: string): Promise<HTMLImageElement | null> {
   if (!url) return null;
 
-  if (imageCache.has(url)) {
-    return imageCache.get(url)!;
+  // Use proxied URL for external images
+  const actualUrl = getProxiedUrl(url);
+
+  if (imageCache.has(actualUrl)) {
+    return imageCache.get(actualUrl)!;
   }
 
   return new Promise((resolve) => {
     const img = new Image();
-    img.crossOrigin = 'anonymous';
+    // Only set crossOrigin for non-proxied URLs
+    if (!actualUrl.startsWith('/api/')) {
+      img.crossOrigin = 'anonymous';
+    }
     img.onload = () => {
-      imageCache.set(url, img);
+      imageCache.set(actualUrl, img);
       resolve(img);
     };
     img.onerror = () => resolve(null);
-    img.src = url;
+    img.src = actualUrl;
   });
 }
 
