@@ -355,12 +355,34 @@ export default function GraphView() {
 
       setExpandedNodes(prev => new Set([...prev, node.id]));
 
-      // Zoom out slightly to show new nodes
+      // Smooth camera adjustment - pull back to show new nodes while keeping focus
       setTimeout(() => {
         if (fgRef.current) {
-          fgRef.current.zoomToFit(800, 50);
+          const nodePos = { x: (node as any).x || 0, y: (node as any).y || 0, z: (node as any).z || 0 };
+          const currentPos = fgRef.current.cameraPosition();
+
+          // Calculate direction from node to camera
+          const dx = currentPos.x - nodePos.x;
+          const dy = currentPos.y - nodePos.y;
+          const dz = currentPos.z - nodePos.z;
+          const currentDist = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
+
+          // Pull back to distance that shows neighbors (spreadRadius + margin)
+          const targetDist = Math.max(currentDist, 90);
+
+          const newCamPos = {
+            x: nodePos.x + (dx / currentDist) * targetDist,
+            y: nodePos.y + (dy / currentDist) * targetDist,
+            z: nodePos.z + (dz / currentDist) * targetDist
+          };
+
+          fgRef.current.cameraPosition(
+            newCamPos,
+            nodePos, // keep looking at the expanded node
+            1000     // smooth animation
+          );
         }
-      }, 300);
+      }, 100);
 
     } catch (err) {
       console.error('Failed to expand:', err);
@@ -429,37 +451,20 @@ export default function GraphView() {
       // Set this node as focused (for highlighting)
       setFocusedNodeId(node.id);
 
-      // Focus camera on node - position camera in front of node
-      if (fgRef.current) {
-        const nodePos = { x: node.x || 0, y: node.y || 0, z: node.z || 0 };
-        const distance = 60;
-
-        // Get current camera position to determine viewing direction
-        const currentPos = fgRef.current.cameraPosition();
-
-        // Calculate direction from node to current camera
-        const dx = currentPos.x - nodePos.x;
-        const dy = currentPos.y - nodePos.y;
-        const dz = currentPos.z - nodePos.z;
-        const dist = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
-
-        // New camera position: same direction, fixed distance
-        const newCamPos = {
-          x: nodePos.x + (dx / dist) * distance,
-          y: nodePos.y + (dy / dist) * distance,
-          z: nodePos.z + (dz / dist) * distance
-        };
-
-        fgRef.current.cameraPosition(
-          newCamPos,
-          nodePos,
-          800 // animation duration
-        );
-      }
-
       // Expand neighbors if not already expanded
+      // Camera adjustment happens in handleExpand after nodes are added
       if (!expandedNodes.has(node.id)) {
         handleExpand(node);
+      } else {
+        // Already expanded - just smoothly center on node
+        if (fgRef.current) {
+          const nodePos = { x: node.x || 0, y: node.y || 0, z: node.z || 0 };
+          fgRef.current.cameraPosition(
+            undefined, // keep current position
+            nodePos,   // look at node
+            600
+          );
+        }
       }
     } else {
       // Single click: select node
