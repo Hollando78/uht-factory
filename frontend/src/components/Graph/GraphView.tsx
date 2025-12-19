@@ -197,6 +197,7 @@ export default function GraphView() {
   // Control panel state
   const [controlsOpen, setControlsOpen] = useState(false);
   const [showTraitContext, setShowTraitContext] = useState(true);
+  const [includeNsfw, setIncludeNsfw] = useState(false);
   const [layout, setLayout] = useState('force');
   const [linkDistance, setLinkDistance] = useState(50);
 
@@ -214,7 +215,7 @@ export default function GraphView() {
     setError(null);
 
     try {
-      const response = await API.graph.getNeighborhood(uuid, similarityMetric, 15, showTraitContext);
+      const response = await API.graph.getNeighborhood(uuid, similarityMetric, 15, showTraitContext, includeNsfw);
 
       // Build combined graph data
       const entityNodes: GraphNode[] = [
@@ -290,7 +291,7 @@ export default function GraphView() {
     } finally {
       setLoading(false);
     }
-  }, [similarityMetric, showTraitContext]);
+  }, [similarityMetric, showTraitContext, includeNsfw]);
 
   // Expand from a node
   const handleExpand = useCallback(async (node: GraphNode) => {
@@ -306,7 +307,8 @@ export default function GraphView() {
         node.id,
         similarityMetric,
         10,
-        existingUuids
+        existingUuids,
+        includeNsfw
       );
 
       if (response.new_nodes.length === 0) {
@@ -389,7 +391,7 @@ export default function GraphView() {
     } finally {
       setLoading(false);
     }
-  }, [graphData, expandedNodes, similarityMetric]);
+  }, [graphData, expandedNodes, similarityMetric, includeNsfw]);
 
   // Handle entity selection from search
   const handleEntitySelect = useCallback((uuid: string, name: string) => {
@@ -721,6 +723,18 @@ export default function GraphView() {
                   />
                 }
                 label="Show Trait Context"
+              />
+            </ListItem>
+            <ListItem>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={includeNsfw}
+                    onChange={(e) => setIncludeNsfw(e.target.checked)}
+                    color="warning"
+                  />
+                }
+                label="Include NSFW"
               />
             </ListItem>
           </List>

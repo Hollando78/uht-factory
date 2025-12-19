@@ -343,6 +343,7 @@ class ExpandRequest(BaseModel):
     metric: Literal['embedding', 'hamming', 'hybrid'] = 'embedding'
     k: int = Field(default=10, ge=1, le=30)
     exclude_uuids: List[str] = Field(default_factory=list)
+    include_nsfw: bool = False
 
 
 class EntityNode(BaseModel):
@@ -387,6 +388,7 @@ async def get_entity_neighborhood(
     k: int = Query(15, ge=5, le=50),
     min_similarity: float = Query(0.3, ge=0.0, le=1.0),
     include_traits: bool = Query(True),
+    include_nsfw: bool = Query(False, description="Include NSFW content"),
     request = None,
     neo4j_client: Neo4jClient = Depends(get_neo4j_client),
     redis: RedisClient = Depends(get_redis_client)
@@ -399,11 +401,15 @@ async def get_entity_neighborhood(
     hamming (structural), or hybrid similarity metrics.
     """
     try:
-        # Check cache first
-        cache_key = f"graph:neighborhood:{uuid}:{metric}:{k}"
+        # Check cache first (include nsfw in cache key)
+        cache_key = f"graph:neighborhood:{uuid}:{metric}:{k}:{include_nsfw}"
         cached = await redis.get(cache_key)
         if cached:
             return NeighborhoodResponse(**json.loads(cached))
+
+        # Build NSFW filter clause
+        nsfw_filter = "" if include_nsfw else "AND (node.nsfw IS NULL OR node.nsfw = false)"
+        nsfw_filter_e = "" if include_nsfw else "AND (e.nsfw IS NULL OR e.nsfw = false)"
 
         # Get the center entity
         center_query = """
@@ -450,10 +456,10 @@ async def get_entity_neighborhood(
         # Get neighbors based on metric
         if metric in ['embedding', 'hybrid'] and center_embedding:
             # Embedding-based neighbors using vector index
-            emb_query = """
+            emb_query = f"""
             CALL db.index.vector.queryNodes('entity_embedding', $k_plus, $embedding)
             YIELD node, score
-            WHERE node.uuid <> $uuid AND score >= $min_score
+            WHERE node.uuid <> $uuid AND score >= $min_score {nsfw_filter}
             RETURN node.uuid as uuid, node.name as name, node.uht_code as uht_code,
                    node.description as description, node.image_url as image_url,
                    score as embedding_similarity
@@ -492,9 +498,9 @@ async def get_entity_neighborhood(
 
         if metric == 'hamming':
             # UHT-based neighbors (Jaccard similarity on traits)
-            uht_query = """
+            uht_query = f"""
             MATCH (e:Entity)
-            WHERE e.uuid <> $uuid AND e.uht_code IS NOT NULL
+            WHERE e.uuid <> $uuid AND e.uht_code IS NOT NULL {nsfw_filter_e}
             RETURN e.uuid as uuid, e.name as name, e.uht_code as uht_code,
                    e.description as description, e.image_url as image_url
             LIMIT 5000
@@ -660,6 +666,10 @@ async def expand_from_node(
         exclude_set = set(body.exclude_uuids)
         exclude_set.add(body.entity_uuid)  # Don't include self
 
+        # Build NSFW filter clause
+        nsfw_filter = "" if body.include_nsfw else "AND (node.nsfw IS NULL OR node.nsfw = false)"
+        nsfw_filter_e = "" if body.include_nsfw else "AND (e.nsfw IS NULL OR e.nsfw = false)"
+
         layer_colors = {
             "Physical": "#FF6B35",
             "Functional": "#00E5FF",
@@ -673,10 +683,10 @@ async def expand_from_node(
         # Get candidates based on metric
         if body.metric in ['embedding', 'hybrid'] and entity_embedding:
             # Get more than needed since we'll filter
-            emb_query = """
+            emb_query = f"""
             CALL db.index.vector.queryNodes('entity_embedding', $k_plus, $embedding)
             YIELD node, score
-            WHERE node.uuid <> $uuid AND score >= 0.3
+            WHERE node.uuid <> $uuid AND score >= 0.3 {nsfw_filter}
             RETURN node.uuid as uuid, node.name as name, node.uht_code as uht_code,
                    node.description as description, node.image_url as image_url,
                    score as embedding_similarity
@@ -711,9 +721,9 @@ async def expand_from_node(
                 })
 
         if body.metric == 'hamming':
-            uht_query = """
+            uht_query = f"""
             MATCH (e:Entity)
-            WHERE e.uuid <> $uuid AND e.uht_code IS NOT NULL
+            WHERE e.uuid <> $uuid AND e.uht_code IS NOT NULL {nsfw_filter_e}
             RETURN e.uuid as uuid, e.name as name, e.uht_code as uht_code,
                    e.description as description, e.image_url as image_url
             LIMIT 5000

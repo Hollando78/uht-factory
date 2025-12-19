@@ -352,9 +352,10 @@ export const graphAPI = {
     uuid: string,
     metric: 'embedding' | 'hamming' | 'hybrid' = 'embedding',
     k: number = 15,
-    includeTraits: boolean = true
+    includeTraits: boolean = true,
+    includeNsfw: boolean = false
   ) => {
-    const response = await api.get(`/graph/neighborhood/${uuid}?metric=${metric}&k=${k}&include_traits=${includeTraits}`);
+    const response = await api.get(`/graph/neighborhood/${uuid}?metric=${metric}&k=${k}&include_traits=${includeTraits}&include_nsfw=${includeNsfw}`);
     return response.data;
   },
 
@@ -362,13 +363,15 @@ export const graphAPI = {
     entityUuid: string,
     metric: 'embedding' | 'hamming' | 'hybrid',
     k: number = 10,
-    excludeUuids: string[] = []
+    excludeUuids: string[] = [],
+    includeNsfw: boolean = false
   ) => {
     const response = await api.post('/graph/expand', {
       entity_uuid: entityUuid,
       metric,
       k,
-      exclude_uuids: excludeUuids
+      exclude_uuids: excludeUuids,
+      include_nsfw: includeNsfw
     });
     return response.data;
   }
