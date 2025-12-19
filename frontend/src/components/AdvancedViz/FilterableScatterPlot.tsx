@@ -347,7 +347,6 @@ export default function ProjectionScatterPlot({ projectionType, onEntitySelect }
 
       return true;
     });
-    console.log('[FilteredPoints] layerFilter:', layerFilter, 'points:', points.length, 'filtered:', result.length);
     return result;
   }, [points, layerFilter, traitRange, lassoMode, lassoPoints, lassoInvert, getPointScreenCoords]);
 
@@ -1812,7 +1811,6 @@ export default function ProjectionScatterPlot({ projectionType, onEntitySelect }
 
   // Subset projection functions
   const computeSubsetProjection = useCallback(async () => {
-    console.log('[SubsetProjection] filteredPoints.length:', filteredPoints.length);
     if (filteredPoints.length < 3) return;
 
     setSubsetLoading(true);
@@ -1827,8 +1825,6 @@ export default function ProjectionScatterPlot({ projectionType, onEntitySelect }
       const method = projectionType === 'tsne' ? 'tsne'
                    : projectionType === 'uht_umap' ? 'pacmap'
                    : 'umap';
-
-      console.log('[SubsetProjection] Sending request:', { uuidsCount: uuids.length, method, firstUuids: uuids.slice(0, 3) });
 
       const response = await explorerAPI.computeSubsetProjection(uuids, method);
       setSubsetProjection(response);
