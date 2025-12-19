@@ -346,6 +346,31 @@ export const graphAPI = {
   getFullGraph: async (nodeLimit: number = 50, similarityThreshold: number = 0.7) => {
     const response = await api.get(`/graph/full?node_limit=${nodeLimit}&similarity_threshold=${similarityThreshold}`);
     return response.data;
+  },
+
+  getNeighborhood: async (
+    uuid: string,
+    metric: 'embedding' | 'hamming' | 'hybrid' = 'embedding',
+    k: number = 15,
+    includeTraits: boolean = true
+  ) => {
+    const response = await api.get(`/graph/neighborhood/${uuid}?metric=${metric}&k=${k}&include_traits=${includeTraits}`);
+    return response.data;
+  },
+
+  expandNode: async (
+    entityUuid: string,
+    metric: 'embedding' | 'hamming' | 'hybrid',
+    k: number = 10,
+    excludeUuids: string[] = []
+  ) => {
+    const response = await api.post('/graph/expand', {
+      entity_uuid: entityUuid,
+      metric,
+      k,
+      exclude_uuids: excludeUuids
+    });
+    return response.data;
   }
 };
 

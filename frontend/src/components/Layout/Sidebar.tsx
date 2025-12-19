@@ -23,7 +23,8 @@ import {
   School as SchoolIcon,
   Email as EmailIcon,
   Calculate as CalculatorIcon,
-  ScatterPlot as ExplorerIcon
+  ScatterPlot as ExplorerIcon,
+  AutoGraph as AdvancedVizIcon
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useMobile } from '../../context/MobileContext';
@@ -66,11 +67,10 @@ const navItems: NavItem[] = [
   },
   {
     path: '/graph',
-    label: '3D Graph',
+    label: 'Entity Explorer',
     icon: <GraphIcon />,
-    description: 'Explore entity relationships',
-    hideOnMobile: true,
-    hidden: true  // Non-functional at present
+    description: 'Search and explore similar entities in 3D',
+    hideOnMobile: true
   },
   {
     path: '/comparison',
@@ -120,6 +120,13 @@ const navItems: NavItem[] = [
     label: 'Embedding Explorer',
     icon: <ExplorerIcon />,
     description: 'Embeddings vs UHT codes',
+    hideOnMobile: true
+  },
+  {
+    path: '/advanced-viz',
+    label: 'Advanced Viz',
+    icon: <AdvancedVizIcon />,
+    description: 'Interactive filtering & tours',
     hideOnMobile: true
   }
 ];

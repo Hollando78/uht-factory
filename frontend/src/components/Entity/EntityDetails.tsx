@@ -50,7 +50,8 @@ import {
   Flag as FlagIcon,
   Share as ShareIcon,
   OpenInNew as PopoutIcon,
-  History as HistoryIcon
+  History as HistoryIcon,
+  ScatterPlot as ExploreGraphIcon
 } from '@mui/icons-material';
 import { entityAPI, traitsAPI, imageAPI, preprocessAPI, classificationAPI, getApiKey } from '../../services/api';
 import { useMobile } from '../../context/MobileContext';
@@ -867,6 +868,8 @@ export default function EntityDetails() {
     reasoning: string;
   } | null>(null);
   const [acceptingPreprocess, setAcceptingPreprocess] = useState(false);
+  const [editedName, setEditedName] = useState('');
+  const [editedDescription, setEditedDescription] = useState('');
   const [uploadingImage, setUploadingImage] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const fetchInProgress = React.useRef(false);
@@ -1105,6 +1108,8 @@ export default function EntityDetails() {
         confidence: result.confidence,
         reasoning: result.reasoning || ''
       });
+      setEditedName(result.suggested_name);
+      setEditedDescription(result.suggested_description);
     } catch (err) {
       console.error('Reprocessing failed:', err);
       const errorMessage = (err as any)?.response?.data?.detail ||
@@ -1122,10 +1127,10 @@ export default function EntityDetails() {
     setActionError(null);
 
     try {
-      // First update the entity with suggested name, description, and context
+      // First update the entity with edited name, description, and context
       await entityAPI.updateEntity(entity.uuid, {
-        name: preprocessResult.suggested_name,
-        description: preprocessResult.suggested_description,
+        name: editedName,
+        description: editedDescription,
         additional_context: preprocessResult.additional_context
       });
 
@@ -1133,8 +1138,8 @@ export default function EntityDetails() {
       await classificationAPI.classifyEntity({
         entity: {
           uuid: entity.uuid,  // Pass existing UUID to update instead of creating new
-          name: preprocessResult.suggested_name,
-          description: preprocessResult.suggested_description
+          name: editedName,
+          description: editedDescription
         },
         use_cache: false,
         detailed: true,
@@ -1145,7 +1150,9 @@ export default function EntityDetails() {
       // Refresh entity data
       await fetchEntity(true);
       setPreprocessResult(null);
-      setActionSuccess(`Entity updated: "${preprocessResult.suggested_name}"`);
+      setEditedName('');
+      setEditedDescription('');
+      setActionSuccess(`Entity updated: "${editedName}"`);
     } catch (err) {
       console.error('Accept preprocessing failed:', err);
       const errorMessage = (err as any)?.response?.data?.detail ||
@@ -1264,8 +1271,11 @@ export default function EntityDetails() {
   }
 
   const imageUrl = getImageUrl();
-  const activeTraitCount = entity.traits?.filter(t => t.evaluation?.applicable).length || 0;
-  const totalTraitCount = entity.traits?.length || 0;
+  // Count from traits array, or fallback to counting 1s in binary representation
+  const activeTraitCount = entity.traits?.filter(t => t.evaluation?.applicable).length
+    || (entity.binary_representation?.split('1').length - 1)
+    || 0;
+  const totalTraitCount = entity.traits?.length || 32;
 
   // Structured data for entity
   const structuredData = {
@@ -1298,19 +1308,21 @@ export default function EntityDetails() {
           <Typography variant={isCompact ? 'h6' : 'h5'} sx={{ flex: 1 }}>
             Entity Details
           </Typography>
-          <Tooltip title={isFloating(entity.uuid) ? "Already floating" : "Pop out as floating card"}>
-            <span>
-              <IconButton
-                onClick={() => addFloatingCard(entity.uuid)}
-                disabled={isFloating(entity.uuid)}
-                sx={{
-                  color: isFloating(entity.uuid) ? 'text.disabled' : 'primary.main'
-                }}
-              >
-                <PopoutIcon sx={{ transform: 'rotate(-90deg)' }} />
-              </IconButton>
-            </span>
-          </Tooltip>
+{!isMobile && (
+            <Tooltip title={isFloating(entity.uuid) ? "Already floating" : "Pop out as floating card"}>
+              <span>
+                <IconButton
+                  onClick={() => addFloatingCard(entity.uuid)}
+                  disabled={isFloating(entity.uuid)}
+                  sx={{
+                    color: isFloating(entity.uuid) ? 'text.disabled' : 'primary.main'
+                  }}
+                >
+                  <PopoutIcon sx={{ transform: 'rotate(-90deg)' }} />
+                </IconButton>
+              </span>
+            </Tooltip>
+          )}
           <IconButton onClick={() => fetchEntity(true)}>
             <RefreshIcon />
           </IconButton>
@@ -1516,6 +1528,16 @@ export default function EntityDetails() {
                     </IconButton>
                   </Tooltip>
 
+                  <Tooltip title="Explore in 3D Graph">
+                    <IconButton
+                      size="small"
+                      onClick={() => navigate(`/graph?center=${entity.uuid}`)}
+                      sx={{ p: 0.25 }}
+                    >
+                      <ExploreGraphIcon sx={{ fontSize: 18, color: '#00E5FF' }} />
+                    </IconButton>
+                  </Tooltip>
+
                 </Box>
 
                 {/* Image generation error */}
@@ -1550,17 +1572,29 @@ export default function EntityDetails() {
                     </Typography>
 
                     <Box sx={{ mb: 1.5 }}>
-                      <Typography variant="caption" color="text.secondary">Suggested Name:</Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                        {preprocessResult.suggested_name}
-                      </Typography>
+                      <Typography variant="caption" color="text.secondary">Name (editable):</Typography>
+                      <TextField
+                        fullWidth
+                        size="small"
+                        value={editedName}
+                        onChange={(e) => setEditedName(e.target.value)}
+                        variant="outlined"
+                        sx={{ mt: 0.5 }}
+                      />
                     </Box>
 
                     <Box sx={{ mb: 1.5 }}>
-                      <Typography variant="caption" color="text.secondary">Suggested Description:</Typography>
-                      <Typography variant="body2" sx={{ fontSize: '0.85rem' }}>
-                        {preprocessResult.suggested_description}
-                      </Typography>
+                      <Typography variant="caption" color="text.secondary">Description (editable):</Typography>
+                      <TextField
+                        fullWidth
+                        size="small"
+                        multiline
+                        rows={3}
+                        value={editedDescription}
+                        onChange={(e) => setEditedDescription(e.target.value)}
+                        variant="outlined"
+                        sx={{ mt: 0.5 }}
+                      />
                     </Box>
 
                     {preprocessResult.reasoning && (
@@ -1586,7 +1620,11 @@ export default function EntityDetails() {
                       <Button
                         size="small"
                         variant="outlined"
-                        onClick={() => setPreprocessResult(null)}
+                        onClick={() => {
+                          setPreprocessResult(null);
+                          setEditedName('');
+                          setEditedDescription('');
+                        }}
                         disabled={acceptingPreprocess}
                       >
                         Dismiss
