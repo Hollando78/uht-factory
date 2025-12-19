@@ -12,7 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, HTMLResponse
 from contextlib import asynccontextmanager
 
-from api.routes import classification, entities, traits, auth, preprocessing, graph, images, models, embeddings, users, collections, seo, admin, hex_calc, explorer
+from api.routes import classification, entities, traits, auth, preprocessing, graph, images, models, embeddings, users, collections, seo, admin, hex_calc, explorer, analytics
 from api.middleware.api_key_auth import api_key_manager
 from api.middleware.meta_injection import MetaTagInjectionMiddleware
 from db.neo4j_client import Neo4jClient
@@ -113,6 +113,7 @@ app.include_router(seo.router, prefix="/api/v1", tags=["SEO"])
 app.include_router(admin.router, prefix="/api/v1", tags=["Admin"])
 app.include_router(hex_calc.router, prefix="/api/v1/hex-calc", tags=["Hex Calculator"])
 app.include_router(explorer.router, prefix="/api/v1/explorer", tags=["Embedding Explorer"])
+app.include_router(analytics.router, prefix="/api/v1", tags=["Analytics"])
 
 @app.get("/api")
 async def root():

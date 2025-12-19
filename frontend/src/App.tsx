@@ -21,12 +21,14 @@ import ListView from './components/ListView/ListView';
 import GalleryView from './components/Gallery/GalleryView';
 import EntityDetails from './components/Entity/EntityDetails';
 import TraitAnalytics from './components/Analytics/TraitAnalytics';
+import SiteAnalytics from './components/Analytics/SiteAnalytics';
 import VerifyEmailPage from './components/Auth/VerifyEmailPage';
 import HowItWorksView from './components/HowItWorks/HowItWorksView';
 import { TraitFlagsView } from './components/Admin';
 import { HexCalcView } from './components/HexCalc';
 import { EmbeddingExplorerView } from './components/Explorer';
 import { AdvancedVizView } from './components/AdvancedViz';
+import { useAnalytics } from './hooks/useAnalytics';
 
 // Dark theme optimized for graph visualization with responsive typography
 const darkTheme = createTheme({
@@ -129,6 +131,9 @@ const SIDEBAR_WIDTH = 240;
 // Inner app component that uses mobile context
 function AppContent() {
   const { isMobile, isTablet, drawerOpen, closeDrawer } = useMobile();
+
+  // Track page views for analytics
+  useAnalytics();
   const showDrawer = isMobile || isTablet;
 
   return (
@@ -198,6 +203,7 @@ function AppContent() {
             <Route path="/advanced-viz" element={<AdvancedVizView />} />
             <Route path="/verify-email" element={<VerifyEmailPage />} />
             <Route path="/admin/trait-flags" element={<TraitFlagsView />} />
+            <Route path="/admin/site-analytics" element={<SiteAnalytics />} />
           </Routes>
         </Box>
       </Box>
